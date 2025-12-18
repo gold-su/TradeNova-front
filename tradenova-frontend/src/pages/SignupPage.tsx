@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
+import { M } from "../i18n/messages";
+import { getLocale } from "../i18n/locale";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
 
 export default function SignupPage() {
     const nav = useNavigate();
     const [email, setEmail] = useState("");
     const [nickname, setNickname] = useState("");
     const [password, setPassword] = useState("");
+
+    const t = M[getLocale()]; //언어
 
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -26,21 +35,21 @@ export default function SignupPage() {
 
     return (
         <div style={{ padding: 24, maxWidth: 380, margin: "0 auto" }}>
-            <h2>회원가입</h2>
+            <h2>{t.goSignup}</h2>
 
             <div style={{ display: "grid", gap: 10 }}>
                 <input
-                    placeholder="이메일"
+                    placeholder={t.email}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
                 <input
-                    placeholder="닉네임"
+                    placeholder={t.nickname}
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                 />
                 <input
-                    placeholder="비밀번호"
+                    placeholder={t.password}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -52,10 +61,10 @@ export default function SignupPage() {
                     onClick={onSubmit}
                     disabled={loading || !email || !password || !nickname}
                 >
-                    {loading ? "가입 중..." : "회원가입"}
+                    {loading ? t.loginLoading : t.loginBtn}
                 </button>
 
-                <Link to="/login">로그인 하러가기</Link>
+                <Link to="/login">{t.goLogin}</Link>
             </div>
         </div>
     );

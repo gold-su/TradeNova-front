@@ -3,6 +3,13 @@ import { Link, useNavigate } from "react-router-dom"; //useNavigate는 페이지
 import { authApi } from "../api/authApi"; //만들어둔 API 서비스 객체
 import { M } from "../i18n/messages";
 import { getLocale } from "../i18n/locale";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
+
+
 
 export default function LoginPage() {
     const nav = useNavigate();
@@ -34,12 +41,12 @@ export default function LoginPage() {
 
             <div style={{ display: "grid", gap: 10 }}>
                 <input
-                    placeholder="이메일"
+                    placeholder={t.email}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
                 <input
-                    placeholder="비밀번호"
+                    placeholder={t.password}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

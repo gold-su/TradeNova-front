@@ -37,4 +37,22 @@ export const M = {
         haveAccount: "Already have an account?",
         goLogin: "Log in",
     },
+    ja: {
+        loginTitle: "ログイン",
+        loginDesc: "TradeNovaへようこそ。",
+        email: "メールアドレス",
+        password: "パスワード",
+        loginBtn: "ログイン",
+        loginLoading: "ログイン中..",
+        noAccount: "アカウントをお持ちでないですか？",
+        goSignup: "新規登録",
+
+        signupTitle: "新規登録",
+        signupDesc: "数秒でアカウントを作成できます。",
+        nickname: "ニックネーム",
+        signupBtn: "登録する",
+        signupLoading: "登録中...",
+        haveAccount: "すでにアカウントをお持ちですか？",
+        goLogin: "ログイン",
+    },
 } as const;
