@@ -1,0 +1,40 @@
+export type Locale = "ko" | "en";
+
+export const M = {
+    ko: {
+        loginTitle: "로그인",
+        loginDesc: "TradeNova에 다시 오신 걸 환영해요.",
+        email: "이메일",
+        password: "비밀번호",
+        loginBtn: "로그인",
+        loginLoading: "로그인 중..",
+        noAccount: "아직 계정이 없나요?",
+        goSignup: "회원가입",
+
+        signupTitle: "회원가입",
+        signupDesc: "3초만에 계정을 만들고 시작해요.",
+        nickname: "닉네임",
+        signupBtn: "회원가입",
+        signupLoading: "가입 중...",
+        haveAccount: "이미 계정이 있나요?",
+        goLogin: "로그인",
+    },
+    en: {
+        loginTitle: "Log in",
+        loginDesc: "Welcome back to TradeNova.",
+        email: "Email",
+        password: "Password",
+        loginBtn: "Log in",
+        loginLoading: "Logging in...",
+        noAccount: "Don't have an account?",
+        goSignup: "Sign up",
+
+        signupTitle: "Sign up",
+        signupDesc: "Create your account in seconds.",
+        nickname: "Nickname",
+        signupBtn: "Sign up",
+        signupLoading: "Signing up...",
+        haveAccount: "Already have an account?",
+        goLogin: "Log in",
+    },
+} as const;
