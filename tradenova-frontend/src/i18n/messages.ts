@@ -3,7 +3,7 @@ export type Locale = "ko" | "en";
 export const M = {
     ko: {
         loginTitle: "로그인",
-        loginDesc: "TradeNova에 다시 오신 걸 환영해요.",
+        loginDesc: "트레이더의 재탄생 [TradeNova]",
         email: "이메일",
         password: "비밀번호",
         loginBtn: "로그인",

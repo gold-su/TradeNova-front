@@ -29,37 +29,78 @@ export default function LoginPage() {
             localStorage.setItem("accessToken", data.accessToken); //로그인 상태를 브라우저에 저장, 이후 모든 요청에 인터셉터가 자동으로 토큰 붙임
             nav("/"); //로그인 성공하면 홈으로
         } catch (e: any) { //axios 에러 타입이 복잡해서 일단 any, 실무에서도 자주 이렇게 시작함.
-            setErrorMsg(e?.response?.data?.message ?? "로그인 실패"); //e?.response?.data?.message 중간에 하나라도 없으면 에러 안 터지고 undefined
+            const msg =
+                e?.response?.data?.message ||
+                e?.response?.data?.errors?.email ||
+                e?.response?.data?.errors?.password ||
+                "로그인 실패";
+            setErrorMsg(msg); //e?.response?.data?.message 중간에 하나라도 없으면 에러 안 터지고 undefined
         } finally { //성공하든, 실패하든 무조건 실행
             setLoading(false);  //로딩 상태 해제 보장
         }
     };
 
+    const disabled = loading || !email.trim() || !password.trim();
+
     return (
-        <div style={{ padding: 24, maxWidth: 380, margin: "0 auto" }}>
-            <h2>{t.goLogin}</h2>
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
+            <Card className="w-full max-w-md">
+                <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{t.loginDesc}</p>
+                </CardHeader>
 
-            <div style={{ display: "grid", gap: 10 }}>
-                <input
-                    placeholder={t.email}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <input
-                    placeholder={t.password}
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email">{t.email}</Label>
+                        <Input
+                            id="email"
+                            placeholder="example@domain.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !disabled) onSubmit();
+                            }}
+                        />
+                    </div>
 
-                {errorMsg && <div style={{ color: "red" }}>{errorMsg}</div>}
+                    <div className="space-y-2">
+                        <Label htmlFor="password">{t.password}</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !disabled) onSubmit();
+                            }}
+                        />
+                    </div>
 
-                <button onClick={onSubmit} disabled={loading || !email || !password}>
-                    {loading ? t.loginLoading : t.loginBtn}
-                </button>
+                    {errorMsg && (
+                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                            {errorMsg}
+                        </div>
+                    )}
 
-                <Link to="/signup">{t.signupBtn}</Link>
-            </div>
+                    <Button className="w-full" onClick={onSubmit} disabled={disabled}>
+                        {loading ? t.loginLoading : t.loginBtn}
+                    </Button>
+
+                    <div className="text-sm text-muted-foreground">
+                        {t.noAccount}{" "}
+                        <Link
+                            to="/signup"
+                            className="text-foreground font-semibold underline underline-offset-4"
+                        >
+                            {t.goSignup}
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
