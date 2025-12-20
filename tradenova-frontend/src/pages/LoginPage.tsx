@@ -10,43 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
 
-type Step = "start" | "email" | "details" | "verify"; //단계 플로우 용 Step
+
 
 export default function LoginPage() {
     const nav = useNavigate();
     const t = M[getLocale()]; //언어
 
-    const [step, setStep] = useState<Step>("start");
-
     const [email, setEmail] = useState(""); //입력창 값 저장용 상태
     const [nickname, setNickname] = useState("");
     const [password, setPassword] = useState("");
 
-    const [code, setCode] = useState("");
-    const [devCode, setDevCode] = useState<string | null>(null); //값이 문자열일 수도 있고, null 일 수도 있다. 초기값은 (null)
-
     const [loading, setLoading] = useState(false); //로그인 요청 중인지 여부, 버튼 비활성화 / 로딩 문구 표시용
     const [errorMsg, setErrorMsg] = useState(""); //서버 에러 메시지 보여주기 용
-
-    const disabledEmail = loading || !email.trim();  //이메일 보내기 버튼 비활성화 조건, 로딩 중이거나, 이메일이 비어있으면(disabled)
-    const disabledDetails = //회원가입(상세정보) 버튼 비활성화 조건
-        loading || !email.trim() || !nickname.trim() || !password.trim(); //이메일 / 닉네임 / 비밀번호 중 하나라도 비어있으면
-    const disabledVerify = loading || !email.trim() || !code.trim(); //이메일 인증 버튼 비활성화 조건, 로딩 중, 이메일 or 인증 코드 비어있으면
-
-    const title = useMemo(() => {
-        switch (step) {
-            case "start":
-                return "Start your training";
-            case "email":
-                return "Enter your email";
-            case "details":
-                return "Create your account";
-            case "verify":
-                return "Verify your email";
-            default:
-                return "Start your training";
-        }
-    }, [step]);
 
     const onSubmit = async () => { //로그인 버튼 클릭 시 실행할 함수, 비동기 함수
         setErrorMsg(""); //이전 에러 메시지 제거

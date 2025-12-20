@@ -1,5 +1,3 @@
-export type Locale = "ko" | "en";
-
 export const M = {
     ko: {
         loginTitle: "로그인",
@@ -18,7 +16,27 @@ export const M = {
         signupLoading: "가입 중...",
         haveAccount: "이미 계정이 있나요?",
         goLogin: "로그인",
+
+        signupFlow: {
+            start: {
+                title: "Where Traders Are Reborn",
+                subtitle: "실전 차트 기반 트레이딩 훈련 플랫폼",
+            },
+            email: {
+                title: "Enter your email",
+                subtitle: "이메일로 계정을 시작합니다.",
+            },
+            details: {
+                title: "Create your account",
+                subtitle: "기본 정보를 입력합니다.",
+            },
+            verify: {
+                title: "Verify your email",
+                subtitle: "이메일 인증을 진행합니다.",
+            },
+        },
     },
+
     en: {
         loginTitle: "Log in",
         loginDesc: "Welcome back to TradeNova.",
@@ -36,7 +54,27 @@ export const M = {
         signupLoading: "Signing up...",
         haveAccount: "Already have an account?",
         goLogin: "Log in",
+
+        signupFlow: {
+            start: {
+                title: "Where Traders Are Reborn",
+                subtitle: "A platform for practicing real trading decisions",
+            },
+            email: {
+                title: "Enter your email",
+                subtitle: "Start with your email.",
+            },
+            details: {
+                title: "Create your account",
+                subtitle: "Enter your account details.",
+            },
+            verify: {
+                title: "Verify your email",
+                subtitle: "Check your email for the code.",
+            },
+        },
     },
+
     ja: {
         loginTitle: "ログイン",
         loginDesc: "TradeNovaへようこそ。",
@@ -54,5 +92,24 @@ export const M = {
         signupLoading: "登録中...",
         haveAccount: "すでにアカウントをお持ちですか？",
         goLogin: "ログイン",
+
+        signupFlow: {
+            start: {
+                title: "Where Traders Are Reborn",
+                subtitle: "実践的なトレード判断を練習するプラットフォーム",
+            },
+            email: {
+                title: "メールアドレスを入力",
+                subtitle: "メールで登録を開始します。",
+            },
+            details: {
+                title: "アカウント作成",
+                subtitle: "基本情報を入力します。",
+            },
+            verify: {
+                title: "メールを確認",
+                subtitle: "メールのコードを確認してください。",
+            },
+        },
     },
 } as const;
