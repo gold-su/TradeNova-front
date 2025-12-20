@@ -44,8 +44,14 @@ export default function SignupPage() {
         loading || !email.trim() || !password.trim() || !nickname.trim();
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
-            <Card className="w-full max-w-md">
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-background p-6 overflow-hidden">
+            {/* Nova glow */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 left-1/2 h-80 w-[520px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+            />
+
+            <Card className="relative z-10 w-full max-w-md bg-card border-border rounded-2xl">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl">{t.signupTitle}</CardTitle>
                     <p className="text-sm text-muted-foreground">{t.signupDesc}</p>
@@ -56,10 +62,14 @@ export default function SignupPage() {
                         <Label htmlFor="email">{t.email}</Label>
                         <Input
                             id="email"
+                            className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                             placeholder="example@domain.com"
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !disabled) onSubmit();
+                            }}
                         />
                     </div>
 
@@ -67,10 +77,14 @@ export default function SignupPage() {
                         <Label htmlFor="nickname">{t.nickname}</Label>
                         <Input
                             id="nickname"
+                            className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                             placeholder={t.nickname}
                             autoComplete="nickname"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !disabled) onSubmit();
+                            }}
                         />
                     </div>
 
@@ -78,21 +92,29 @@ export default function SignupPage() {
                         <Label htmlFor="password">{t.password}</Label>
                         <Input
                             id="password"
+                            className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                             type="password"
                             placeholder="••••••••"
                             autoComplete="new-password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !disabled) onSubmit();
+                            }}
                         />
                     </div>
 
                     {errorMsg && (
-                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                             {errorMsg}
                         </div>
                     )}
 
-                    <Button className="w-full" onClick={onSubmit} disabled={disabled}>
+                    <Button
+                        className="w-full h-11 rounded-xl font-semibold bg-primary text-primary-foreground hover:opacity-90"
+                        onClick={onSubmit}
+                        disabled={disabled}
+                    >
                         {loading ? t.signupLoading : t.signupBtn}
                     </Button>
 
@@ -100,7 +122,7 @@ export default function SignupPage() {
                         {t.haveAccount}{" "}
                         <Link
                             to="/login"
-                            className="text-foreground font-semibold underline underline-offset-4"
+                            className="text-primary font-semibold hover:underline underline-offset-4"
                         >
                             {t.goLogin}
                         </Link>
@@ -109,4 +131,5 @@ export default function SignupPage() {
             </Card>
         </div>
     );
+
 }

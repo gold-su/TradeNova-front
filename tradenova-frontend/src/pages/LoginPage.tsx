@@ -3,23 +3,50 @@ import { Link, useNavigate } from "react-router-dom"; //useNavigate는 페이지
 import { authApi } from "../api/authApi"; //만들어둔 API 서비스 객체
 import { M } from "../i18n/messages";
 import { getLocale } from "../i18n/locale";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
 
-
+type Step = "start" | "email" | "details" | "verify"; //단계 플로우 용 Step
 
 export default function LoginPage() {
     const nav = useNavigate();
+    const t = M[getLocale()]; //언어
+
+    const [step, setStep] = useState<Step>("start");
+
     const [email, setEmail] = useState(""); //입력창 값 저장용 상태
+    const [nickname, setNickname] = useState("");
     const [password, setPassword] = useState("");
+
+    const [code, setCode] = useState("");
+    const [devCode, setDevCode] = useState<string | null>(null); //값이 문자열일 수도 있고, null 일 수도 있다. 초기값은 (null)
 
     const [loading, setLoading] = useState(false); //로그인 요청 중인지 여부, 버튼 비활성화 / 로딩 문구 표시용
     const [errorMsg, setErrorMsg] = useState(""); //서버 에러 메시지 보여주기 용
 
-    const t = M[getLocale()]; //언어
+    const disabledEmail = loading || !email.trim();  //이메일 보내기 버튼 비활성화 조건, 로딩 중이거나, 이메일이 비어있으면(disabled)
+    const disabledDetails = //회원가입(상세정보) 버튼 비활성화 조건
+        loading || !email.trim() || !nickname.trim() || !password.trim(); //이메일 / 닉네임 / 비밀번호 중 하나라도 비어있으면
+    const disabledVerify = loading || !email.trim() || !code.trim(); //이메일 인증 버튼 비활성화 조건, 로딩 중, 이메일 or 인증 코드 비어있으면
+
+    const title = useMemo(() => {
+        switch (step) {
+            case "start":
+                return "Start your training";
+            case "email":
+                return "Enter your email";
+            case "details":
+                return "Create your account";
+            case "verify":
+                return "Verify your email";
+            default:
+                return "Start your training";
+        }
+    }, [step]);
 
     const onSubmit = async () => { //로그인 버튼 클릭 시 실행할 함수, 비동기 함수
         setErrorMsg(""); //이전 에러 메시지 제거
@@ -43,8 +70,13 @@ export default function LoginPage() {
     const disabled = loading || !email.trim() || !password.trim();
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
-            <Card className="w-full max-w-md">
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-background p-6 overflow-hidden">
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 left-1/2 h-80 w-[520px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+            />
+
+            <Card className="relative z-10 w-full max-w-md bg-card border-border rounded-2xl">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
                     <p className="text-sm text-muted-foreground">{t.loginDesc}</p>
@@ -55,6 +87,7 @@ export default function LoginPage() {
                         <Label htmlFor="email">{t.email}</Label>
                         <Input
                             id="email"
+                            className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                             placeholder="example@domain.com"
                             autoComplete="email"
                             value={email}
@@ -69,6 +102,7 @@ export default function LoginPage() {
                         <Label htmlFor="password">{t.password}</Label>
                         <Input
                             id="password"
+                            className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                             type="password"
                             placeholder="••••••••"
                             autoComplete="current-password"
@@ -81,12 +115,16 @@ export default function LoginPage() {
                     </div>
 
                     {errorMsg && (
-                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                             {errorMsg}
                         </div>
                     )}
 
-                    <Button className="w-full" onClick={onSubmit} disabled={disabled}>
+                    <Button
+                        className="w-full h-11 rounded-xl font-semibold bg-primary text-primary-foreground hover:opacity-90"
+                        onClick={onSubmit}
+                        disabled={disabled}
+                    >
                         {loading ? t.loginLoading : t.loginBtn}
                     </Button>
 
@@ -94,7 +132,7 @@ export default function LoginPage() {
                         {t.noAccount}{" "}
                         <Link
                             to="/signup"
-                            className="text-foreground font-semibold underline underline-offset-4"
+                            className="text-primary font-semibold hover:underline underline-offset-4"
                         >
                             {t.goSignup}
                         </Link>
