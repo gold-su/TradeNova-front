@@ -37,4 +37,25 @@ export const authApi = { //동기로 만든다면 서버에 응답이 올 때까
         const res = await http.post("/api/auth/email/verify", body);
         return res.data;
     },
+
+    //  이메일 중복 체크
+    checkEmail: async (body: CheckEmailRequest) => {
+        await http.post("/api/auth/email/check", body);
+    },
+
+    //  닉네임 중복 체크
+    checkNickname: async (body: CheckNicknameRequest) => {
+        await http.post("/api/auth/nickname/check", body);
+    },
+
+    //  이메일 인증 코드 발급
+    sendEmailVerification: async (body: EmailSendRequest) => {
+        const res = await http.post<EmailSendResponse>("/api/auth/email/send", body);
+        return res.data;
+    },
+
+    //  이메일 인증 확인
+    verifyEmail: async (body: EmailVerifyRequest) => {
+        await http.post("/api/auth/email/verify", body);
+    },
 }

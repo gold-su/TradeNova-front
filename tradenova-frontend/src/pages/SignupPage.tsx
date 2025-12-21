@@ -1,8 +1,11 @@
-import { useState } from "react";
+// src/pages/SignupPage.tsx
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { M } from "../i18n/messages";
 import { getLocale } from "../i18n/locale";
+import { getFieldErrors } from "../utils/errors";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +13,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
 type Step = "start" | "email" | "details" | "verify";
+
+type FieldErrors = Partial<{
+    email: string;
+    nickname: string;
+    password: string;
+    code: string;
+}>;
+
+// 간단한 프론트 검증 규칙
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isValidNickname = (v: string) => v.length >= 2 && v.length <= 12; // 너 서비스 기준으로 조정
+const isValidPassword = (v: string) =>
+    v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v); // 영문+숫자 최소
 
 export default function SignupPage() {
     const nav = useNavigate();
@@ -22,85 +38,159 @@ export default function SignupPage() {
     const [password, setPassword] = useState("");
 
     const [code, setCode] = useState("");
-    const [devCode, setDevCode] = useState<string | null>(null); //값이 문자열일 수도 있고, null 일 수도 있다. 초기값은 (null)
+    const [devCode, setDevCode] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
+    const [errors, setErrors] = useState<FieldErrors>({});
+    const [globalMsg, setGlobalMsg] = useState<string>(""); // 꼭 필요할 때만 사용
 
     const flow = t.signupFlow[step];
 
-    const disabledEmail = loading || !email.trim();  //이메일 보내기 버튼 비활성화 조건, 로딩 중이거나, 이메일이 비어있으면(disabled)
-    const disabledDetails = //회원가입(상세정보) 버튼 비활성화 조건
-        loading || !email.trim() || !nickname.trim() || !password.trim(); //이메일 / 닉네임 / 비밀번호 중 하나라도 비어있으면
-    const disabledVerify = loading || !email.trim() || !code.trim(); //이메일 인증 버튼 비활성화 조건, 로딩 중, 이메일 or 인증 코드 비어있으면
+    const disabledEmail = loading || !email.trim();
+    const disabledDetails = loading || !nickname.trim() || !password.trim() || !email.trim();
+    const disabledVerify = loading || !email.trim() || !code.trim();
 
-    const submitSignup = async () => { //회원가입 버튼 클릭 시 실행되는 함수
-        setErrorMsg("");
+    const emailTrim = useMemo(() => email.trim(), [email]);
+    const nicknameTrim = useMemo(() => nickname.trim(), [nickname]);
+
+    const clearAllErrors = () => {
+        setErrors({});
+        setGlobalMsg("");
+    };
+
+    // 이메일 단계: 형식 + 서버 중복 체크 후 details로
+    const continueEmail = async () => {
+        clearAllErrors();
+
+        // 1) 프론트 형식 검증
+        if (!isValidEmail(emailTrim)) {
+            setErrors({ email: "올바른 이메일 형식이 아닙니다." });
+            return;
+        }
+
         setLoading(true);
         try {
-            await authApi.signup({  //회원가입 API 호출
-                email: email.trim(),    //email / nickname 공백 제거
-                nickname: nickname.trim(),
+            // 2) 서버 중복 체크
+            await authApi.checkEmail({ email: emailTrim });
+            setStep("details");
+        } catch (e: any) {
+            const { message, fieldErrors } = getFieldErrors(e);
+            setErrors({ ...fieldErrors, email: fieldErrors.email || message || "이메일 확인 실패" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // details 단계: 닉네임(형식+중복) + 비번(형식) 통과 시 signup + 인증코드 발급
+    const submitDetails = async () => {
+        clearAllErrors();
+
+        // 1) 닉네임 프론트 검증
+        if (!isValidNickname(nicknameTrim)) {
+            setErrors({ nickname: "닉네임은 2~12자로 입력해주세요." });
+            return;
+        }
+
+        // 2) 비밀번호 프론트 검증
+        if (!isValidPassword(password)) {
+            setErrors({ password: "비밀번호는 8자 이상, 영문+숫자를 포함해야 합니다." });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // 3) 닉네임 중복 체크 (서버)
+            await authApi.checkNickname({ nickname: nicknameTrim });
+
+            // 4) 회원가입
+            await authApi.signup({
+                email: emailTrim,
+                nickname: nicknameTrim,
                 password,
             });
 
-            const res = await authApi.sendEmailVerification({ email: email.trim() }); //이메일 인증 코드 발급 요청
-            setDevCode(res.devCode ?? null); //개발용 인증 코드 저장
-            setStep("verify"); //verify 단계로 이동
-        } catch (e: any) {  //백엔드 에러 메시지 우선순위로 추출해서 화면에 표시
-            const msg =
-                e?.response?.data?.message ||
-                e?.response?.data?.errors?.email ||
-                e?.response?.data?.errors?.nickname ||
-                e?.response?.data?.errors?.password ||
-                "회원가입 실패";
-            setErrorMsg(msg);
+            // 5) 인증 코드 발급
+            const res = await authApi.sendEmailVerification({ email: emailTrim });
+            setDevCode(res.devCode ?? null);
+            setStep("verify");
+        } catch (e: any) {
+            const { message, fieldErrors } = getFieldErrors(e);
+
+            // 서버에서 내려준 필드 에러 우선
+            if (Object.keys(fieldErrors).length > 0) {
+                setErrors(fieldErrors);
+            } else if (message) {
+                // 어느 필드인지 애매하면 global로 (최소 사용)
+                setGlobalMsg(message);
+            } else {
+                setGlobalMsg("회원가입에 실패했습니다.");
+            }
         } finally {
-            setLoading(false); //성공/실패 상관없이 로딩 종료
+            setLoading(false);
         }
     };
 
-    const verifyEmail = async () => { //이메일 인증 버튼 클릭 시 실행
-        setErrorMsg(""); //에러 초기화
-        setLoading(true); //로딩 시작
-        try {
-            await authApi.verifyEmail({ email: email.trim(), code: code.trim() });//이메일 + 인증 코드 검증 API 호출
+    // verify 단계: 인증 코드 검증
+    const verifyEmail = async () => {
+        clearAllErrors();
 
-            // 인증 완료 → 로그인으로 이동 + 메시지/이메일 전달
+        // 프론트 간단 검증 (6자리 숫자 등)
+        if (!/^\d{6}$/.test(code.trim())) {
+            setErrors({ code: "인증 코드는 6자리 숫자로 입력해주세요." });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await authApi.verifyEmail({ email: emailTrim, code: code.trim() });
+
+            // 인증 완료 → 로그인 이동
             nav("/login", {
                 state: {
                     verified: true,
-                    email: email.trim(),
+                    email: emailTrim,
                     msg: "인증 완료! 이제 로그인하세요.",
                 },
             });
-        } catch (e: any) { //실패 시 서버 메시지 표시
-            const msg = e?.response?.data?.message || "인증 실패";
-            setErrorMsg(msg);
+        } catch (e: any) {
+            const { message, fieldErrors } = getFieldErrors(e);
+            setErrors({ ...fieldErrors, code: fieldErrors.code || message || "인증 실패" });
         } finally {
-            setLoading(false); //로딩 종료
+            setLoading(false);
         }
     };
 
-    const resendCode = async () => { //인증 코드 재전송 버튼 클릭 시 실행
-        setErrorMsg(""); //에러 초기화
-        setLoading(true); //로딩 시작
+    const resendCode = async () => {
+        clearAllErrors();
+        setLoading(true);
         try {
-            const res = await authApi.sendEmailVerification({ email: email.trim() }); //이메일 인증 코드 재발급 요청
-            setDevCode(res.devCode ?? null); //개발용 인증 코드 저장(있으면), 없으면 null
+            const res = await authApi.sendEmailVerification({ email: emailTrim });
+            setDevCode(res.devCode ?? null);
+            setGlobalMsg("인증 코드를 다시 보냈습니다.");
         } catch (e: any) {
-            setErrorMsg("인증 코드 재전송 실패"); //실패 시 공통 에러 메시지 표시
+            const { message } = getFieldErrors(e);
+            setGlobalMsg(message || "인증 코드 재전송 실패");
         } finally {
-            setLoading(false); //로딩 종료
+            setLoading(false);
         }
     };
+
+    // 공통: 인풋 + 에러 스타일
+    const inputClass = (hasError?: boolean) =>
+        cn(
+            "h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
+            hasError && "border-destructive/60 focus-visible:ring-destructive/40"
+        );
+
+    const errorText = (msg?: string) =>
+        msg ? <p className="mt-1 text-xs text-destructive/80">{msg}</p> : null;
 
     return (
         <div className="relative min-h-screen w-full flex items-center justify-center bg-background p-6 overflow-hidden">
             <div
                 aria-hidden
                 className="pointer-events-none absolute -top-24 left-1/2 h-80 w-[520px]
-                   -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+          -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
             />
 
             <Card className="relative z-10 w-full max-w-md bg-card border-border rounded-2xl">
@@ -110,9 +200,10 @@ export default function SignupPage() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                    {errorMsg && (
-                        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                            {errorMsg}
+                    {/* global message는 정말 애매할 때만 */}
+                    {globalMsg && (
+                        <div className="rounded-xl border border-border bg-background/40 p-3 text-sm text-muted-foreground">
+                            {globalMsg}
                         </div>
                     )}
 
@@ -125,14 +216,17 @@ export default function SignupPage() {
 
                             <Button
                                 className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:opacity-90"
-                                onClick={() => setStep("email")}
+                                onClick={() => {
+                                    clearAllErrors();
+                                    setStep("email");
+                                }}
                             >
                                 Continue with email
                             </Button>
 
                             <div className="pt-2 text-sm text-muted-foreground">
                                 {t.haveAccount}{" "}
-                                <Link to="/login" className="text-primary font-semibold">
+                                <Link to="/login" className="text-primary font-semibold hover:underline underline-offset-4">
                                     {t.goLogin}
                                 </Link>
                             </div>
@@ -146,22 +240,32 @@ export default function SignupPage() {
                                 <Label htmlFor="email">{t.email}</Label>
                                 <Input
                                     id="email"
-                                    className="h-11 rounded-xl bg-background/40 border-border/70
-                             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+                                    className={inputClass(!!errors.email)}
                                     placeholder="example@domain.com"
                                     autoComplete="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        // 입력 중에는 해당 필드 에러만 제거(UX)
+                                        if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
+                                    }}
+                                    onBlur={() => {
+                                        // blur에서 형식만 가볍게 체크
+                                        if (emailTrim && !isValidEmail(emailTrim)) {
+                                            setErrors((p) => ({ ...p, email: "올바른 이메일 형식이 아닙니다." }));
+                                        }
+                                    }}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !disabledEmail) setStep("details");
+                                        if (e.key === "Enter" && !disabledEmail) continueEmail();
                                     }}
                                 />
+                                {errorText(errors.email)}
                             </div>
 
                             <Button
                                 className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:opacity-90"
                                 disabled={disabledEmail}
-                                onClick={() => setStep("details")}
+                                onClick={continueEmail}
                             >
                                 Continue
                             </Button>
@@ -169,7 +273,10 @@ export default function SignupPage() {
                             <button
                                 type="button"
                                 className="text-sm text-muted-foreground hover:text-foreground"
-                                onClick={() => setStep("start")}
+                                onClick={() => {
+                                    clearAllErrors();
+                                    setStep("start");
+                                }}
                             >
                                 Back
                             </button>
@@ -183,12 +290,20 @@ export default function SignupPage() {
                                 <Label htmlFor="nickname">{t.nickname}</Label>
                                 <Input
                                     id="nickname"
-                                    className="h-11 rounded-xl bg-background/40 border-border/70
-                             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+                                    className={inputClass(!!errors.nickname)}
                                     placeholder={t.nickname}
                                     value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
+                                    onChange={(e) => {
+                                        setNickname(e.target.value);
+                                        if (errors.nickname) setErrors((p) => ({ ...p, nickname: undefined }));
+                                    }}
+                                    onBlur={() => {
+                                        if (nicknameTrim && !isValidNickname(nicknameTrim)) {
+                                            setErrors((p) => ({ ...p, nickname: "닉네임은 2~12자로 입력해주세요." }));
+                                        }
+                                    }}
                                 />
+                                {errorText(errors.nickname)}
                             </div>
 
                             <div className="space-y-2">
@@ -196,22 +311,33 @@ export default function SignupPage() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    className="h-11 rounded-xl bg-background/40 border-border/70
-                             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+                                    className={inputClass(!!errors.password)}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
+                                    }}
+                                    onBlur={() => {
+                                        if (password && !isValidPassword(password)) {
+                                            setErrors((p) => ({
+                                                ...p,
+                                                password: "비밀번호는 8자 이상, 영문+숫자를 포함해야 합니다.",
+                                            }));
+                                        }
+                                    }}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !disabledDetails) submitSignup();
+                                        if (e.key === "Enter" && !disabledDetails) submitDetails();
                                     }}
                                 />
+                                {errorText(errors.password)}
                             </div>
 
                             <Button
                                 className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:opacity-90"
                                 disabled={disabledDetails}
-                                onClick={submitSignup}
+                                onClick={submitDetails}
                             >
                                 {loading ? t.signupLoading : t.signupBtn}
                             </Button>
@@ -219,7 +345,10 @@ export default function SignupPage() {
                             <button
                                 type="button"
                                 className="text-sm text-muted-foreground hover:text-foreground"
-                                onClick={() => setStep("email")}
+                                onClick={() => {
+                                    clearAllErrors();
+                                    setStep("email");
+                                }}
                             >
                                 Back
                             </button>
@@ -229,7 +358,6 @@ export default function SignupPage() {
                     {/* verify */}
                     {step === "verify" && (
                         <>
-                            {/* DEV ONLY: 나중에 제거 */}
                             {devCode && (
                                 <div className="rounded-xl border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                                     <span className="font-semibold text-foreground">DEV CODE:</span>{" "}
@@ -241,15 +369,18 @@ export default function SignupPage() {
                                 <Label htmlFor="code">Enter code</Label>
                                 <Input
                                     id="code"
-                                    className="h-11 rounded-xl bg-background/40 border-border/70
-                             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+                                    className={inputClass(!!errors.code)}
                                     placeholder="6-digit code"
                                     value={code}
-                                    onChange={(e) => setCode(e.target.value)}
+                                    onChange={(e) => {
+                                        setCode(e.target.value);
+                                        if (errors.code) setErrors((p) => ({ ...p, code: undefined }));
+                                    }}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !disabledVerify) verifyEmail();
                                     }}
                                 />
+                                {errorText(errors.code)}
                             </div>
 
                             <Button
@@ -268,12 +399,17 @@ export default function SignupPage() {
                             >
                                 Resend code
                             </button>
+
+                            <div className="pt-2 text-sm text-muted-foreground">
+                                {t.haveAccount}{" "}
+                                <Link to="/login" className="text-primary font-semibold hover:underline underline-offset-4">
+                                    {t.goLogin}
+                                </Link>
+                            </div>
                         </>
                     )}
                 </CardContent>
             </Card>
         </div>
-
     );
-
 }

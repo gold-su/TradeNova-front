@@ -8,28 +8,6 @@ export interface LoginRequest {
     password: string;
 }
 
-// 회원가입 요청
-export interface SignupRequest {
-    email: string;
-    password: string;
-    nickname: string;
-}
-
-// 이메일 인증 코드 발송 요청
-export interface EmailSendRequest {
-    email: string;
-}
-
-// 이메일 인증 코드 확인 요청
-export interface EmailVerifyRequest {
-    email: string;
-    code: string;
-}
-
-// =========================
-// Auth - Response DTOs
-// =========================
-
 // 로그인 응답
 export interface LoginResponse {
     accessToken: string;
@@ -42,8 +20,37 @@ export interface LoginResponse {
     };
 }
 
+// 회원가입 요청
+export interface SignupRequest {
+    email: string;
+    password: string;
+    nickname: string;
+}
+
+
+//중복 체크
+export interface CheckEmailRequest {
+    email: string;
+}
+
+export interface CheckNicknameRequest {
+    nickname: string;
+}
+
+// 이메일 인증 코드 발송 요청
+export interface EmailSendRequest {
+    email: string;
+}
+
+
 // 이메일 인증 코드 발송 응답
 export interface EmailSendResponse {
     message: string;
     devCode?: string; // 개발용 (운영에서 제거 예정)
+}
+
+// 이메일 인증 코드 확인 요청
+export interface EmailVerifyRequest {
+    email: string;
+    code: string;
 }
