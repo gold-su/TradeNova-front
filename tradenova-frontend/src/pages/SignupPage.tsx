@@ -41,22 +41,37 @@ export default function SignupPage() {
     const [devCode, setDevCode] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
+
+    // 필드별 에러(인풋 테두리 + 인풋 아래 메시지)
     const [errors, setErrors] = useState<FieldErrors>({});
-    const [globalMsg, setGlobalMsg] = useState<string>(""); // 꼭 필요할 때만 사용
+
+    // 진짜로 어느 필드인지 애매한 경우에만 쓰는 글로벌 메시지(가능하면 최소)
+    const [globalMsg, setGlobalMsg] = useState<string>("");
 
     const flow = t.signupFlow[step];
 
-    const disabledEmail = loading || !email.trim();
-    const disabledDetails = loading || !nickname.trim() || !password.trim() || !email.trim();
-    const disabledVerify = loading || !email.trim() || !code.trim();
-
     const emailTrim = useMemo(() => email.trim(), [email]);
     const nicknameTrim = useMemo(() => nickname.trim(), [nickname]);
+    const codeTrim = useMemo(() => code.trim(), [code]);
+
+    const disabledEmail = loading || !emailTrim;
+    const disabledDetails = loading || !emailTrim || !nicknameTrim || !password.trim();
+    const disabledVerify = loading || !emailTrim || !codeTrim;
 
     const clearAllErrors = () => {
         setErrors({});
         setGlobalMsg("");
     };
+
+    // 공통: 인풋 + 에러 스타일
+    const inputClass = (hasError?: boolean) =>
+        cn(
+            "h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
+            hasError && "border-destructive/60 focus-visible:ring-destructive/40"
+        );
+
+    const errorText = (msg?: string) =>
+        msg ? <p className="mt-1 text-xs text-destructive/80">{msg}</p> : null;
 
     // 이메일 단계: 형식 + 서버 중복 체크 후 details로
     const continueEmail = async () => {
@@ -64,7 +79,7 @@ export default function SignupPage() {
 
         // 1) 프론트 형식 검증
         if (!isValidEmail(emailTrim)) {
-            setErrors({ email: "올바른 이메일 형식이 아닙니다." });
+            setErrors({ email: t.validation.emailInvalid });
             return;
         }
 
@@ -75,7 +90,14 @@ export default function SignupPage() {
             setStep("details");
         } catch (e: any) {
             const { message, fieldErrors } = getFieldErrors(e);
-            setErrors({ ...fieldErrors, email: fieldErrors.email || message || "이메일 확인 실패" });
+
+            // 서버가 내려준 필드 에러 우선
+            if (fieldErrors.email) {
+                setErrors({ email: fieldErrors.email });
+            } else {
+                // 그래도 애매하면 global msg로
+                setErrors({ email: message || t.toast.emailCheckFailed });
+            }
         } finally {
             setLoading(false);
         }
@@ -87,13 +109,13 @@ export default function SignupPage() {
 
         // 1) 닉네임 프론트 검증
         if (!isValidNickname(nicknameTrim)) {
-            setErrors({ nickname: "닉네임은 2~12자로 입력해주세요." });
+            setErrors({ nickname: t.validation.nicknameInvalid });
             return;
         }
 
         // 2) 비밀번호 프론트 검증
         if (!isValidPassword(password)) {
-            setErrors({ password: "비밀번호는 8자 이상, 영문+숫자를 포함해야 합니다." });
+            setErrors({ password: t.validation.passwordInvalid });
             return;
         }
 
@@ -123,7 +145,7 @@ export default function SignupPage() {
                 // 어느 필드인지 애매하면 global로 (최소 사용)
                 setGlobalMsg(message);
             } else {
-                setGlobalMsg("회원가입에 실패했습니다.");
+                setGlobalMsg(t.toast.signupFailed);
             }
         } finally {
             setLoading(false);
@@ -135,26 +157,26 @@ export default function SignupPage() {
         clearAllErrors();
 
         // 프론트 간단 검증 (6자리 숫자 등)
-        if (!/^\d{6}$/.test(code.trim())) {
-            setErrors({ code: "인증 코드는 6자리 숫자로 입력해주세요." });
+        if (!/^\d{6}$/.test(codeTrim)) {
+            setErrors({ code: t.validation.codeInvalid });
             return;
         }
 
         setLoading(true);
         try {
-            await authApi.verifyEmail({ email: emailTrim, code: code.trim() });
+            await authApi.verifyEmail({ email: emailTrim, code: codeTrim });
 
-            // 인증 완료 → 로그인 이동
+            // 인증 완료 → 로그인 이동 + 메시지/이메일 전달
             nav("/login", {
                 state: {
                     verified: true,
                     email: emailTrim,
-                    msg: "인증 완료! 이제 로그인하세요.",
+                    msg: t.toast.verifiedGoLogin, // i18n 키로 통일
                 },
             });
         } catch (e: any) {
             const { message, fieldErrors } = getFieldErrors(e);
-            setErrors({ ...fieldErrors, code: fieldErrors.code || message || "인증 실패" });
+            setErrors({ ...fieldErrors, code: fieldErrors.code || message || t.toast.verifyFailed });
         } finally {
             setLoading(false);
         }
@@ -166,31 +188,21 @@ export default function SignupPage() {
         try {
             const res = await authApi.sendEmailVerification({ email: emailTrim });
             setDevCode(res.devCode ?? null);
-            setGlobalMsg("인증 코드를 다시 보냈습니다.");
+            setGlobalMsg(t.toast.resendSuccess); // 문자열로 넣어야 함
         } catch (e: any) {
             const { message } = getFieldErrors(e);
-            setGlobalMsg(message || "인증 코드 재전송 실패");
+            setGlobalMsg(message || t.toast.requestFailed);
         } finally {
             setLoading(false);
         }
     };
-
-    // 공통: 인풋 + 에러 스타일
-    const inputClass = (hasError?: boolean) =>
-        cn(
-            "h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
-            hasError && "border-destructive/60 focus-visible:ring-destructive/40"
-        );
-
-    const errorText = (msg?: string) =>
-        msg ? <p className="mt-1 text-xs text-destructive/80">{msg}</p> : null;
 
     return (
         <div className="relative min-h-screen w-full flex items-center justify-center bg-background p-6 overflow-hidden">
             <div
                 aria-hidden
                 className="pointer-events-none absolute -top-24 left-1/2 h-80 w-[520px]
-          -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+        -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
             />
 
             <Card className="relative z-10 w-full max-w-md bg-card border-border rounded-2xl">
@@ -211,7 +223,7 @@ export default function SignupPage() {
                     {step === "start" && (
                         <>
                             <Button className="w-full h-11 rounded-xl" variant="secondary" disabled>
-                                Continue with Google (준비중)
+                                {t.common.continueWithGoogle}
                             </Button>
 
                             <Button
@@ -221,12 +233,15 @@ export default function SignupPage() {
                                     setStep("email");
                                 }}
                             >
-                                Continue with email
+                                {t.common.continueWithEmail}
                             </Button>
 
                             <div className="pt-2 text-sm text-muted-foreground">
                                 {t.haveAccount}{" "}
-                                <Link to="/login" className="text-primary font-semibold hover:underline underline-offset-4">
+                                <Link
+                                    to="/login"
+                                    className="text-primary font-semibold hover:underline underline-offset-4"
+                                >
                                     {t.goLogin}
                                 </Link>
                             </div>
@@ -241,7 +256,7 @@ export default function SignupPage() {
                                 <Input
                                     id="email"
                                     className={inputClass(!!errors.email)}
-                                    placeholder="example@domain.com"
+                                    placeholder={t.common.emailPlaceholder}
                                     autoComplete="email"
                                     value={email}
                                     onChange={(e) => {
@@ -252,7 +267,7 @@ export default function SignupPage() {
                                     onBlur={() => {
                                         // blur에서 형식만 가볍게 체크
                                         if (emailTrim && !isValidEmail(emailTrim)) {
-                                            setErrors((p) => ({ ...p, email: "올바른 이메일 형식이 아닙니다." }));
+                                            setErrors((p) => ({ ...p, email: t.validation.emailInvalid }));
                                         }
                                     }}
                                     onKeyDown={(e) => {
@@ -267,7 +282,7 @@ export default function SignupPage() {
                                 disabled={disabledEmail}
                                 onClick={continueEmail}
                             >
-                                Continue
+                                {t.common.continue}
                             </Button>
 
                             <button
@@ -278,7 +293,7 @@ export default function SignupPage() {
                                     setStep("start");
                                 }}
                             >
-                                Back
+                                {t.common.back}
                             </button>
                         </>
                     )}
@@ -299,7 +314,7 @@ export default function SignupPage() {
                                     }}
                                     onBlur={() => {
                                         if (nicknameTrim && !isValidNickname(nicknameTrim)) {
-                                            setErrors((p) => ({ ...p, nickname: "닉네임은 2~12자로 입력해주세요." }));
+                                            setErrors((p) => ({ ...p, nickname: t.validation.nicknameInvalid }));
                                         }
                                     }}
                                 />
@@ -312,7 +327,7 @@ export default function SignupPage() {
                                     id="password"
                                     type="password"
                                     className={inputClass(!!errors.password)}
-                                    placeholder="••••••••"
+                                    placeholder={t.common.passwordPlaceholder}
                                     autoComplete="new-password"
                                     value={password}
                                     onChange={(e) => {
@@ -321,10 +336,7 @@ export default function SignupPage() {
                                     }}
                                     onBlur={() => {
                                         if (password && !isValidPassword(password)) {
-                                            setErrors((p) => ({
-                                                ...p,
-                                                password: "비밀번호는 8자 이상, 영문+숫자를 포함해야 합니다.",
-                                            }));
+                                            setErrors((p) => ({ ...p, password: t.validation.passwordInvalid }));
                                         }
                                     }}
                                     onKeyDown={(e) => {
@@ -350,7 +362,7 @@ export default function SignupPage() {
                                     setStep("email");
                                 }}
                             >
-                                Back
+                                {t.common.back}
                             </button>
                         </>
                     )}
@@ -358,6 +370,7 @@ export default function SignupPage() {
                     {/* verify */}
                     {step === "verify" && (
                         <>
+                            {/* DEV ONLY: 나중에 제거 */}
                             {devCode && (
                                 <div className="rounded-xl border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                                     <span className="font-semibold text-foreground">DEV CODE:</span>{" "}
@@ -366,11 +379,11 @@ export default function SignupPage() {
                             )}
 
                             <div className="space-y-2">
-                                <Label htmlFor="code">Enter code</Label>
+                                <Label htmlFor="code">{t.common.codeLabel}</Label>
                                 <Input
                                     id="code"
                                     className={inputClass(!!errors.code)}
-                                    placeholder="6-digit code"
+                                    placeholder={t.common.codePlaceholder}
                                     value={code}
                                     onChange={(e) => {
                                         setCode(e.target.value);
@@ -388,7 +401,7 @@ export default function SignupPage() {
                                 disabled={disabledVerify}
                                 onClick={verifyEmail}
                             >
-                                Verify and continue
+                                {t.common.verifyAndContinue}
                             </Button>
 
                             <button
@@ -397,12 +410,15 @@ export default function SignupPage() {
                                 onClick={resendCode}
                                 disabled={loading}
                             >
-                                Resend code
+                                {t.common.resendCode}
                             </button>
 
                             <div className="pt-2 text-sm text-muted-foreground">
                                 {t.haveAccount}{" "}
-                                <Link to="/login" className="text-primary font-semibold hover:underline underline-offset-4">
+                                <Link
+                                    to="/login"
+                                    className="text-primary font-semibold hover:underline underline-offset-4"
+                                >
                                     {t.goLogin}
                                 </Link>
                             </div>

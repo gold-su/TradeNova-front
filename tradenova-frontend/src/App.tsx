@@ -1,16 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./router"; // router.tsx 위치에 맞게 경로 수정
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-      </Routes>
-    </BrowserRouter>
-  );
+export default function App() {
+  return <RouterProvider router={router} />;
 }
-
-export default App;

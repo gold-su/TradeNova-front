@@ -7,7 +7,7 @@ export const M = {
         loginBtn: "로그인",
         loginLoading: "로그인 중..",
         noAccount: "아직 계정이 없나요?",
-        goSignup: "회원가입",
+        goSignup: "Sign up",
 
         signupTitle: "회원가입",
         signupDesc: "3초만에 계정을 만들고 시작해요.",
@@ -15,7 +15,7 @@ export const M = {
         signupBtn: "회원가입",
         signupLoading: "가입 중...",
         haveAccount: "이미 계정이 있나요?",
-        goLogin: "로그인",
+        goLogin: "Log in",
 
         signupFlow: {
             start: {
@@ -35,6 +35,35 @@ export const M = {
                 subtitle: "이메일 인증을 진행합니다.",
             },
         },
+        common: {
+            continue: "계속하기",
+            back: "뒤로",
+            resendCode: "인증 코드 재전송",
+            verifyAndContinue: "인증하고 계속하기",
+            emailPlaceholder: "example@domain.com",
+            passwordPlaceholder: "••••••••",
+            codePlaceholder: "6-digit code",
+            codeLabel: "인증 코드",
+            continueWithGoogle: "Continue with Google (Coming soon)",
+            continueWithEmail: "Continue with email",
+        },
+
+        validation: {
+            emailInvalid: "올바른 이메일 형식이 아닙니다.",
+            nicknameInvalid: "닉네임은 2~12자로 입력해주세요.",
+            passwordInvalid: "비밀번호는 8자 이상, 영문+숫자를 포함해야 합니다.",
+            codeInvalid: "인증 코드는 6자리 숫자로 입력해주세요.",
+        },
+
+        toast: {
+            resendSuccess: "인증 코드를 다시 보냈습니다.",
+            requestFailed: "요청에 실패했습니다.",
+            signupFailed: "회원가입에 실패했습니다.",
+            emailCheckFailed: "이메일 확인에 실패했습니다.",
+            verifyFailed: "인증에 실패했습니다.",
+            verifiedGoLogin: "인증 완료! 이제 로그인하세요.",
+        },
+
     },
 
     en: {
@@ -73,6 +102,35 @@ export const M = {
                 subtitle: "Check your email for the code.",
             },
         },
+        common: {
+            continue: "Continue",
+            back: "Back",
+            resendCode: "Resend code",
+            verifyAndContinue: "Verify and continue",
+            emailPlaceholder: "example@domain.com",
+            passwordPlaceholder: "••••••••",
+            codePlaceholder: "6-digit code",
+            codeLabel: "Verification code",
+            continueWithGoogle: "Continue with Google (Coming soon)",
+            continueWithEmail: "Continue with email",
+        },
+
+        validation: {
+            emailInvalid: "Please enter a valid email address.",
+            nicknameInvalid: "Nickname must be 2–12 characters.",
+            passwordInvalid: "Password must be at least 8 characters and include letters and numbers.",
+            codeInvalid: "Please enter a 6-digit code.",
+        },
+
+        toast: {
+            resendSuccess: "We sent a new code.",
+            requestFailed: "Request failed.",
+            signupFailed: "Sign up failed.",
+            emailCheckFailed: "Failed to check email.",
+            verifyFailed: "Verification failed.",
+            verifiedGoLogin: "Verified! Please log in now.",
+        },
+
     },
 
     ja: {
@@ -83,7 +141,7 @@ export const M = {
         loginBtn: "ログイン",
         loginLoading: "ログイン中..",
         noAccount: "アカウントをお持ちでないですか？",
-        goSignup: "新規登録",
+        goSignup: "Sign up",
 
         signupTitle: "新規登録",
         signupDesc: "数秒でアカウントを作成できます。",
@@ -91,7 +149,7 @@ export const M = {
         signupBtn: "登録する",
         signupLoading: "登録中...",
         haveAccount: "すでにアカウントをお持ちですか？",
-        goLogin: "ログイン",
+        goLogin: "Log in",
 
         signupFlow: {
             start: {
@@ -111,5 +169,34 @@ export const M = {
                 subtitle: "メールのコードを確認してください。",
             },
         },
+        common: {
+            continue: "続ける",
+            back: "戻る",
+            resendCode: "コードを再送",
+            verifyAndContinue: "確認して続ける",
+            emailPlaceholder: "example@domain.com",
+            passwordPlaceholder: "••••••••",
+            codePlaceholder: "6桁のコード",
+            codeLabel: "確認コード",
+            continueWithGoogle: "Continue with Google (Coming soon)",
+            continueWithEmail: "Continue with email",
+        },
+
+        validation: {
+            emailInvalid: "正しいメールアドレスを入力してください。",
+            nicknameInvalid: "ニックネームは2〜12文字で入力してください。",
+            passwordInvalid: "パスワードは8文字以上で、英字と数字を含めてください。",
+            codeInvalid: "6桁のコードを入力してください。",
+        },
+
+        toast: {
+            resendSuccess: "新しいコードを送信しました。",
+            requestFailed: "リクエストに失敗しました。",
+            signupFailed: "登録に失敗しました。",
+            emailCheckFailed: "メールの確認に失敗しました。",
+            verifyFailed: "認証に失敗しました。",
+            verifiedGoLogin: "認証完了！ログインしてください。",
+        },
+
     },
 } as const;

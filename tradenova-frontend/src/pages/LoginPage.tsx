@@ -9,9 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
-
-
-
 export default function LoginPage() {
     const nav = useNavigate();
     const t = M[getLocale()]; //언어
