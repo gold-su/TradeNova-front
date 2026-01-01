@@ -1,3 +1,4 @@
+// src/api/authApi.ts
 import http from "./http";
 import type {
     LoginRequest,
@@ -6,26 +7,42 @@ import type {
     EmailSendRequest,
     EmailSendResponse,
     EmailVerifyRequest,
-} from "../types/auth"; //타입 전용 import하여 DTO 불러옴
+    CheckEmailRequest,
+    CheckNicknameRequest,
+} from "../types/auth";
 
-export const authApi = { //동기로 만든다면 서버에 응답이 올 때까지 약 2초 동안 웹사이트가 멈춘 것처럼 보임.
-    login: async (body: LoginRequest) => { //호출할 login 함수를 생성, async는 비동기 함수 항상 Promise(나중에 성공 or 실패 값을 알려주겠다는 약속 객체)를 반환
-        const res = await http.post<LoginResponse>("/api/auth/login", body); //await은 값이 돌아올 때까지 대기.
-        return res.data; //res의 data만 반환
+/**
+ * authApi
+ * - UI에서 직접 axios를 쓰지 않고 "API 함수"로 감싸두면
+ *   1) 유지보수 쉬움
+ *   2) 타입 관리 쉬움
+ *   3) 공통 에러 처리도 한곳에서 가능
+ */
+export const authApi = {
+    /**
+     * 로그인
+     * POST /api/auth/login
+     */
+    login: async (body: LoginRequest) => {
+        const res = await http.post<LoginResponse>("/api/auth/login", body);
+        return res.data;
     },
+
+    /**
+     * 회원가입
+     * POST /api/auth/signup
+     */
     signup: async (body: SignupRequest) => {
         const res = await http.post("/api/auth/signup", body);
         return res.data;
     },
+
     /**
-  * 이메일 인증 코드 발송
-  * POST /api/auth/email/send
-  */
+     * 이메일 인증 코드 발송
+     * POST /api/auth/email/send
+     */
     sendEmailVerification: async (body: EmailSendRequest) => {
-        const res = await http.post<EmailSendResponse>(
-            "/api/auth/email/send",
-            body
-        );
+        const res = await http.post<EmailSendResponse>("/api/auth/email/send", body);
         return res.data;
     },
 
@@ -38,24 +55,30 @@ export const authApi = { //동기로 만든다면 서버에 응답이 올 때까
         return res.data;
     },
 
-    //  이메일 중복 체크
+    /**
+     * 이메일 중복 체크
+     * POST /api/auth/email/check
+     */
     checkEmail: async (body: CheckEmailRequest) => {
-        await http.post("/api/auth/email/check", body);
-    },
-
-    //  닉네임 중복 체크
-    checkNickname: async (body: CheckNicknameRequest) => {
-        await http.post("/api/auth/nickname/check", body);
-    },
-
-    //  이메일 인증 코드 발급
-    sendEmailVerification: async (body: EmailSendRequest) => {
-        const res = await http.post<EmailSendResponse>("/api/auth/email/send", body);
+        const res = await http.post("/api/auth/email/check", body);
         return res.data;
     },
 
-    //  이메일 인증 확인
-    verifyEmail: async (body: EmailVerifyRequest) => {
-        await http.post("/api/auth/email/verify", body);
+    /**
+     * 닉네임 중복 체크
+     * POST /api/auth/nickname/check
+     */
+    checkNickname: async (body: CheckNicknameRequest) => {
+        const res = await http.post("/api/auth/nickname/check", body);
+        return res.data;
     },
-}
+
+    /**
+     * 로그아웃(프론트 기준)
+     * - 서버에 별도 로그아웃 API가 없으면 토큰만 제거해도 됨
+     * - 나중에 refresh token/httpOnly-cookie 쓰면 서버 로그아웃이 필요해짐
+     */
+    logoutLocal: () => {
+        localStorage.removeItem("accessToken");
+    },
+};
