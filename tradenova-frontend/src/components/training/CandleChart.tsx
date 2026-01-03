@@ -56,7 +56,13 @@ export default function CandleChart({ candles }: Props) {
          */
         const chart = createChart(containerRef.current, {
             height: 520,
-            layout: { background: { color: "transparent" }, textColor: "#9CA3AF" },
+
+            layout: {
+                attributionLogo: false, // ✅ 이게 정답 (기본 true라서 로고 뜸)
+                background: { color: "transparent" },
+                textColor: "#9CA3AF",
+            },
+
             grid: {
                 vertLines: { color: "rgba(255,255,255,0.06)" },
                 horzLines: { color: "rgba(255,255,255,0.06)" },
@@ -65,6 +71,7 @@ export default function CandleChart({ candles }: Props) {
             timeScale: { borderColor: "rgba(255,255,255,0.12)" },
             crosshair: { mode: 1 },
         });
+
 
         /**
          * 2) ✅ 캔들 시리즈 추가 (v5 방식)
