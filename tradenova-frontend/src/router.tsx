@@ -10,6 +10,7 @@ import SignupPage from "@/pages/SignupPage";
 // 차트/훈련 페이지 만들면 아래처럼 보호 라우트 적용 가능
 import TrainingPage from "@/pages/TrainingPage";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import TrainingSessionPage from "@/pages/TrainingSessionPage";
 
 export const router = createBrowserRouter([
     // 헤더 보이는 영역
@@ -22,7 +23,7 @@ export const router = createBrowserRouter([
                 element: (
                     // 토큰 없으면 /login으로 이동
                     <ProtectedRoute>
-                        <TrainingPage />
+                        <TrainingSessionPage />
                     </ProtectedRoute>
                 ),
             },

@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 
+//accessToken 확인용
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("accessToken");
 
