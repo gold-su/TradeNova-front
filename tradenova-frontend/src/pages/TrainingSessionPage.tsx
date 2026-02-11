@@ -1,6 +1,7 @@
 // src/pages/TrainingSessionPage.tsx
 import { useMemo, useState } from "react";
 import { trainingSessionApi } from "@/api/trainingSessionApi";
+import CandleChart from "@/components/training/CandleChart";
 import type { Candle, SessionProgressResponse, TradeResponse, TrainingStatus } from "@/types/training";
 
 /**
@@ -8,6 +9,8 @@ import type { Candle, SessionProgressResponse, TradeResponse, TrainingStatus } f
  * - UI는 최소로, 동작 검증/상태 반영 우선
  */
 export default function TrainingSessionPage() {
+    console.log("[PAGE] TrainingSessionPage rendered");
+
     // ===== Core State =====
     const [sessionId, setSessionId] = useState<number | null>(null);
     const [candles, setCandles] = useState<Candle[]>([]);
@@ -24,8 +27,8 @@ export default function TrainingSessionPage() {
     const [error, setError] = useState<string | null>(null);
 
     // ===== Inputs (MVP: 하드코딩/간단 입력) =====
-    const [accountId, setAccountId] = useState<number>(10);
-    const [bars, setBars] = useState<number>(120);
+    const [accountId, setAccountId] = useState<number>(3);
+    const [bars, setBars] = useState<number>(100);
     const [qty, setQty] = useState<number>(1);
 
     // 요청 중이거나 세션 종료면 거래/진행 막기
@@ -56,6 +59,8 @@ export default function TrainingSessionPage() {
 
     // ===== Handlers =====
     const onCreateSession = async () => {
+        console.log("[UI] createSession clicked", { accountId, bars });
+
         try {
             setLoading(true);
             setError(null);
@@ -73,12 +78,12 @@ export default function TrainingSessionPage() {
             const cs = await trainingSessionApi.getSessionCandles(created.sessionId);
             setCandles(cs);
 
-            // 초기 progressIndex가 백엔드에서 따로 내려오지 않으면 0 기준으로 시작
-            // 만약 created 응답에 progressIndex가 있다면 그 값으로 세팅해도 됨.
+            // 초기 progressIndex (일단 0부터 시작)
             setProgressIndex(0);
 
             console.log("created:", created);
             console.log("candles:", cs.length);
+            console.log("candles[0]:", cs[0]);
         } catch (e: any) {
             setError(e?.response?.data?.message ?? e?.message ?? "세션 생성 실패");
         } finally {
@@ -88,6 +93,7 @@ export default function TrainingSessionPage() {
 
     const onNext = async () => {
         if (!sessionId) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -105,6 +111,7 @@ export default function TrainingSessionPage() {
 
     const onAdvance10 = async () => {
         if (!sessionId) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -122,6 +129,7 @@ export default function TrainingSessionPage() {
 
     const onBuy = async () => {
         if (!sessionId) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -139,6 +147,7 @@ export default function TrainingSessionPage() {
 
     const onSell = async () => {
         if (!sessionId) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -156,6 +165,7 @@ export default function TrainingSessionPage() {
 
     const onSellAll = async () => {
         if (!sessionId) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -174,7 +184,9 @@ export default function TrainingSessionPage() {
     // ===== UI (MVP) =====
     return (
         <div style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700 }}>Training Session (MVP)</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 700 }}>
+                Training Session (MVP) - {new Date().toLocaleTimeString()}
+            </h1>
 
             <div style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -184,7 +196,11 @@ export default function TrainingSessionPage() {
                             type="number"
                             value={accountId}
                             onChange={(e) => setAccountId(Number(e.target.value))}
-                            style={{ width: 120 }}
+                            style={{
+                                width: 120,
+                                color: "#000",        // ← 이거
+                                backgroundColor: "#fff" // ← 이거
+                            }}
                             disabled={loading}
                         />
                     </label>
@@ -196,12 +212,20 @@ export default function TrainingSessionPage() {
                             value={bars}
                             min={30}
                             onChange={(e) => setBars(Number(e.target.value))}
-                            style={{ width: 120 }}
+                            style={{
+                                width: 120,
+                                color: "#000",        // ← 이거
+                                backgroundColor: "#fff" // ← 이거
+                            }}
                             disabled={loading}
                         />
                     </label>
 
-                    <button onClick={onCreateSession} disabled={loading} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onCreateSession}
+                        disabled={loading}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         세션 생성 + 캔들 로드
                     </button>
 
@@ -219,11 +243,19 @@ export default function TrainingSessionPage() {
 
             <div style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    <button onClick={onNext} disabled={disabled} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onNext}
+                        disabled={disabled}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         NEXT (1봉)
                     </button>
 
-                    <button onClick={onAdvance10} disabled={disabled} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onAdvance10}
+                        disabled={disabled}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         ADVANCE (10봉)
                     </button>
 
@@ -231,9 +263,7 @@ export default function TrainingSessionPage() {
                         status: <b>{status}</b>
                     </span>
 
-                    {status === "COMPLETED" && (
-                        <span style={{ color: "green", fontWeight: 700 }}>세션 종료됨</span>
-                    )}
+                    {status === "COMPLETED" && <span style={{ color: "green", fontWeight: 700 }}>세션 종료됨</span>}
                 </div>
 
                 <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
@@ -268,70 +298,56 @@ export default function TrainingSessionPage() {
                             min={0.000001}
                             step={1}
                             onChange={(e) => setQty(Number(e.target.value))}
-                            style={{ width: 120 }}
+                            style={{
+                                width: 120,
+                                color: "#000",        // ← 이거
+                                backgroundColor: "#fff" // ← 이거
+                            }}
                             disabled={disabled}
                         />
                     </label>
 
-                    <button onClick={onBuy} disabled={disabled} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onBuy}
+                        disabled={disabled}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         BUY
                     </button>
 
-                    <button onClick={onSell} disabled={disabled} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onSell}
+                        disabled={disabled}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         SELL
                     </button>
 
-                    <button onClick={onSellAll} disabled={disabled} style={{ padding: "8px 12px" }}>
+                    <button
+                        onClick={onSellAll}
+                        disabled={disabled}
+                        style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8 }}
+                    >
                         SELL ALL
                     </button>
 
-                    <span style={{ marginLeft: "auto", opacity: 0.8 }}>
-                        * COMPLETED 또는 로딩 중이면 버튼 비활성화
-                    </span>
+                    <span style={{ marginLeft: "auto", opacity: 0.8 }}>* COMPLETED 또는 로딩 중이면 버튼 비활성화</span>
                 </div>
             </div>
 
-            {/* 차트는 MVP에서는 placeholder: slice가 잘 되는지 숫자로 확인 */}
+            {/* ✅ 차트 영역 */}
             <div style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
-                <h2 style={{ fontSize: 16, margin: 0 }}>Chart Placeholder</h2>
+                <h2 style={{ fontSize: 16, margin: 0 }}>Candle Chart</h2>
                 <div style={{ marginTop: 8, fontSize: 13, opacity: 0.9 }}>
                     visibleCandles = candles.slice(0, progressIndex + 1)
                 </div>
 
-                <div style={{ marginTop: 10, maxHeight: 240, overflow: "auto", border: "1px solid #eee" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead>
-                            <tr>
-                                <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>idx</th>
-                                <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>t</th>
-                                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>o</th>
-                                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>h</th>
-                                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>l</th>
-                                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>c</th>
-                                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>v</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visibleCandles.map((c, idx) => (
-                                <tr key={c.t ?? idx}>
-                                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>{idx}</td>
-                                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>{c.t}</td>
-                                    <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>{c.o}</td>
-                                    <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>{c.h}</td>
-                                    <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>{c.l}</td>
-                                    <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>{c.c}</td>
-                                    <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>{c.v}</td>
-                                </tr>
-                            ))}
-                            {!visibleCandles.length && (
-                                <tr>
-                                    <td colSpan={7} style={{ padding: 12, textAlign: "center", opacity: 0.7 }}>
-                                        세션 생성 후 캔들을 로드하세요.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div style={{ marginTop: 10 }}>
+                    {visibleCandles.length ? (
+                        <CandleChart candles={visibleCandles} height={520} />
+                    ) : (
+                        <div style={{ padding: 12, opacity: 0.7 }}>세션 생성 후 캔들을 로드하세요.</div>
+                    )}
                 </div>
             </div>
         </div>

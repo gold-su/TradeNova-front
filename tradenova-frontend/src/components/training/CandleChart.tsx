@@ -7,7 +7,7 @@ import {
     type ISeriesApi,
     type CandlestickData,
 } from "lightweight-charts";
-import type { Candle } from "@/api/trainingApi";
+import type { Candle } from "@/types/training";
 
 type Props = {
     candles: Candle[];
@@ -17,7 +17,7 @@ type Props = {
 function toCandlestickData(candles: Candle[]): CandlestickData[] {
     return candles
         .map((x) => ({
-            time: Math.floor(x.t / 1000), // backend epoch millis -> sec
+            time: Math.floor(x.t / 1000), // epoch millis -> sec
             open: x.o,
             high: x.h,
             low: x.l,
@@ -40,7 +40,7 @@ export default function CandleChart({ candles, height = 520 }: Props) {
     useEffect(() => {
         if (!containerRef.current) return;
 
-        // ✅ 이미 차트가 만들어졌으면 재생성 방지
+        // 이미 차트가 만들어졌으면 재생성 방지
         if (chartRef.current || mountedRef.current) return;
         mountedRef.current = true;
 
@@ -101,7 +101,6 @@ export default function CandleChart({ candles, height = 520 }: Props) {
     useEffect(() => {
         if (!seriesRef.current) return;
 
-        // ✅ candles 없을 때도 안전하게 처리
         seriesRef.current.setData(data.length ? data : []);
         chartRef.current?.timeScale().fitContent();
     }, [data]);
