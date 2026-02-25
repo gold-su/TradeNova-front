@@ -1,34 +1,70 @@
-//백엔드 enum 값을 문자열 유니온 타입으로 표현
-//아무 문자열이나 못 넣게 막음
+// src/types/training.ts
+
+// ===== Enums =====
 export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
 export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
-//캔들 구조
-export type Candle = { t: number; o: number; h: number; l: number; c: number; v: number };
-//세션 생성 요청 DTO
-//프론트->백엔드로 보내는 데이터
-//검증 규칙 (bras >= 30)은 서버에서 실제로 체크
-export type TrainingSessionCreateRequest = {
-    accountId: number;
-    mode: TrainingMode;
-    bars: number; // >= 30
+
+// ===== Candle =====
+// 백엔드 candle: t는 epoch millis (프론트 chart에서 /1000 해서 sec 사용)
+export type Candle = {
+    t: number;
+    o: number;
+    h: number;
+    l: number;
+    c: number;
+    v: number;
 };
-//세션 생성 응답 DTO
-export type TrainingSessionCreateResponse = {
-    sessionId: number;
+
+// ===== Chart DTO =====
+export type TrainingChartDto = {
+    chartId: number;
+    chartIndex: number; // 0..3
     accountId: number;
     symbolId: number;
     symbolTicker: string;
     symbolName: string;
-    mode: TrainingMode;
     bars: number;
-    startDate: string; // YYYY-MM-DD
-    endDate: string;   // YYYY-MM-DD
+    progressIndex: number;
+    startDate: string; // yyyy-MM-dd
+    endDate: string;   // yyyy-MM-dd
     status: TrainingStatus;
 };
-//세션 진행 응답 DTO
-export type SessionProgressResponse = {
-    sessionId: number;
+
+// ===== Session Create =====
+export type CreateSessionRequest = {
+    accountId: number;
+    mode: TrainingMode;
+    bars: number;        // >= 30
+    chartCount?: number; // 1 or 4 (optional)
+};
+
+// 백엔드 응답이 단일/멀티 둘 다 가능하면 유니온 유지
+export type CreateSessionResponse =
+    | {
+        sessionId: number;
+        status: TrainingStatus;
+        charts: TrainingChartDto[];
+    }
+    | {
+        sessionId: number;
+        chartId: number;
+        chartIndex: number;
+        accountId: number;
+        symbolId: number;
+        symbolTicker: string;
+        symbolName: string;
+        mode: TrainingMode;
+        bars: number;
+        progressIndex: number;
+        startDate: string;
+        endDate: string;
+        status: TrainingStatus;
+    };
+
+// ===== Progress =====
+export type ProgressResponse = {
+    chartId: number;
     progressIndex: number;
     currentPrice: number;
     status: TrainingStatus;
@@ -38,27 +74,31 @@ export type SessionProgressResponse = {
     autoExited: boolean;
     reason: AutoExitReason | null;
 };
-//매매 요청 DTO
+
+export type AdvanceRequest = { steps: number };
+
+// ===== Trade =====
 export type TradeRequest = { qty: number };
-//매매 응답 DTO
+
 export type TradeResponse = {
-    sessionId: number;
+    chartId: number;
     tradeId: number;
     cashBalance: number;
     positionQty: number;
     avgPrice: number;
     executedPrice: number;
 };
-//리스크룰 Upsert 요청 DTO
+
+// ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
     stopLossPrice: number | null;
     takeProfitPrice: number | null;
     autoExitEnabled: boolean;
 };
-//리스크룰 응답 DTO
+
 export type RiskRuleResponse = {
     id: number;
-    sessionId: number;
+    chartId: number;
     accountId: number;
     stopLossPrice: number | null;
     takeProfitPrice: number | null;

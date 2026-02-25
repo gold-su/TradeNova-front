@@ -1,73 +1,174 @@
 import { useMemo, useState } from "react";
-import { trainingApi } from "@/api/trainingApi";
 import CandleChart from "@/components/training/CandleChart";
+import { trainingApi } from "@/api/trainingApi";
 import type {
   Candle,
-  SessionProgressResponse,
+  CreateSessionResponse,
+  ProgressResponse,
   TradeResponse,
+  TrainingChartDto,
   TrainingStatus,
 } from "@/types/training";
 
-export default function TrainingSessionPage() {
-  // ===== Core State =====
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [candles, setCandles] = useState<Candle[]>([]);
+type CandlesMap = Record<number, Candle[]>;
+type ProgressMap = Record<number, ProgressResponse>;
 
-  const [progressIndex, setProgressIndex] = useState<number>(0);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [cashBalance, setCashBalance] = useState<number | null>(null);
-  const [positionQty, setPositionQty] = useState<number | null>(null);
-  const [avgPrice, setAvgPrice] = useState<number | null>(null);
+function pickCharts(res: CreateSessionResponse): TrainingChartDto[] {
+  if ("charts" in res) return res.charts;
+
+  // 단일 응답 호환
+  return [
+    {
+      chartId: res.chartId,
+      chartIndex: res.chartIndex,
+      accountId: res.accountId,
+      symbolId: res.symbolId,
+      symbolTicker: res.symbolTicker,
+      symbolName: res.symbolName,
+      bars: res.bars,
+      progressIndex: res.progressIndex,
+      startDate: res.startDate,
+      endDate: res.endDate,
+      status: res.status,
+    },
+  ];
+}
+
+const emptyProgress = (
+  chartId: number,
+  status: TrainingStatus,
+  price = 0
+): ProgressResponse => ({
+  chartId,
+  progressIndex: 0,
+  currentPrice: price,
+  status,
+  cashBalance: 0,
+  positionQty: 0,
+  avgPrice: 0,
+  autoExited: false,
+  reason: null,
+});
+
+export default function TrainingSessionPage() {
+  const [sessionId, setSessionId] = useState<number | null>(null);
   const [status, setStatus] = useState<TrainingStatus>("IN_PROGRESS");
+
+  const [charts, setCharts] = useState<TrainingChartDto[]>([]);
+  const [activeChartId, setActiveChartId] = useState<number | null>(null);
+
+  const [candlesByChart, setCandlesByChart] = useState<CandlesMap>({});
+  const [progressByChart, setProgressByChart] = useState<ProgressMap>({});
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔥 멀티 차트 느낌용
-  const [activeChartIndex, setActiveChartIndex] = useState<number>(0);
-  const chartSlots = [0, 1, 2, 3]; // PREMIUM 기준 4개
+  const activeCandles = useMemo(() => {
+    if (!activeChartId) return [];
+    return candlesByChart[activeChartId] ?? [];
+  }, [activeChartId, candlesByChart]);
+
+  const activeProgress = useMemo(() => {
+    if (!activeChartId) return null;
+    return progressByChart[activeChartId] ?? null;
+  }, [activeChartId, progressByChart]);
 
   const visibleCandles = useMemo(() => {
-    if (!candles.length) return [];
-    const end = Math.min(progressIndex + 1, candles.length);
-    return candles.slice(0, end);
-  }, [candles, progressIndex]);
+    if (!activeProgress) return activeCandles;
+    const end = Math.min(
+      activeProgress.progressIndex + 1,
+      activeCandles.length
+    );
+    return activeCandles.slice(0, end);
+  }, [activeCandles, activeProgress]);
 
-  const disabled = !sessionId || status === "COMPLETED" || loading;
+  const disabled = !activeChartId || status === "COMPLETED" || loading;
 
-  const applyProgressSnapshot = (res: SessionProgressResponse) => {
-    setProgressIndex(res.progressIndex);
-    setCurrentPrice(res.currentPrice);
-    setCashBalance(res.cashBalance);
-    setPositionQty(res.positionQty);
-    setAvgPrice(res.avgPrice);
+  const applyProgress = (res: ProgressResponse) => {
+    setProgressByChart((prev) => ({
+      ...prev,
+      [res.chartId]: res,
+    }));
     setStatus(res.status);
   };
 
-  const applyTradeSnapshot = (res: TradeResponse) => {
-    setCashBalance(res.cashBalance);
-    setPositionQty(res.positionQty);
-    setAvgPrice(res.avgPrice);
-    setCurrentPrice(res.executedPrice);
+  const applyTrade = (res: TradeResponse) => {
+    setProgressByChart((prev) => {
+      const cur =
+        prev[res.chartId] ??
+        emptyProgress(res.chartId, status, Number(res.executedPrice));
+
+      return {
+        ...prev,
+        [res.chartId]: {
+          ...cur,
+          cashBalance: res.cashBalance,
+          positionQty: res.positionQty,
+          avgPrice: res.avgPrice,
+          currentPrice: Number(res.executedPrice),
+        },
+      };
+    });
   };
 
   const onCreateSession = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    setError(null);
+    setLoading(true);
 
-      const created = await trainingSessionApi.createSession({
-        accountId: 3,
+    try {
+      const created = await trainingApi.createSession({
+        accountId: 3, // TODO: default accountId로 교체
         mode: "RANDOM",
-        bars: 100,
+        bars: 120,
+        chartCount: 4,
       });
 
+      const cs = pickCharts(created);
+
       setSessionId(created.sessionId);
+      setCharts(cs);
       setStatus(created.status);
 
-      const cs = await trainingSessionApi.getSessionCandles(created.sessionId);
-      setCandles(cs);
-      setProgressIndex(29); // 🔥 초기 30봉 공개
+      // 첫 차트 선택
+      const first = cs
+        .slice()
+        .sort((a, b) => a.chartIndex - b.chartIndex)[0];
+
+      setActiveChartId(first?.chartId ?? null);
+
+      // 캔들 병렬 로딩
+      const pairs = await Promise.all(
+        cs.map(async (c) => {
+          const candles = await trainingApi.getChartCandles(c.chartId);
+          return [c.chartId, candles] as const;
+        })
+      );
+
+      const map: CandlesMap = {};
+      pairs.forEach(([chartId, candles]) => {
+        map[chartId] = candles;
+      });
+
+      setCandlesByChart(map);
+
+      // progress 초기화
+      setProgressByChart(() => {
+        const next: ProgressMap = {};
+        cs.forEach((c) => {
+          next[c.chartId] = {
+            chartId: c.chartId,
+            progressIndex: c.progressIndex ?? 0,
+            currentPrice: 0,
+            status: c.status,
+            cashBalance: 0,
+            positionQty: 0,
+            avgPrice: 0,
+            autoExited: false,
+            reason: null,
+          };
+        });
+        return next;
+      });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "세션 생성 실패");
     } finally {
@@ -76,133 +177,186 @@ export default function TrainingSessionPage() {
   };
 
   const onNext = async () => {
-    if (!sessionId) return;
-    const res = await trainingSessionApi.next(sessionId);
-    applyProgressSnapshot(res);
+    if (!activeChartId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await trainingApi.next(activeChartId);
+      applyProgress(res);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "NEXT 실패");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onBuy = async () => {
-    if (!sessionId) return;
-    const res = await trainingSessionApi.buy(sessionId, 1);
-    applyTradeSnapshot(res);
+    if (!activeChartId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await trainingApi.buy(activeChartId, { qty: 1 });
+      applyTrade(res);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "BUY 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSell = async () => {
+    if (!activeChartId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await trainingApi.sell(activeChartId, { qty: 1 });
+      applyTrade(res);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "SELL 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSellAll = async () => {
+    if (!activeChartId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await trainingApi.sellAll(activeChartId);
+      applyTrade(res);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "SELL ALL 실패");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full flex overflow-hidden">
-      {/* ===== LEFT SIDEBAR ===== */}
-      <aside className="w-64 border-r bg-muted/20 p-4 flex flex-col gap-6">
-        <div>
-          <h2 className="text-sm font-semibold mb-2">계좌</h2>
-          <div className="rounded-lg border p-3 text-sm">
-            <div>
-              Cash: <b>{cashBalance ?? "-"}</b>
-            </div>
-            <div>
-              Position: <b>{positionQty ?? "-"}</b>
-            </div>
-            <div>
-              Avg: <b>{avgPrice ?? "-"}</b>
-            </div>
-          </div>
+    <div className="h-[calc(100vh-56px)] w-full flex overflow-hidden">
+      {/* LEFT */}
+      <aside className="w-72 border-r bg-muted/10 p-4 flex flex-col gap-4">
+        <div className="text-sm">
+          <div className="font-semibold">Session</div>
+          <div className="text-muted-foreground">id: {sessionId ?? "-"}</div>
+          <div className="text-muted-foreground">status: {status}</div>
         </div>
 
         <div>
-          <h2 className="text-sm font-semibold mb-2">차트 목록</h2>
+          <div className="text-sm font-semibold mb-2">Charts</div>
           <div className="flex flex-col gap-2">
-            {chartSlots.map((i) => (
-              <button
-                key={i}
-                onClick={() => setActiveChartIndex(i)}
-                className={`text-left rounded-md px-3 py-2 text-sm border transition 
-                ${
-                  activeChartIndex === i
-                    ? "border-red-500 bg-red-50 font-semibold"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                Chart {i + 1}
-              </button>
-            ))}
+            {charts
+              .slice()
+              .sort((a, b) => a.chartIndex - b.chartIndex)
+              .map((c) => (
+                <button
+                  key={c.chartId}
+                  onClick={() => setActiveChartId(c.chartId)}
+                  className={[
+                    "text-left rounded-md px-3 py-2 text-sm border transition",
+                    activeChartId === c.chartId
+                      ? "border-primary/60 bg-primary/10 font-semibold"
+                      : "border-border/60 hover:bg-muted/30",
+                  ].join(" ")}
+                >
+                  <div>Chart {c.chartIndex + 1}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.symbolTicker} · {c.symbolName}
+                  </div>
+                </button>
+              ))}
           </div>
         </div>
 
         <button
           onClick={onCreateSession}
-          className="mt-auto rounded-lg border px-3 py-2 text-sm hover:bg-muted"
+          disabled={loading}
+          className="mt-auto rounded-lg border border-border/60 px-3 py-2 text-sm hover:bg-muted/30 disabled:opacity-60"
         >
-          세션 시작
+          {loading ? "세션 생성 중..." : "세션 시작(4차트)"}
         </button>
       </aside>
 
-      {/* ===== CENTER CHART ===== */}
+      {/* CENTER */}
       <main className="flex-1 flex flex-col p-6 overflow-hidden">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-lg font-bold">
-            Active Chart: {activeChartIndex + 1}
-          </h1>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <div className="text-lg font-bold">
+              Active Chart: {activeChartId ?? "-"}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              progress: {activeProgress?.progressIndex ?? "-"} /{" "}
+              {activeCandles.length
+                ? activeCandles.length - 1
+                : "-"}
+            </div>
+          </div>
 
-          <span className="text-sm opacity-70">Status: {status}</span>
+          <div className="text-sm text-muted-foreground">
+            Price:{" "}
+            <b className="text-foreground">
+              {activeProgress?.currentPrice ?? "-"}
+            </b>
+          </div>
         </div>
 
-        <div className="flex-1 rounded-xl border p-4 overflow-hidden">
+        {error && (
+          <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="flex-1 overflow-hidden">
           {visibleCandles.length > 0 ? (
             <CandleChart candles={visibleCandles} height={520} />
           ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
+            <div className="h-full rounded-2xl border border-border/60 bg-background/20 flex items-center justify-center text-muted-foreground">
               세션 시작 후 차트가 표시됩니다.
             </div>
           )}
         </div>
       </main>
 
-      {/* ===== RIGHT PANEL ===== */}
+      {/* RIGHT */}
       <aside className="w-80 border-l p-6 overflow-y-auto bg-muted/10">
-        {/* 매매 영역 */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold mb-3">주문</h2>
-          <div className="flex flex-col gap-3">
-            <button
-              disabled={disabled}
-              onClick={onNext}
-              className="rounded-lg border px-4 py-2 hover:bg-muted"
-            >
-              NEXT (1봉)
-            </button>
+        <div className="mb-6">
+          <div className="text-sm font-semibold mb-2">
+            Account Snapshot
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/20 p-3 text-sm space-y-1">
+            <div>Cash: <b>{activeProgress?.cashBalance ?? "-"}</b></div>
+            <div>Qty: <b>{activeProgress?.positionQty ?? "-"}</b></div>
+            <div>Avg: <b>{activeProgress?.avgPrice ?? "-"}</b></div>
+          </div>
+        </div>
 
-            <button
-              disabled={disabled}
-              onClick={onBuy}
-              className="rounded-lg border px-4 py-2 hover:bg-muted"
-            >
-              BUY
+        <div className="mb-8">
+          <div className="text-sm font-semibold mb-3">Actions</div>
+          <div className="flex flex-col gap-2">
+            <button disabled={disabled} onClick={onNext} className="rounded-lg border px-4 py-2 hover:bg-muted/30 disabled:opacity-60">
+              NEXT (1)
+            </button>
+            <button disabled={disabled} onClick={onBuy} className="rounded-lg border px-4 py-2 hover:bg-muted/30 disabled:opacity-60">
+              BUY (qty=1)
+            </button>
+            <button disabled={disabled} onClick={onSell} className="rounded-lg border px-4 py-2 hover:bg-muted/30 disabled:opacity-60">
+              SELL (qty=1)
+            </button>
+            <button disabled={disabled} onClick={onSellAll} className="rounded-lg border px-4 py-2 hover:bg-muted/30 disabled:opacity-60">
+              SELL ALL
             </button>
           </div>
         </div>
 
-        {/* 리스크 룰 영역 */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold mb-3">리스크 설정</h2>
-          <div className="flex flex-col gap-3 text-sm">
-            <input
-              placeholder="손절가"
-              className="rounded-md border px-3 py-2 bg-background"
-            />
-            <input
-              placeholder="익절가"
-              className="rounded-md border px-3 py-2 bg-background"
-            />
-            <button className="rounded-md border px-3 py-2 hover:bg-muted">
-              적용
-            </button>
-          </div>
-        </div>
-
-        {/* 리포트 영역 */}
         <div>
-          <h2 className="text-sm font-semibold mb-3">트레이딩 리포트</h2>
+          <div className="text-sm font-semibold mb-3">Notes</div>
           <textarea
-            placeholder="이번 매매에 대한 분석을 기록하세요..."
-            className="w-full min-h-[200px] rounded-md border p-3 text-sm bg-background"
+            placeholder="복기 메모..."
+            className="w-full min-h-[180px] rounded-md border border-border/60 p-3 text-sm bg-background"
           />
         </div>
       </aside>
