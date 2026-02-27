@@ -2,18 +2,20 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
-
-// 차트/훈련 페이지 만들면 아래처럼 보호 라우트 적용 가능
-import TrainingPage from "@/pages/TrainingPage";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import TrainingSessionPage from "@/pages/TrainingSessionPage";
 
+import MyPageLayout from "@/pages/mypage/MyPageLayout";
+import MyProfilePage from "@/pages/mypage/MyProfilePage";
+import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
+import MyReportsPage from "@/pages/mypage/MyReportsPage";
+
 export const router = createBrowserRouter([
-    // 헤더 보이는 영역
+    //헤더 보이는 영역
     {
         element: <AppLayout />,
         children: [
@@ -21,16 +23,27 @@ export const router = createBrowserRouter([
             {
                 path: "/training",
                 element: (
-                    // 토큰 없으면 /login으로 이동
                     <ProtectedRoute>
                         <TrainingSessionPage />
                     </ProtectedRoute>
                 ),
             },
+            {
+                path: "/mypage",
+                element: (
+                    <ProtectedRoute>
+                        <MyPageLayout />
+                    </ProtectedRoute>
+                ),
+                children: [
+                    { path: "profile", element: <MyProfilePage /> },
+                    { path: "accounts", element: <MyAccountsPage /> },
+                    { path: "reports", element: <MyReportsPage /> },
+                ],
+            },
         ],
     },
-
-    // 헤더 안 보이는 영역 (로그인/회원가입)
+    //헤더 안 보이는 영역
     {
         element: <AuthLayout />,
         children: [
