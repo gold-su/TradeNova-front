@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CandleChart from "@/components/training/CandleChart";
 import { trainingApi } from "@/api/trainingApi";
+import { reportApi } from "@/api/reportApi";
 import http from "@/api/http";
 import type {
   Candle,
@@ -9,6 +10,10 @@ import type {
   TradeResponse,
   TrainingChartDto,
   TrainingStatus,
+  QuickPhraseResponse,
+  TrainingEventResponse,
+  ReportDocumentResponse,
+  ReportDraftContent,
 } from "@/types/training";
 
 // ===== Types =====
@@ -20,14 +25,13 @@ type PaperAccountDto = {
   name: string;
   description?: string | null;
   cashBalance: number;
-  isDefault?: boolean; // 백엔드 필드명 다르면 아래 매핑만 바꾸면 됨
+  isDefault?: boolean;
 };
 
 // ===== Utils =====
 function pickCharts(res: CreateSessionResponse): TrainingChartDto[] {
   if ("charts" in res) return res.charts;
 
-  // 단일 응답 호환
   return [
     {
       chartId: res.chartId,
@@ -65,9 +69,12 @@ function n(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
   return new Intl.NumberFormat("ko-KR").format(v);
 }
+
 function n2(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
-  return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 }).format(v);
+  return new Intl.NumberFormat("ko-KR", {
+    maximumFractionDigits: 2,
+  }).format(v);
 }
 
 // ===== Component =====
@@ -94,23 +101,40 @@ export default function TrainingSessionPage() {
   const [candlesByChart, setCandlesByChart] = useState<CandlesMap>({});
   const [progressByChart, setProgressByChart] = useState<ProgressMap>({});
 
+  // report / events / snapshot
+  const [quickPhrases, setQuickPhrases] = useState<QuickPhraseResponse[]>([]);
+  const [events, setEvents] = useState<TrainingEventResponse[]>([]);
+  const [snapshots, setSnapshots] = useState<ReportDocumentResponse[]>([]);
+
+  const [draft, setDraft] = useState<ReportDraftContent>({
+    thesis: "",
+    entryReason: "",
+    exitPlan: "",
+    riskNote: "",
+    freeNote: "",
+    tags: [],
+  });
+
   // ui
   const [loading, setLoading] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [eventLoading, setEventLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ===== Load accounts on mount =====
   useEffect(() => {
     (async () => {
       try {
-        const list = await http.get<PaperAccountDto[]>("/api/paper-accounts").then((r) => r.data);
+        const list = await http
+          .get<PaperAccountDto[]>("/api/paper-accounts")
+          .then((r) => r.data);
+
         setAccounts(list);
 
-        // default 계좌 자동 선택 (필드명이 다르면 여기만 수정)
         const def = list.find((a) => a.isDefault) ?? list[0];
         setAccountId(def?.id ?? null);
-      } catch (e: any) {
-        // 계좌 API 없거나 토큰 문제면 여기서 막힘
-        console.warn(e);
+      } catch (e) {
+        console.warn("계좌 목록 로드 실패", e);
       }
     })();
   }, []);
@@ -141,13 +165,19 @@ export default function TrainingSessionPage() {
 
   // ===== Apply snapshot =====
   const applyProgress = (res: ProgressResponse) => {
-    setProgressByChart((prev) => ({ ...prev, [res.chartId]: res }));
+    setProgressByChart((prev) => ({
+      ...prev,
+      [res.chartId]: res,
+    }));
     setStatus(res.status);
   };
 
   const applyTrade = (res: TradeResponse) => {
     setProgressByChart((prev) => {
-      const cur = prev[res.chartId] ?? emptyProgress(res.chartId, status, Number(res.executedPrice));
+      const cur =
+        prev[res.chartId] ??
+        emptyProgress(res.chartId, status, Number(res.executedPrice));
+
       return {
         ...prev,
         [res.chartId]: {
@@ -161,12 +191,150 @@ export default function TrainingSessionPage() {
     });
   };
 
+  // ===== Report loaders =====
+  const loadQuickPhrases = async () => {
+    try {
+      const data = await reportApi.getQuickPhrases();
+      setQuickPhrases(data);
+    } catch (e) {
+      console.error("quick phrase load failed", e);
+    }
+  };
+
+  const loadDraft = async (chartId: number) => {
+    try {
+      const data = await reportApi.getDraft(chartId);
+
+      if (data?.contentJson) {
+        setDraft({
+          thesis: data.contentJson.thesis ?? "",
+          entryReason: data.contentJson.entryReason ?? "",
+          exitPlan: data.contentJson.exitPlan ?? "",
+          riskNote: data.contentJson.riskNote ?? "",
+          freeNote: data.contentJson.freeNote ?? "",
+          tags: data.contentJson.tags ?? [],
+        });
+      } else {
+        setDraft({
+          thesis: "",
+          entryReason: "",
+          exitPlan: "",
+          riskNote: "",
+          freeNote: "",
+          tags: [],
+        });
+      }
+    } catch (e) {
+      console.error("draft load failed", e);
+    }
+  };
+
+  const loadEvents = async (chartId: number) => {
+    try {
+      setEventLoading(true);
+      const data = await reportApi.getEvents(chartId, 50);
+      setEvents(data);
+    } catch (e) {
+      console.error("event load failed", e);
+    } finally {
+      setEventLoading(false);
+    }
+  };
+
+  const loadSnapshots = async (chartId: number) => {
+    try {
+      const data = await reportApi.getSnapshots(chartId);
+      setSnapshots(data);
+    } catch (e) {
+      console.error("snapshot load failed", e);
+    }
+  };
+
+  useEffect(() => {
+    loadQuickPhrases();
+  }, []);
+
+  useEffect(() => {
+    if (!activeChartId) return;
+
+    loadDraft(activeChartId);
+    loadEvents(activeChartId);
+    loadSnapshots(activeChartId);
+  }, [activeChartId]);
+
+  // ===== Draft / Phrase / Snapshot =====
+  const onSaveDraft = async () => {
+    if (!activeChartId) return;
+
+    try {
+      setDraftSaving(true);
+      setError(null);
+
+      await reportApi.upsertDraft(activeChartId, {
+        contentJson: draft,
+      });
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "드래프트 저장 실패");
+    } finally {
+      setDraftSaving(false);
+    }
+  };
+
+  const onCreateSnapshot = async () => {
+    if (!activeChartId) return;
+
+    try {
+      setError(null);
+
+      const saved = await reportApi.createSnapshot(activeChartId, {
+        linkedEventId: null,
+        contentJson: draft,
+      });
+
+      setSnapshots((prev) => [saved, ...prev]);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "스냅샷 저장 실패");
+    }
+  };
+
+  const onCreateNoteEvent = async () => {
+    if (!activeChartId) return;
+
+    try {
+      setError(null);
+
+      await reportApi.createEvent(activeChartId, {
+        type: "NOTE",
+        title: draft.thesis?.trim() || "수동 메모",
+        payloadJson: {
+          thesis: draft.thesis ?? "",
+          entryReason: draft.entryReason ?? "",
+          exitPlan: draft.exitPlan ?? "",
+          riskNote: draft.riskNote ?? "",
+          freeNote: draft.freeNote ?? "",
+          tags: draft.tags ?? [],
+        },
+      });
+
+      await loadEvents(activeChartId);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "메모 이벤트 저장 실패");
+    }
+  };
+
+  const appendQuickPhrase = (content: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      freeNote: [prev.freeNote ?? "", content].filter(Boolean).join("\n"),
+    }));
+  };
+
   // ===== Actions =====
   const onCreateSession = async () => {
     setError(null);
 
     if (!accountId) {
-      setError("먼저 계좌를 선택/생성해줘.");
+      setError("먼저 계좌를 선택하거나 생성해줘.");
       return;
     }
 
@@ -185,11 +353,9 @@ export default function TrainingSessionPage() {
       setCharts(cs);
       setStatus(created.status);
 
-      // 첫 차트 선택
       const first = cs.slice().sort((a, b) => a.chartIndex - b.chartIndex)[0];
       setActiveChartId(first?.chartId ?? null);
 
-      // candles 병렬 로딩
       const pairs = await Promise.all(
         cs.map(async (c) => {
           const candles = await trainingApi.getChartCandles(c.chartId);
@@ -198,10 +364,11 @@ export default function TrainingSessionPage() {
       );
 
       const map: CandlesMap = {};
-      pairs.forEach(([chartId, candles]) => (map[chartId] = candles));
+      pairs.forEach(([chartId, candles]) => {
+        map[chartId] = candles;
+      });
       setCandlesByChart(map);
 
-      // progress 초기화(표시용)
       setProgressByChart(() => {
         const next: ProgressMap = {};
         cs.forEach((c) => {
@@ -220,37 +387,37 @@ export default function TrainingSessionPage() {
         return next;
       });
     } catch (e: any) {
-      const msg = e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.";
-      setError(msg);
+      setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
-  // NEXT: viewMode/syncNext 정책 반영
   const onNext = async () => {
     if (!activeChartId) return;
     setLoading(true);
     setError(null);
 
     try {
-      // 단일 보기면 무조건 active만
       if (viewMode === "single") {
         const res = await trainingApi.next(activeChartId);
         applyProgress(res);
+        await loadEvents(activeChartId);
         return;
       }
 
-      // grid 보기
       if (syncNext) {
-        // 4개 동시 진행
         const ids = sortedCharts.map((c) => c.chartId);
         const results = await Promise.all(ids.map((id) => trainingApi.next(id)));
         results.forEach(applyProgress);
+
+        if (activeChartId) {
+          await loadEvents(activeChartId);
+        }
       } else {
-        // 선택 차트만 진행
         const res = await trainingApi.next(activeChartId);
         applyProgress(res);
+        await loadEvents(activeChartId);
       }
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "NEXT 실패");
@@ -263,9 +430,11 @@ export default function TrainingSessionPage() {
     if (!activeChartId) return;
     setLoading(true);
     setError(null);
+
     try {
       const res = await trainingApi.buy(activeChartId, { qty: 1 });
       applyTrade(res);
+      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "BUY 실패");
     } finally {
@@ -277,9 +446,11 @@ export default function TrainingSessionPage() {
     if (!activeChartId) return;
     setLoading(true);
     setError(null);
+
     try {
       const res = await trainingApi.sell(activeChartId, { qty: 1 });
       applyTrade(res);
+      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL 실패");
     } finally {
@@ -291,9 +462,11 @@ export default function TrainingSessionPage() {
     if (!activeChartId) return;
     setLoading(true);
     setError(null);
+
     try {
       const res = await trainingApi.sellAll(activeChartId);
       applyTrade(res);
+      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL ALL 실패");
     } finally {
@@ -301,36 +474,45 @@ export default function TrainingSessionPage() {
     }
   };
 
-  // ===== Grid render helpers =====
+  // ===== Grid helper =====
   const renderTile = (c: TrainingChartDto) => {
     const candles = candlesByChart[c.chartId] ?? [];
     const prog = progressByChart[c.chartId] ?? null;
 
-    const visible = prog ? candles.slice(0, Math.min(prog.progressIndex + 1, candles.length)) : candles;
+    const visible = prog
+      ? candles.slice(0, Math.min(prog.progressIndex + 1, candles.length))
+      : candles;
 
     return (
       <button
         key={c.chartId}
         onClick={() => {
           setActiveChartId(c.chartId);
-          setViewMode("single"); // 클릭하면 확대 보기로 전환(원하면 이 줄 삭제)
+          setViewMode("single");
         }}
         className={[
           "group relative rounded-2xl border border-border/60 bg-background/10 p-2 text-left",
-          activeChartId === c.chartId ? "ring-2 ring-primary/40" : "hover:bg-background/20",
+          activeChartId === c.chartId
+            ? "ring-2 ring-primary/40"
+            : "hover:bg-background/20",
         ].join(" ")}
       >
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
-            <div className="text-xs text-muted-foreground">Chart {c.chartIndex + 1}</div>
+            <div className="text-xs text-muted-foreground">
+              Chart {c.chartIndex + 1}
+            </div>
             <div className="text-sm font-semibold">
-              {c.symbolTicker} <span className="text-muted-foreground">· {c.symbolName}</span>
+              {c.symbolTicker}{" "}
+              <span className="text-muted-foreground">· {c.symbolName}</span>
             </div>
           </div>
 
           <div className="text-right text-xs text-muted-foreground">
             <div>idx: {prog?.progressIndex ?? "-"}</div>
-            <div>px: <span className="text-foreground">{n2(prog?.currentPrice)}</span></div>
+            <div>
+              px: <span className="text-foreground">{n2(prog?.currentPrice)}</span>
+            </div>
           </div>
         </div>
 
@@ -372,13 +554,14 @@ export default function TrainingSessionPage() {
           <div className="text-muted-foreground">status: {status}</div>
         </div>
 
-        {/* Account selector */}
         <div className="rounded-2xl border border-border/60 bg-background/10 p-3">
           <div className="mb-2 text-sm font-semibold">계좌</div>
           <select
             className="w-full rounded-xl border border-border/60 bg-background/30 px-3 py-2 text-sm"
             value={accountId ?? ""}
-            onChange={(e) => setAccountId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) =>
+              setAccountId(e.target.value ? Number(e.target.value) : null)
+            }
           >
             <option value="">계좌 선택</option>
             {accounts.map((a) => (
@@ -388,11 +571,10 @@ export default function TrainingSessionPage() {
             ))}
           </select>
           <div className="mt-2 text-xs text-muted-foreground">
-            계좌가 없으면 계좌 생성 페이지를 먼저 만들고 연결하자.
+            계좌가 없으면 계좌 생성 페이지를 먼저 연결하면 돼.
           </div>
         </div>
 
-        {/* View / Sync controls */}
         <div className="rounded-2xl border border-border/60 bg-background/10 p-3">
           <div className="mb-2 text-sm font-semibold">View</div>
           <div className="flex gap-2">
@@ -431,12 +613,12 @@ export default function TrainingSessionPage() {
               NEXT 동시 진행(4개)
             </span>
           </label>
+
           <div className="mt-1 text-xs text-muted-foreground">
-            확대 보기에서는 무조건 선택 차트만 진행.
+            확대 보기에서는 무조건 선택 차트만 진행됨.
           </div>
         </div>
 
-        {/* Chart list */}
         <div className="flex-1 overflow-auto rounded-2xl border border-border/60 bg-background/10 p-3">
           <div className="mb-2 text-sm font-semibold">Charts</div>
           <div className="flex flex-col gap-2">
@@ -457,8 +639,11 @@ export default function TrainingSessionPage() {
                 </div>
               </button>
             ))}
+
             {sortedCharts.length === 0 && (
-              <div className="text-xs text-muted-foreground">세션 시작 후 표시됨</div>
+              <div className="text-xs text-muted-foreground">
+                세션 시작 후 표시됨
+              </div>
             )}
           </div>
         </div>
@@ -486,10 +671,7 @@ export default function TrainingSessionPage() {
           </div>
 
           <div className="text-sm text-muted-foreground">
-            Price:{" "}
-            <b className="text-foreground">
-              {n2(activeProgress?.currentPrice)}
-            </b>
+            Price: <b className="text-foreground">{n2(activeProgress?.currentPrice)}</b>
           </div>
         </div>
 
@@ -503,6 +685,7 @@ export default function TrainingSessionPage() {
           {viewMode === "grid" ? (
             <div className="grid h-full grid-cols-2 gap-4">
               {sortedCharts.map(renderTile)}
+
               {sortedCharts.length === 0 && (
                 <div className="col-span-2 h-full rounded-2xl border border-border/60 bg-background/20 flex items-center justify-center text-muted-foreground">
                   세션 시작 후 4분할 차트가 표시됩니다.
@@ -524,60 +707,63 @@ export default function TrainingSessionPage() {
       </main>
 
       {/* RIGHT */}
-      <aside className="w-96 border-l border-border/60 p-6 overflow-y-auto bg-muted/10">
-        {/* Snapshot */}
+      <aside className="w-[420px] border-l border-border/60 p-6 overflow-y-auto bg-muted/10">
         <div className="mb-6">
           <div className="text-sm font-semibold mb-2">Account Snapshot</div>
           <div className="rounded-2xl border border-border/60 bg-background/10 p-4">
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="rounded-xl border border-border/60 bg-background/20 p-3">
                 <div className="text-xs text-muted-foreground">Cash</div>
-                <div className="mt-1 text-base font-semibold">{n(activeProgress?.cashBalance)}</div>
+                <div className="mt-1 text-base font-semibold">
+                  {n(activeProgress?.cashBalance)}
+                </div>
               </div>
               <div className="rounded-xl border border-border/60 bg-background/20 p-3">
                 <div className="text-xs text-muted-foreground">Qty</div>
-                <div className="mt-1 text-base font-semibold">{n2(activeProgress?.positionQty)}</div>
+                <div className="mt-1 text-base font-semibold">
+                  {n2(activeProgress?.positionQty)}
+                </div>
               </div>
               <div className="rounded-xl border border-border/60 bg-background/20 p-3">
                 <div className="text-xs text-muted-foreground">Avg</div>
-                <div className="mt-1 text-base font-semibold">{n2(activeProgress?.avgPrice)}</div>
+                <div className="mt-1 text-base font-semibold">
+                  {n2(activeProgress?.avgPrice)}
+                </div>
               </div>
             </div>
 
             <div className="mt-3 text-xs text-muted-foreground">
-              ※ BUY/SELL 후에 snapshot이 갱신됩니다. (세션 생성 직후는 0으로 보일 수 있음)
+              BUY / SELL 후 스냅샷이 갱신됨
             </div>
           </div>
         </div>
 
-        {/* Actions */}
         <div className="mb-8">
           <div className="text-sm font-semibold mb-3">Actions</div>
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               disabled={disabled}
               onClick={onNext}
-              className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
+              className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60 col-span-2"
             >
               NEXT {viewMode === "grid" && syncNext ? "(ALL)" : "(Active)"}
             </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                disabled={disabled}
-                onClick={onBuy}
-                className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
-              >
-                BUY (qty=1)
-              </button>
-              <button
-                disabled={disabled}
-                onClick={onSell}
-                className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
-              >
-                SELL (qty=1)
-              </button>
-            </div>
+            <button
+              disabled={disabled}
+              onClick={onBuy}
+              className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
+            >
+              BUY (qty=1)
+            </button>
+
+            <button
+              disabled={disabled}
+              onClick={onSell}
+              className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
+            >
+              SELL (qty=1)
+            </button>
 
             <button
               disabled={disabled}
@@ -586,18 +772,174 @@ export default function TrainingSessionPage() {
             >
               SELL ALL
             </button>
+
+            <button
+              disabled={!activeChartId}
+              onClick={onCreateSnapshot}
+              className="rounded-2xl border border-border/60 px-4 py-3 hover:bg-muted/30 disabled:opacity-60"
+            >
+              SNAPSHOT
+            </button>
           </div>
         </div>
 
-        {/* Notes (리포트/복기: 다음 단계에서 저장/조회 붙임) */}
+        <div className="mb-8">
+          <div className="text-sm font-semibold mb-3">Quick Phrases</div>
+          <div className="flex flex-wrap gap-2">
+            {quickPhrases.map((phrase) => (
+              <button
+                key={phrase.id}
+                type="button"
+                onClick={() => appendQuickPhrase(phrase.content)}
+                className="rounded-full border border-border/60 px-3 py-1 text-xs hover:bg-muted/30"
+              >
+                {phrase.title}
+              </button>
+            ))}
+
+            {quickPhrases.length === 0 && (
+              <div className="text-xs text-muted-foreground">
+                등록된 빠른 문장이 없어
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-semibold">Draft Report</div>
+            <button
+              type="button"
+              onClick={onSaveDraft}
+              disabled={!activeChartId || draftSaving}
+              className="rounded-md border border-border/60 px-3 py-1 text-xs hover:bg-muted/30 disabled:opacity-60"
+            >
+              {draftSaving ? "저장 중..." : "Draft 저장"}
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <input
+              value={draft.thesis ?? ""}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, thesis: e.target.value }))
+              }
+              placeholder="한 줄 관점"
+              className="w-full rounded-2xl border border-border/60 p-3 text-sm bg-background/20"
+            />
+
+            <textarea
+              value={draft.entryReason ?? ""}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, entryReason: e.target.value }))
+              }
+              placeholder="진입 근거"
+              className="w-full min-h-[90px] rounded-2xl border border-border/60 p-3 text-sm bg-background/20"
+            />
+
+            <textarea
+              value={draft.exitPlan ?? ""}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, exitPlan: e.target.value }))
+              }
+              placeholder="청산 계획"
+              className="w-full min-h-[90px] rounded-2xl border border-border/60 p-3 text-sm bg-background/20"
+            />
+
+            <textarea
+              value={draft.riskNote ?? ""}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, riskNote: e.target.value }))
+              }
+              placeholder="리스크 / 손절 기준"
+              className="w-full min-h-[90px] rounded-2xl border border-border/60 p-3 text-sm bg-background/20"
+            />
+
+            <textarea
+              value={draft.freeNote ?? ""}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, freeNote: e.target.value }))
+              }
+              placeholder="자유 메모"
+              className="w-full min-h-[140px] rounded-2xl border border-border/60 p-3 text-sm bg-background/20"
+            />
+
+            <button
+              type="button"
+              onClick={onCreateNoteEvent}
+              disabled={!activeChartId}
+              className="w-full rounded-2xl border border-border/60 px-4 py-3 text-sm hover:bg-muted/30 disabled:opacity-60"
+            >
+              현재 메모를 이벤트로 기록
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="text-sm font-semibold mb-3">Event Log</div>
+
+          <div className="space-y-2">
+            {eventLoading && (
+              <div className="text-xs text-muted-foreground">불러오는 중...</div>
+            )}
+
+            {!eventLoading && events.length === 0 && (
+              <div className="text-xs text-muted-foreground">이벤트가 없어</div>
+            )}
+
+            {events.map((event) => (
+              <div
+                key={event.id}
+                className="rounded-2xl border border-border/60 bg-background/10 p-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium">{event.title}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {event.type}
+                  </div>
+                </div>
+
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {new Date(event.createdAt).toLocaleString()}
+                </div>
+
+                {event.payloadJson && (
+                  <pre className="mt-2 overflow-x-auto rounded-md bg-black/20 p-2 text-[11px] text-muted-foreground">
+                    {JSON.stringify(event.payloadJson, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div>
-          <div className="text-sm font-semibold mb-3">리포트 / 복기</div>
-          <textarea
-            placeholder="복기 메모... (다음 단계에서 저장/조회 API 붙일 예정)"
-            className="w-full min-h-[220px] rounded-2xl border border-border/60 p-4 text-sm bg-background/20"
-          />
-          <div className="mt-2 text-xs text-muted-foreground">
-            다음 단계: (1) 저장/조회 API 연결 → (2) AI 리포트 생성 버튼 붙이기
+          <div className="text-sm font-semibold mb-3">Snapshots</div>
+
+          <div className="space-y-2">
+            {snapshots.length === 0 && (
+              <div className="text-xs text-muted-foreground">
+                저장된 스냅샷이 없어
+              </div>
+            )}
+
+            {snapshots.map((snapshot) => (
+              <div
+                key={snapshot.id}
+                className="rounded-2xl border border-border/60 bg-background/10 p-3"
+              >
+                <div className="text-sm font-medium">
+                  Snapshot #{snapshot.id}
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {new Date(snapshot.createdAt).toLocaleString()}
+                </div>
+
+                <pre className="mt-2 overflow-x-auto rounded-md bg-black/20 p-2 text-[11px] text-muted-foreground">
+                  {JSON.stringify(snapshot.contentJson, null, 2)}
+                </pre>
+              </div>
+            ))}
           </div>
         </div>
       </aside>

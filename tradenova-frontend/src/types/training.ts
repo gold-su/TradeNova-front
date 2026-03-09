@@ -5,6 +5,16 @@ export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
 export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
 
+// ===== Report / Event / Phrase =====
+
+export type EventType =
+    | "PROGRESS"
+    | "TRADE"
+    | "WARNING"
+    | "NOTE"
+    | "SNAPSHOT"
+    | "AI";
+
 // ===== Candle =====
 // 백엔드 candle: t는 epoch millis (프론트 chart에서 /1000 해서 sec 사용)
 export type Candle = {
@@ -105,3 +115,65 @@ export type RiskRuleResponse = {
     autoExitEnabled: boolean;
     updatedAt: string;
 };
+
+export type QuickPhraseCreateRequest = {
+    title: string;
+    content: string;
+};
+
+export type QuickPhraseUpdateRequest = {
+    title: string;
+    content: string;
+};
+
+export type QuickPhraseResponse = {
+    id: number;
+    title: string;
+    content: string;
+    sortOrder: number;
+};
+
+export type ReportDraftContent = {
+    thesis?: string;
+    entryReason?: string;
+    exitPlan?: string;
+    riskNote?: string;
+    freeNote?: string;
+    tags?: string[];
+};
+
+export type ReportDraftUpsertRequest = {
+    contentJson: ReportDraftContent;
+};
+
+export type ReportSnapshotCreateRequest = {
+    linkedEventId?: number | null;
+    contentJson: ReportDraftContent;
+};
+
+export type ReportDocumentResponse = {
+    id: number;
+    chartId: number;
+    kind: "DRAFT" | "SNAPSHOT";
+    contentJson: ReportDraftContent;
+    createdAt: string;
+    updatedAt: string | null;
+};
+
+export type TrainingEventAppendRequest = {
+    type?: EventType | null;
+    title: string;
+    payloadJson?: Record<string, unknown> | null;
+};
+
+export type TrainingEventResponse = {
+    id: number;
+    chartId: number;
+    type: EventType;
+    title: string;
+    payloadJson?: Record<string, unknown> | null;
+    createdAt: string;
+};
+
+
+
