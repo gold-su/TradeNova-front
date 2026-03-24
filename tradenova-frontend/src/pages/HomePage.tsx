@@ -9,13 +9,13 @@ export default function HomePage() {
 
   return (
     <main>
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-black">
         {/* Background media */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 ">
           <img
             src="/tradeNova.gif"
             alt="TradeNova hero banner"
-            className="h-full w-full object-contain object-right"
+            className="h-full w-full object-contain"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-black/10" />

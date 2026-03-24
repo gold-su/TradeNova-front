@@ -1,0 +1,76 @@
+import { TrainingCenterPanel } from "@/components/training/layout/TrainingCenterPanel";
+import { TrainingLeftPanel } from "@/components/training/layout/TrainingLeftPanel";
+import { TrainingRightPanel } from "@/components/training/layout/TrainingRightPanel";
+import { TradeReasonModal } from "@/components/training/modal/TradeReasonModal";
+import { useTrainingSessionPage } from "@/hooks/training/useTrainingSessionPage";
+
+export default function TrainingSessionPage() {
+  const page = useTrainingSessionPage();
+
+  return (
+    <div className="flex h-[calc(100vh-56px)] w-full overflow-hidden">
+      <TrainingLeftPanel
+        sessionId={page.sessionId}
+        status={page.status}
+        accounts={page.accounts}
+        accountId={page.accountId}
+        setAccountId={page.setAccountId}
+        viewMode={page.viewMode}
+        setViewMode={page.setViewMode}
+        syncNext={page.syncNext}
+        setSyncNext={page.setSyncNext}
+        charts={page.charts}
+        activeChartId={page.activeChartId}
+        setActiveChartId={page.setActiveChartId}
+        loading={page.loading}
+        onCreateSession={page.onCreateSession}
+      />
+
+      <TrainingCenterPanel
+        charts={page.charts}
+        activeChartId={page.activeChartId}
+        setActiveChartId={page.setActiveChartId}
+        viewMode={page.viewMode}
+        setViewMode={page.setViewMode}
+        candlesByChart={page.candlesByChart}
+        progressByChart={page.progressByChart}
+        activeChart={page.activeChart}
+        activeProgress={page.activeProgress}
+        visibleActiveCandles={page.visibleActiveCandles}
+        error={page.error}
+      />
+
+      <TrainingRightPanel
+        activeChart={page.activeChart}
+        activeProgress={page.activeProgress}
+        quickPhrases={page.quickPhrases}
+        events={page.events}
+        snapshots={page.snapshots}
+        draft={page.draft}
+        setDraft={page.setDraft}
+        loading={page.loading}
+        draftSaving={page.draftSaving}
+        eventLoading={page.eventLoading}
+        disabled={page.disabled}
+        onNext={page.onNext}
+        onSellAll={page.onSellAll}
+        onSaveDraft={page.onSaveDraft}
+        onCreateSnapshot={page.onCreateSnapshot}
+        onCreateNoteEvent={page.onCreateNoteEvent}
+        appendQuickPhrase={page.appendQuickPhrase}
+        openBuyModal={page.openBuyModal}
+        openSellModal={page.openSellModal}
+      />
+
+      <TradeReasonModal
+        open={page.tradeModalOpen}
+        tradeType={page.tradeType}
+        tradeForm={page.tradeForm}
+        setTradeForm={page.setTradeForm}
+        loading={page.loading}
+        onClose={() => page.setTradeModalOpen(false)}
+        onConfirm={page.handleConfirmTrade}
+      />
+    </div>
+  );
+}

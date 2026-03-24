@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
-import TrainingSessionPage from "@/pages/TrainingSessionPage";
+import TrainingSessionPage from "@/pages/training/TrainingSessionPage";
 
 import MyPageLayout from "@/pages/mypage/MyPageLayout";
 import MyProfilePage from "@/pages/mypage/MyProfilePage";

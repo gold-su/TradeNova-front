@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import CandleChart from "@/components/training/CandleChart";
+import CandleChart from "@/components/training/chart/CandleChart";
 import { trainingApi, type Candle } from "@/api/trainingApi";
 import { Button } from "@/components/ui/button";
 

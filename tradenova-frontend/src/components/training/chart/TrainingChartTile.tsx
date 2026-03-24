@@ -1,0 +1,95 @@
+import CandleChart from "@/components/training/chart/CandleChart";
+import type {
+  Candle,
+  ProgressResponse,
+  TrainingChartDto,
+} from "@/types/training";
+
+function n(v: number | null | undefined) {
+  if (v === null || v === undefined) return "-";
+  return new Intl.NumberFormat("ko-KR").format(v);
+}
+
+function n2(v: number | null | undefined) {
+  if (v === null || v === undefined) return "-";
+  return new Intl.NumberFormat("ko-KR", {
+    maximumFractionDigits: 2,
+  }).format(v);
+}
+
+type Props = {
+  chart: TrainingChartDto;
+  active: boolean;
+  candles: Candle[];
+  progress: ProgressResponse | null;
+  onClick: () => void;
+};
+
+export function TrainingChartTile({
+  chart,
+  active,
+  candles,
+  progress,
+  onClick,
+}: Props) {
+  const visible = progress
+    ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
+    : candles;
+
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "group relative rounded-2xl border border-border/60 bg-background/10 p-2 text-left",
+        active ? "ring-2 ring-primary/40" : "hover:bg-background/20",
+      ].join(" ")}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <div className="text-xs text-muted-foreground">
+            Chart {chart.chartIndex + 1}
+          </div>
+          <div className="text-sm font-semibold">
+            {chart.symbolTicker}{" "}
+            <span className="text-muted-foreground">· {chart.symbolName}</span>
+          </div>
+        </div>
+
+        <div className="text-right text-xs text-muted-foreground">
+          <div>idx: {progress?.progressIndex ?? "-"}</div>
+          <div>
+            px:{" "}
+            <span className="text-foreground">
+              {n2(progress?.currentPrice)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="h-[220px]">
+        {visible.length > 0 ? (
+          <CandleChart candles={visible} height={220} />
+        ) : (
+          <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-xs text-muted-foreground">
+            no data
+          </div>
+        )}
+      </div>
+
+      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
+          <div className="text-muted-foreground">Cash</div>
+          <div className="font-semibold">{n(progress?.cashBalance)}</div>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
+          <div className="text-muted-foreground">Qty</div>
+          <div className="font-semibold">{n2(progress?.positionQty)}</div>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
+          <div className="text-muted-foreground">Avg</div>
+          <div className="font-semibold">{n2(progress?.avgPrice)}</div>
+        </div>
+      </div>
+    </button>
+  );
+}
