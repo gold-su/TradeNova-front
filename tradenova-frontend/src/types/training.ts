@@ -180,3 +180,46 @@ export type AiReviewPayload = {
   snapshotId?: number;
   chartId?: number;
 };
+
+export type ActiveTrainingSessionResponse = {
+  sessionId: number;
+  accountId: number;
+  mode: TrainingMode;
+  status: TrainingStatus;
+  totalChartCount: number;
+  completedChartCount: number;
+  charts: TrainingChartDto[];
+};
+
+export type SessionAiPayload = {
+  analysisScope: "SESSION";
+  sessionId: number;
+  score: number;
+  summary: string;
+  generatedAt: string;
+  analysisVersion: number;
+  hasSnapshots: boolean;
+  tradedChartCount: number;
+  totalChartCount: number;
+  completedChartCount: number;
+  totalTradeCount: number;
+  totalEventCount: number;
+  snapshotCount: number;
+  warnings: string[];
+  strengths: string[];
+};
+
+export type ChartAiPayload = {
+  analysisScope: "CHART";
+  score: number;
+  summary: string;
+  generatedAt: string;
+  analysisVersion: number;
+  warnings: string[];
+  strengths: string[];
+  snapshotId?: number;
+  chartId?: number;
+  stopLossPrice?: string | null;
+  takeProfitPrice?: string | null;
+  autoExitEnabled?: boolean;
+};

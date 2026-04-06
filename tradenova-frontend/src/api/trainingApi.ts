@@ -19,9 +19,7 @@ export const trainingApi = {
       .then((r) => r.data),
 
   getSessionCharts: (sessionId: number) =>
-    http
-      .get(`/api/training/sessions/${sessionId}/charts`)
-      .then((r) => r.data),
+    http.get(`/api/training/sessions/${sessionId}/charts`).then((r) => r.data),
 
   // ===== Candles =====
   getChartCandles: (chartId: number) =>
@@ -37,49 +35,46 @@ export const trainingApi = {
 
   advance: (chartId: number, body: AdvanceRequest) =>
     http
-      .post<ProgressResponse>(
-        `/api/training/charts/${chartId}/advance`,
-        body
-      )
+      .post<ProgressResponse>(`/api/training/charts/${chartId}/advance`, body)
       .then((r) => r.data),
 
   // ===== Trade =====
   buy: (chartId: number, body: TradeRequest) =>
     http
-      .post<TradeResponse>(
-        `/api/training/charts/${chartId}/trades/buy`,
-        body
-      )
+      .post<TradeResponse>(`/api/training/charts/${chartId}/trades/buy`, body)
       .then((r) => r.data),
 
   sell: (chartId: number, body: TradeRequest) =>
     http
-      .post<TradeResponse>(
-        `/api/training/charts/${chartId}/trades/sell`,
-        body
-      )
+      .post<TradeResponse>(`/api/training/charts/${chartId}/trades/sell`, body)
       .then((r) => r.data),
 
   sellAll: (chartId: number) =>
     http
-      .post<TradeResponse>(
-        `/api/training/charts/${chartId}/trades/sell-all`
-      )
+      .post<TradeResponse>(`/api/training/charts/${chartId}/trades/sell-all`)
       .then((r) => r.data),
 
   // ===== Risk Rule =====
   getRiskRule: (chartId: number) =>
     http
-      .get<RiskRuleResponse>(
-        `/api/training/charts/${chartId}/risk-rule`
-      )
+      .get<RiskRuleResponse>(`/api/training/charts/${chartId}/risk-rule`)
       .then((r) => r.data),
 
   upsertRiskRule: (chartId: number, body: RiskRuleUpsertRequest) =>
     http
-      .put<RiskRuleResponse>(
-        `/api/training/charts/${chartId}/risk-rule`,
-        body
-      )
+      .put<RiskRuleResponse>(`/api/training/charts/${chartId}/risk-rule`, body)
       .then((r) => r.data),
+
+  getActiveSession: async () => {
+    const res = await http.get<ActiveTrainingSessionResponse | null>(
+      "/api/training/sessions/active",
+    );
+    return res.data;
+  },
+
+  finishSession: async (sessionId: number) => {
+    const res = await http.post(`/api/training/sessions/${sessionId}/finish`);
+    return res.data;
+  },
 };
+

@@ -46,10 +46,6 @@ function emptyProgress(
   };
 }
 
-function pickCharts(res: CreateSessionResponse): TrainingChartDto[] {
-  return res.charts;
-}
-
 const emptyDraft: ReportDraftContent = {
   thesis: "",
   entryReason: "",
@@ -84,6 +80,8 @@ export function useTrainingSessionPage() {
   const [draftSaving, setDraftSaving] = useState(false);
   const [eventLoading, setEventLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [activeSessionLoading, setActiveSessionLoading] = useState(true);
 
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeType, setTradeType] = useState<"BUY" | "SELL" | null>(null);
@@ -219,6 +217,10 @@ export function useTrainingSessionPage() {
   };
 
   useEffect(() => {
+    loadActiveSession();
+  }, []);
+
+  useEffect(() => {
     loadQuickPhrases();
   }, []);
 
@@ -288,6 +290,7 @@ export function useTrainingSessionPage() {
     }
   };
 
+  
   const appendQuickPhrase = (content: string) => {
     setDraft((prev) => ({
       ...prev,
@@ -295,11 +298,57 @@ export function useTrainingSessionPage() {
     }));
   };
 
+  const hydrateSession = async (session: {
+    sessionId: number;
+    status: TrainingStatus;
+    charts: TrainingChartDto[];
+  }) => {
+    const sorted = session.charts
+      .slice()
+      .sort((a, b) => a.chartIndex - b.chartIndex);
+
+    setSessionId(session.sessionId);
+    setCharts(sorted);
+    setStatus(session.status);
+
+    const first = sorted[0] ?? null;
+    setActiveChartId(first?.chartId ?? null);
+
+    const candlePairs = await Promise.all(
+      sorted.map(async (chart) => {
+        const candles = await trainingApi.getChartCandles(chart.chartId);
+        return [chart.chartId, candles] as const;
+      }),
+    );
+
+    const candleMap: Record<number, Candle[]> = {};
+    candlePairs.forEach(([chartId, candles]) => {
+      candleMap[chartId] = candles;
+    });
+    setCandlesByChart(candleMap);
+
+    const progressMap: Record<number, ProgressResponse> = {};
+    sorted.forEach((chart) => {
+      progressMap[chart.chartId] = {
+        chartId: chart.chartId,
+        progressIndex: chart.progressIndex ?? 0,
+        currentPrice: 0,
+        status: chart.status,
+        cashBalance: 0,
+        positionQty: 0,
+        avgPrice: 0,
+        autoExited: false,
+        reason: null,
+      };
+    });
+    setProgressByChart(progressMap);
+  };
+
   const onCreateSession = async () => {
     setError(null);
 
     if (!accountId) {
-      setError("먼저 계좌를 선택하거나 생성해줘.");
+      setError("먼저 계좌를 선택하거나 생성해하세요.");
       return;
     }
 
@@ -315,42 +364,10 @@ export function useTrainingSessionPage() {
 
       const cs = pickCharts(created);
 
-      setSessionId(created.sessionId);
-      setCharts(cs);
-      setStatus(created.status);
-
-      const first = cs.slice().sort((a, b) => a.chartIndex - b.chartIndex)[0];
-      setActiveChartId(first?.chartId ?? null);
-
-      const pairs = await Promise.all(
-        cs.map(async (c) => {
-          const candles = await trainingApi.getChartCandles(c.chartId);
-          return [c.chartId, candles] as const;
-        }),
-      );
-
-      const map: CandlesMap = {};
-      pairs.forEach(([chartId, candles]) => {
-        map[chartId] = candles;
-      });
-      setCandlesByChart(map);
-
-      setProgressByChart(() => {
-        const next: ProgressMap = {};
-        cs.forEach((c) => {
-          next[c.chartId] = {
-            chartId: c.chartId,
-            progressIndex: c.progressIndex ?? 0,
-            currentPrice: 0,
-            status: created.status,
-            cashBalance: 0,
-            positionQty: 0,
-            avgPrice: 0,
-            autoExited: false,
-            reason: null,
-          };
-        });
-        return next;
+      await hydrateSession({
+        sessionId: created.sessionId,
+        status: created.status,
+        charts: cs,
       });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
@@ -413,6 +430,31 @@ export function useTrainingSessionPage() {
     }
   };
 
+  const loadActiveSession = async () => {
+    try {
+      setActiveSessionLoading(true);
+      setError(null);
+
+      const active = await trainingApi.getActiveSession();
+
+      if (!active) {
+        return;
+      }
+
+      await hydrateSession({
+        sessionId: active.sessionId,
+        status: active.status,
+        charts: active.charts,
+      });
+    } catch (e: any) {
+      setError(
+        e?.response?.data?.message ?? "진행 중 세션 복구에 실패했습니다.",
+      );
+    } finally {
+      setActiveSessionLoading(false);
+    }
+  };
+  
   const onNext = async () => {
     if (!activeChartId) return;
 
@@ -490,6 +532,9 @@ export function useTrainingSessionPage() {
     charts: sortedCharts,
     activeChartId,
     setActiveChartId,
+
+    activeSessionLoading,
+    loadActiveSession,
 
     candlesByChart,
     progressByChart,
