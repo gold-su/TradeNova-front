@@ -106,7 +106,9 @@ export function useTrainingSessionPage() {
       }
     })();
   }, []);
-
+  function pickCharts(res: CreateSessionResponse): TrainingChartDto[] {
+    return res.charts;
+  }
   const sortedCharts = useMemo(
     () => charts.slice().sort((a, b) => a.chartIndex - b.chartIndex),
     [charts],
@@ -300,9 +302,14 @@ export function useTrainingSessionPage() {
 
   const hydrateSession = async (session: {
     sessionId: number;
+    accountId?: number;
     status: TrainingStatus;
     charts: TrainingChartDto[];
   }) => {
+    if (session.accountId != null) {
+      setAccountId(session.accountId);
+    }
+    
     const sorted = session.charts
       .slice()
       .sort((a, b) => a.chartIndex - b.chartIndex);
@@ -365,9 +372,10 @@ export function useTrainingSessionPage() {
       const cs = pickCharts(created);
 
       await hydrateSession({
-        sessionId: created.sessionId,
-        status: created.status,
-        charts: cs,
+        sessionId: active.sessionId,
+        accountId: active.accountId,
+        status: active.status,
+        charts: active.charts,
       });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
