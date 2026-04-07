@@ -372,10 +372,10 @@ export function useTrainingSessionPage() {
       const cs = pickCharts(created);
 
       await hydrateSession({
-        sessionId: active.sessionId,
-        accountId: active.accountId,
-        status: active.status,
-        charts: active.charts,
+        sessionId: created.sessionId,
+        accountId: created.accountId,
+        status: created.status,
+        charts: created.charts,
       });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
@@ -451,6 +451,7 @@ export function useTrainingSessionPage() {
 
       await hydrateSession({
         sessionId: active.sessionId,
+        accountId: active.accountId,
         status: active.status,
         charts: active.charts,
       });
