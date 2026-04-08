@@ -1,39 +1,36 @@
 import type {
   Candle,
   ProgressResponse,
+  TrainingChartDto,
   TrainingStatus,
 } from "@/types/training";
 
 /**
  * 훈련 화면의 보기 모드
- * - grid: 4차트 그리드
- * - single: 단일 차트 집중 보기
+ * - grid: 멀티 차트를 동시에 보는 모드
+ * - single: 한 차트에 집중해서 보는 모드
  */
 export type ViewMode = "grid" | "single";
 
 /**
- * chartId 기준 캔들 맵
+ * chartId -> Candle[] 매핑
  * 예:
  * {
- *   101: Candle[],
- *   102: Candle[]
+ *   101: [...],
+ *   102: [...]
  * }
  */
 export type CandlesMap = Record<number, Candle[]>;
 
 /**
- * chartId 기준 진행 상태 맵
- * 예:
- * {
- *   101: ProgressResponse,
- *   102: ProgressResponse
- * }
+ * chartId -> ProgressResponse 매핑
+ * 차트별 현재 진행 상황을 저장한다.
  */
 export type ProgressMap = Record<number, ProgressResponse>;
 
 /**
- * 모의투자 계좌 DTO
- * /api/paper-accounts 응답용
+ * 모의투자 계좌 목록 조회용 DTO
+ * /api/paper-accounts 응답을 프론트에서 간단히 쓰기 위한 타입
  */
 export type PaperAccountDto = {
   id: number;
@@ -44,7 +41,7 @@ export type PaperAccountDto = {
 };
 
 /**
- * 거래 모달 입력값
+ * 매수/매도 모달 입력 폼 상태
  */
 export type TradeForm = {
   qty: number;
@@ -53,25 +50,12 @@ export type TradeForm = {
 };
 
 /**
- * 세션 hydrate용 최소 입력 타입
- * - 새 세션 생성 응답
- * - active session 복구 응답
- * 둘 다 여기로 맞춰서 처리
+ * 새 세션 생성 응답 / active session 복구 응답을
+ * 하나의 형태로 받아서 화면 상태를 복구하기 위한 타입
  */
 export type HydrateSessionInput = {
   sessionId: number;
   accountId?: number;
   status: TrainingStatus;
-  charts: {
-    chartId: number;
-    chartIndex: number;
-    symbolId: number;
-    symbolTicker: string;
-    symbolName: string;
-    bars: number;
-    progressIndex: number;
-    startDate: string;
-    endDate: string;
-    status: TrainingStatus;
-  }[];
+  charts: TrainingChartDto[];
 };
