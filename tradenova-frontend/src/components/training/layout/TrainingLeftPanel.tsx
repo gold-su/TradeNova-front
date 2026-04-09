@@ -3,7 +3,7 @@ import type { TrainingChartDto, TrainingStatus } from "@/types/training";
 import type {
   PaperAccountDto,
   ViewMode,
-} from "@/hooks/training/useTrainingSessionPage";
+} from "@/hooks/training/training.types";
 import { SessionInfoCard } from "@/components/training/common/SessionInfoCard";
 
 type Props = {

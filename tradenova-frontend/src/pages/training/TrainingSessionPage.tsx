@@ -2,7 +2,7 @@ import { TrainingCenterPanel } from "@/components/training/layout/TrainingCenter
 import { TrainingLeftPanel } from "@/components/training/layout/TrainingLeftPanel";
 import { TrainingRightPanel } from "@/components/training/layout/TrainingRightPanel";
 import { TradeReasonModal } from "@/components/training/modal/TradeReasonModal";
-import { useTrainingSessionPage } from "@/hooks/training/useTrainingSessionPage";
+import { useTrainingSessionPage } from "@/pages/training/useTrainingSessionPage";
 
 export default function TrainingSessionPage() {
   const page = useTrainingSessionPage();

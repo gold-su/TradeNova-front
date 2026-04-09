@@ -4,7 +4,7 @@ import type {
   ProgressResponse,
   TrainingChartDto,
 } from "@/types/training";
-import type { ViewMode } from "@/hooks/training/useTrainingSessionPage";
+import type { ViewMode } from "@/pages/training/useTrainingSessionPage";
 import { TrainingChartGrid } from "@/components/training/chart/TrainingChartGrid";
 import { TrainingChartSingle } from "@/components/training/chart/TrainingChartSingle";
 

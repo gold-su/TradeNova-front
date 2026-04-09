@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import type { TradeResponse } from "@/types/training";
-import { useTrainingReport } from "./useTrainingReport";
-import { useTrainingSessionCore } from "./useTrainingSessionCore";
-import { useTrainingTrade } from "./useTrainingTrade";
-import { emptyProgress } from "./training.utils";
+import { useTrainingReport } from "../../hooks/training/useTrainingReport";
+import { useTrainingSessionCore } from "../../hooks/training/useTrainingSessionCore";
+import { useTrainingTrade } from "../../hooks/training/useTrainingTrade";
+import { emptyProgress } from "../../hooks/training/training.utils";
 
 /**
  * 훈련 페이지 전체 조립 훅
