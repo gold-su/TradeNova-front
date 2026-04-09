@@ -140,5 +140,7 @@ export function useTrainingSessionPage() {
     handleConfirmTrade: trade.handleConfirmTrade,
     openBuyModal: trade.openBuyModal,
     openSellModal: trade.openSellModal,
+    
+    onFinishSession: core.onFinishSession,
   };
 }

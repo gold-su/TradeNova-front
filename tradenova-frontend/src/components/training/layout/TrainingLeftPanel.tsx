@@ -21,6 +21,7 @@ type Props = {
   setActiveChartId: Dispatch<SetStateAction<number | null>>;
   loading: boolean;
   onCreateSession: () => void;
+  onFinishSession: () => void;
 };
 
 export function TrainingLeftPanel({
@@ -38,6 +39,7 @@ export function TrainingLeftPanel({
   setActiveChartId,
   loading,
   onCreateSession,
+  onFinishSession,
 }: Props) {
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 p-4">
@@ -49,8 +51,8 @@ export function TrainingLeftPanel({
           <select
             value={accountId ?? ""}
             onChange={(e) =>
-  setAccountId(e.target.value ? Number(e.target.value) : null)
-}
+              setAccountId(e.target.value ? Number(e.target.value) : null)
+            }
             className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
           >
             {accounts.map((a) => (
@@ -129,6 +131,13 @@ export function TrainingLeftPanel({
           className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
           {loading ? "생성 중..." : "새 훈련 시작"}
+        </button>
+        <button
+          onClick={onFinishSession}
+          disabled={loading || !sessionId || status === "COMPLETED"}
+          className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          세션 종료
         </button>
       </div>
     </aside>

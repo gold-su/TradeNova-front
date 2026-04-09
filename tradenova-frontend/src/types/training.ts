@@ -223,3 +223,29 @@ export type ChartAiPayload = {
   takeProfitPrice?: string | null;
   autoExitEnabled?: boolean;
 };
+
+export type SessionFinishResponse = {
+  sessionId: number;
+  status: TrainingStatus | string;
+  totalChartCount: number;
+  completedChartCount: number;
+  forceCompletedCount: number;
+};
+
+export type SessionAiPayload = {
+  analysisScope: "SESSION";
+  sessionId: number;
+  score: number;
+  summary: string;
+  generatedAt: string;
+  analysisVersion: number;
+  hasSnapshots: boolean;
+  tradedChartCount: number;
+  totalChartCount: number;
+  completedChartCount: number;
+  totalTradeCount: number;
+  totalEventCount: number;
+  snapshotCount: number;
+  warnings: string[];
+  strengths: string[];
+};

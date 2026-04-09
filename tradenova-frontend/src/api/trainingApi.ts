@@ -9,6 +9,8 @@ import type {
   TradeResponse,
   RiskRuleUpsertRequest,
   RiskRuleResponse,
+  ActiveTrainingSessionResponse,
+  SessionFinishResponse,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -74,6 +76,13 @@ export const trainingApi = {
 
   finishSession: async (sessionId: number) => {
     const res = await http.post(`/api/training/sessions/${sessionId}/finish`);
+    return res.data;
+  },
+
+  finishSession: async (sessionId: number) => {
+    const res = await http.post<SessionFinishResponse>(
+      `/api/training/sessions/${sessionId}/finish`,
+    );
     return res.data;
   },
 };

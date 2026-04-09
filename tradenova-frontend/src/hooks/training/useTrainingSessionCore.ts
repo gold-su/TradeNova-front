@@ -235,6 +235,49 @@ export function useTrainingSessionCore() {
   };
 
   /**
+   * 현재 세션을 수동 종료한다.
+   * - 세션 상태를 COMPLETED로 반영
+   * - 모든 차트 상태도 COMPLETED로 반영
+   */
+  const onFinishSession = async () => {
+    if (!sessionId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const finished = await trainingApi.finishSession(sessionId);
+
+      setStatus("COMPLETED");
+
+      setCharts((prev) =>
+        prev.map((chart) => ({
+          ...chart,
+          status: "COMPLETED",
+        })),
+      );
+
+      setProgressByChart((prev) => {
+        const next: typeof prev = {};
+
+        for (const key of Object.keys(prev)) {
+          const chartId = Number(key);
+          next[chartId] = {
+            ...prev[chartId],
+            status: "COMPLETED",
+          };
+        }
+
+        return next;
+      });
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "세션 종료에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * 현재 active chart 또는 전체 차트를 next 진행한다.
    * - single 모드: active chart만 진행
    * - grid + syncNext: 모든 차트를 동시에 진행
@@ -258,7 +301,9 @@ export function useTrainingSessionCore() {
 
       if (syncNext) {
         const ids = sortedCharts.map((c) => c.chartId);
-        const results = await Promise.all(ids.map((id) => trainingApi.next(id)));
+        const results = await Promise.all(
+          ids.map((id) => trainingApi.next(id)),
+        );
 
         results.forEach(applyProgress);
 
@@ -350,5 +395,7 @@ export function useTrainingSessionCore() {
     onCreateSession,
     onNext,
     applyProgress,
+
+    onFinishSession,
   };
 }

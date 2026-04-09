@@ -99,4 +99,18 @@ export const reportApi = {
     );
     return res.data;
   },
+
+  analyzeSessionAi: async (sessionId: number) => {
+    const res = await http.post<TrainingEventResponse>(
+      `/api/reports/sessions/${sessionId}/analyze`,
+    );
+    return res.data;
+  },
+
+  getLatestSessionAi: async (sessionId: number) => {
+    const res = await http.get<TrainingEventResponse | null>(
+      `/api/reports/sessions/${sessionId}/ai/latest`,
+    );
+    return res.data;
+  },
 };

@@ -24,6 +24,7 @@ export default function TrainingSessionPage() {
         setActiveChartId={page.setActiveChartId}
         loading={page.loading}
         onCreateSession={page.onCreateSession}
+        onFinishSession={page.onFinishSession}
       />
 
       <TrainingCenterPanel
