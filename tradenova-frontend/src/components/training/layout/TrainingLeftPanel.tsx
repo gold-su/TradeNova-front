@@ -22,6 +22,9 @@ type Props = {
   loading: boolean;
   onCreateSession: () => void;
   onFinishSession: () => void;
+  onAnalyzeSessionAi: () => void;
+  sessionAiLoading: boolean;
+  sessionAiExists: boolean;
 };
 
 export function TrainingLeftPanel({
@@ -40,10 +43,13 @@ export function TrainingLeftPanel({
   loading,
   onCreateSession,
   onFinishSession,
+  onAnalyzeSessionAi,
+  sessionAiLoading,
+  sessionAiExists,
 }: Props) {
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 p-4">
-      <div className="space-y-4">
+      <div className="h-full space-y-4 overflow-y-auto pr-1">
         <SessionInfoCard sessionId={sessionId} status={status} />
 
         <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
@@ -138,6 +144,17 @@ export function TrainingLeftPanel({
           className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
         >
           세션 종료
+        </button>
+        <button
+          onClick={onAnalyzeSessionAi}
+          disabled={loading || sessionAiLoading || !sessionId}
+          className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          {sessionAiLoading
+            ? "세션 AI 분석 중..."
+            : sessionAiExists
+              ? "세션 AI 다시 보기"
+              : "세션 AI 분석"}
         </button>
       </div>
     </aside>

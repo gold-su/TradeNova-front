@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import type { TradeResponse } from "@/types/training";
-import { useTrainingReport } from "../../hooks/training/useTrainingReport";
-import { useTrainingSessionCore } from "../../hooks/training/useTrainingSessionCore";
-import { useTrainingTrade } from "../../hooks/training/useTrainingTrade";
-import { emptyProgress } from "../../hooks/training/training.utils";
+import { useTrainingReport } from "@/hooks/training/useTrainingReport";
+import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
+import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
+import { emptyProgress } from "@/hooks/training/training.utils";
+import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -21,6 +22,9 @@ export function useTrainingSessionPage() {
 
   // ===== 리포트 로직 =====
   const report = useTrainingReport(core.activeChartId);
+
+  // ===== AI 로직 =====
+  const ai = useTrainingAi(core.sessionId, core.activeChartId);
 
   /**
    * 거래 응답을 progress map에 반영하는 함수
@@ -140,7 +144,22 @@ export function useTrainingSessionPage() {
     handleConfirmTrade: trade.handleConfirmTrade,
     openBuyModal: trade.openBuyModal,
     openSellModal: trade.openSellModal,
-    
+
     onFinishSession: core.onFinishSession,
+
+    // ===== AI =====
+    sessionAi: ai.sessionAi,
+    sessionAiPayload: ai.sessionAiPayload,
+    sessionAiLoading: ai.sessionAiLoading,
+    sessionAiError: ai.sessionAiError,
+    loadLatestSessionAi: ai.loadLatestSessionAi,
+    onAnalyzeSessionAi: ai.onAnalyzeSessionAi,
+
+    chartAi: ai.chartAi,
+    chartAiPayload: ai.chartAiPayload,
+    chartAiLoading: ai.chartAiLoading,
+    chartAiError: ai.chartAiError,
+    loadLatestChartAi: ai.loadLatestChartAi,
+    onAnalyzeChartAi: ai.onAnalyzeChartAi,
   };
 }

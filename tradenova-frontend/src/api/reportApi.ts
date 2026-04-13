@@ -86,6 +86,13 @@ export const reportApi = {
     return res.data;
   },
 
+  getLatestChartAi: async (chartId: number) => {
+    const res = await http.get<TrainingEventResponse | null>(
+      `/api/reports/charts/${chartId}/ai/latest`,
+    );
+    return res.data;
+  },
+
   analyzeSessionAi: async (sessionId: number) => {
     const res = await http.post<TrainingEventResponse>(
       `/api/reports/sessions/${sessionId}/analyze`,
@@ -100,6 +107,19 @@ export const reportApi = {
     return res.data;
   },
 
+  analyzeSessionAi: async (sessionId: number) => {
+    const res = await http.post<TrainingEventResponse>(
+      `/api/reports/sessions/${sessionId}/analyze`,
+    );
+    return res.data;
+  },
+
+  getLatestSessionAi: async (sessionId: number) => {
+    const res = await http.get<TrainingEventResponse | null>(
+      `/api/reports/sessions/${sessionId}/ai/latest`,
+    );
+    return res.data;
+  },
   analyzeSessionAi: async (sessionId: number) => {
     const res = await http.post<TrainingEventResponse>(
       `/api/reports/sessions/${sessionId}/analyze`,

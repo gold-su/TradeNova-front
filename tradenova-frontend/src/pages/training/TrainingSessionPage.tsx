@@ -25,6 +25,9 @@ export default function TrainingSessionPage() {
         loading={page.loading}
         onCreateSession={page.onCreateSession}
         onFinishSession={page.onFinishSession}
+        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
+        sessionAiLoading={page.sessionAiLoading}
+        sessionAiExists={!!page.sessionAi}
       />
 
       <TrainingCenterPanel
@@ -61,6 +64,13 @@ export default function TrainingSessionPage() {
         appendQuickPhrase={page.appendQuickPhrase}
         openBuyModal={page.openBuyModal}
         openSellModal={page.openSellModal}
+        sessionAiPayload={page.sessionAiPayload}
+        sessionAiLoading={page.sessionAiLoading}
+        sessionAiPayload={page.sessionAiPayload}
+        sessionAiLoading={page.sessionAiLoading}
+        chartAiPayload={page.chartAiPayload}
+        chartAiLoading={page.chartAiLoading}
+        onAnalyzeChartAi={page.onAnalyzeChartAi}
       />
 
       <TradeReasonModal
