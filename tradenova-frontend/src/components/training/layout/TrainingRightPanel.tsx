@@ -1,8 +1,10 @@
 import type {
+  ChartAiPayload,
   ProgressResponse,
   QuickPhraseResponse,
   ReportDocumentResponse,
   ReportDraftContent,
+  SessionAiPayload,
   TrainingChartDto,
   TrainingEventResponse,
 } from "@/types/training";
@@ -12,8 +14,6 @@ import { DraftEditor } from "@/components/training/report/DraftEditor";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
 import { QuickPhrasePanel } from "@/components/training/report/QuickPhrasePanel";
 import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
-import type { SessionAiPayload } from "@/types/training";
-import type { ChartAiPayload, SessionAiPayload } from "@/types/training";
 
 type Props = {
   activeChart: TrainingChartDto | null;
@@ -41,6 +41,16 @@ type Props = {
   chartAiLoading: boolean;
   onAnalyzeChartAi: () => void;
 };
+
+function AnalysisTypeBadge({ type }: { type: "FAST" | "DEEP" }) {
+  const label = type === "DEEP" ? "정밀 분석" : "빠른 분석";
+
+  return (
+    <span className="inline-flex items-center rounded-full border border-border/60 bg-background px-3 py-1 text-xs font-medium">
+      {label}
+    </span>
+  );
+}
 
 export function TrainingRightPanel({
   activeChart,
@@ -75,7 +85,14 @@ export function TrainingRightPanel({
 
         {sessionAiPayload && (
           <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-            <div className="mb-2 text-sm font-semibold">세션 AI 리뷰</div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold">세션 AI 리뷰</div>
+              {sessionAiLoading && (
+                <span className="text-xs text-muted-foreground">
+                  불러오는 중...
+                </span>
+              )}
+            </div>
 
             <div className="space-y-2 text-sm">
               <div>
@@ -105,18 +122,33 @@ export function TrainingRightPanel({
 
         {chartAiPayload && (
           <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold">차트 AI 리뷰</div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold">차트 AI 리뷰</div>
+                <AnalysisTypeBadge type={chartAiPayload.analysisType} />
+              </div>
+
               <button
                 onClick={onAnalyzeChartAi}
                 disabled={loading || chartAiLoading || !activeChart}
                 className="rounded-xl border border-border/60 bg-background px-3 py-1 text-xs disabled:opacity-50"
               >
-                {chartAiLoading ? "분석 중..." : "다시 보기"}
+                {chartAiLoading ? "분석 중..." : "다시 분석"}
               </button>
             </div>
 
             <div className="space-y-2 text-sm">
+              {chartAiPayload.analysisType === "FAST" ? (
+                <p className="text-xs text-muted-foreground">
+                  스냅샷이 없어 거래, 포지션, 리스크 기준의 빠른 분석이
+                  적용되었습니다.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  스냅샷 기반 정밀 분석이 적용되었습니다.
+                </p>
+              )}
+
               <div>
                 <span className="text-muted-foreground">점수 </span>
                 <span className="font-semibold">{chartAiPayload.score}</span>
@@ -136,7 +168,9 @@ export function TrainingRightPanel({
                 <div>
                   자동청산: {chartAiPayload.autoExitEnabled ? "예" : "아니오"}
                 </div>
-                <div>스냅샷 ID: {chartAiPayload.snapshotId ?? "-"}</div>
+                <div>
+                  스냅샷 반영: {chartAiPayload.hasSnapshot ? "예" : "아니오"}
+                </div>
               </div>
             </div>
           </div>

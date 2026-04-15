@@ -101,6 +101,9 @@ export function useTrainingAi(
    * 차트 AI 최신 결과 조회
    */
   const loadLatestChartAi = async (targetChartId?: number | null) => {
+    
+    console.log("analyze chartId =", chartId);
+
     const cid = targetChartId ?? chartId;
 
     if (!cid) {
@@ -139,6 +142,9 @@ export function useTrainingAi(
    * - 이미 있으면 409 대신 latest 재조회
    */
   const onAnalyzeChartAi = async () => {
+
+    console.log("analyze chartId =", chartId);
+
     if (!chartId) return;
 
     try {

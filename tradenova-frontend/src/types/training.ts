@@ -211,13 +211,15 @@ export type SessionAiPayload = {
 
 export type ChartAiPayload = {
   analysisScope: "CHART";
+  analysisType: "FAST" | "DEEP";
+  hasSnapshot: boolean;
   score: number;
   summary: string;
   generatedAt: string;
   analysisVersion: number;
   warnings: string[];
   strengths: string[];
-  snapshotId?: number;
+  snapshotId?: number | null;
   chartId?: number;
   stopLossPrice?: string | null;
   takeProfitPrice?: string | null;
