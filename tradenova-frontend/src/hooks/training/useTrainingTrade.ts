@@ -1,23 +1,21 @@
 import { useState } from "react";
 import { reportApi } from "@/api/reportApi";
 import { trainingApi } from "@/api/trainingApi";
-import type {
-  ReportDocumentResponse,
-  TradeResponse,
-  TrainingEventResponse,
-} from "@/types/training";
+import type { ReportDocumentResponse, TradeResponse } from "@/types/training";
 import type { TradeForm } from "./training.types";
-import { emptyProgress } from "./training.utils";
 
 /**
- * 훈련 화면의 "거래/거래모달/거래 후 이벤트/스냅샷" 로직을 담당하는 훅
+ * 훈련 화면의 "거래/거래모달" 로직을 담당하는 훅
  *
  * 담당 책임:
  * - BUY / SELL 모달 상태
  * - 거래 실행
  * - 거래 이벤트 저장
- * - 거래 직후 snapshot 저장
  * - SELL ALL 실행
+ *
+ * 주의:
+ * - snapshot은 자동 생성하지 않음
+ * - snapshot은 사용자가 직접 "Snapshot 저장" 버튼을 눌렀을 때만 생성
  */
 type UseTrainingTradeParams = {
   activeChartId: number | null;
@@ -36,26 +34,24 @@ export function useTrainingTrade({
   setError,
   applyTrade,
 }: UseTrainingTradeParams) {
-  // ===== 거래 모달 상태 =====
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeType, setTradeType] = useState<"BUY" | "SELL" | null>(null);
 
-  // ===== 거래 입력 폼 =====
   const [tradeForm, setTradeForm] = useState<TradeForm>({
     qty: 1,
     entryReason: "",
     riskNote: "",
   });
 
-  // ===== 로딩 =====
   const [loading, setLoading] = useState(false);
 
   /**
    * BUY / SELL 실행 후
    * - trade 응답 반영
    * - TRADE 이벤트 저장
-   * - snapshot 저장
    * - 이벤트 로그 다시 로드
+   *
+   * snapshot은 여기서 자동 저장하지 않는다.
    */
   const handleConfirmTrade = async () => {
     if (!activeChartId || !tradeType) return;
@@ -69,11 +65,11 @@ export function useTrainingTrade({
           ? await trainingApi.buy(activeChartId, { qty: tradeForm.qty })
           : await trainingApi.sell(activeChartId, { qty: tradeForm.qty });
 
-      // trade 결과를 상위 진행 상태에 반영
+      // 거래 결과를 상위 진행 상태에 반영
       applyTrade(tradeRes);
 
       // 거래 이벤트 저장
-      const event = await reportApi.createEvent(activeChartId, {
+      await reportApi.createEvent(activeChartId, {
         type: "TRADE",
         title: `${tradeType} 실행`,
         payloadJson: {
@@ -83,21 +79,6 @@ export function useTrainingTrade({
           price: tradeRes.executedPrice,
         },
       });
-
-      // 거래 직후 snapshot 저장
-      const snapshot = await reportApi.createSnapshot(activeChartId, {
-        linkedEventId: event.id,
-        contentJson: {
-          thesis: "",
-          entryReason: tradeForm.entryReason,
-          exitPlan: "",
-          riskNote: tradeForm.riskNote,
-          freeNote: "",
-          tags: [],
-        },
-      });
-
-      setSnapshots((prev) => [snapshot, ...prev]);
 
       // 모달 초기화
       setTradeModalOpen(false);
@@ -135,24 +116,18 @@ export function useTrainingTrade({
     }
   };
 
-  /**
-   * 매수 모달 열기
-   */
   const openBuyModal = () => {
     setTradeType("BUY");
     setTradeModalOpen(true);
   };
 
-  /**
-   * 매도 모달 열기
-   */
   const openSellModal = () => {
     setTradeType("SELL");
     setTradeModalOpen(true);
   };
 
   return {
-    tradeModalOpen,
+    tradeModalOpen, 
     setTradeModalOpen,
     tradeType,
     tradeForm,
