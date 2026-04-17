@@ -7,7 +7,6 @@ import axios from "axios";
  * - headers: 기본 헤더
  *
  * const로 선언해도 내부 속성은 변경 가능 (재할당만 불가)
- * 테스트
  */
 const http = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
