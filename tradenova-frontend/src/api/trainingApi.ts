@@ -85,5 +85,16 @@ export const trainingApi = {
     );
     return res.data;
   },
+
+  refreshChart: (
+    chartId: number,
+    body: {
+      refreshType: "RANDOM" | "TRAINING_SECTOR" | "EXCHANGE_SECTOR";
+      optionValue: string | null;
+    },
+  ) =>
+    http
+      .post(`/api/training/sessions/charts/${chartId}/refresh`, body)
+      .then((r) => r.data),
 };
 

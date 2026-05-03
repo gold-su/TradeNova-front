@@ -161,5 +161,6 @@ export function useTrainingSessionPage() {
     chartAiError: ai.chartAiError,
     loadLatestChartAi: ai.loadLatestChartAi,
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
+    onRefreshChart: core.onRefreshChart,
   };
 }

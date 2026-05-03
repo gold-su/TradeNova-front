@@ -322,6 +322,69 @@ export function useTrainingSessionCore() {
     }
   };
 
+  const onRefreshChart = async (chartId: number) => {
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await trainingApi.refreshChart(chartId, {
+        refreshType: "RANDOM",
+        optionValue: null,
+      });
+
+      setCharts((prev) =>
+        prev.map((c) => (c.chartIndex === res.chartIndex ? res : c)),
+      );
+      // 새 캔들 로드
+      const candles = await trainingApi.getChartCandles(res.chartId);
+
+      // 기존 chartId의 캔들 데이터는 제거하고,
+      // 새 chartId의 캔들 데이터만 다시 넣는다.
+      setCandlesByChart((prev) => {
+        const next = { ...prev };
+        delete next[chartId];
+
+        next[res.chartId] = candles;
+
+        return next;
+      });
+
+      // 기존 chartId의 progress 데이터는 제거하고,
+      // 새 chartId의 progress 상태를 초기값으로 넣는다.
+      setProgressByChart((prev) => {
+        const next = { ...prev };
+        delete next[chartId];
+
+        next[res.chartId] = {
+          chartId: res.chartId,
+          progressIndex: res.progressIndex ?? 0,
+          currentPrice: 0,
+          status: res.status,
+          cashBalance: 0,
+          positionQty: 0,
+          avgPrice: 0,
+          autoExited: false,
+          reason: null,
+        };
+
+        return next;
+      });
+
+      setActiveChartId((prev) => (prev === chartId ? res.chartId : prev));
+    } catch (e: any) {
+      console.error("[refresh] failed:", e);
+
+      setError(
+        e?.response?.data?.message ??
+          e?.message ??
+          "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /**
    * 계좌 목록을 최초 1회 불러온다.
    * active 세션이 accountId를 먼저 세팅했더라도
@@ -397,5 +460,6 @@ export function useTrainingSessionCore() {
     applyProgress,
 
     onFinishSession,
+    onRefreshChart,
   };
 }

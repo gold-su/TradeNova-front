@@ -13,6 +13,8 @@ type Props = {
   candlesByChart: Record<number, Candle[]>;
   progressByChart: Record<number, ProgressResponse>;
   onOpenSingle: () => void;
+  onRefreshChart: (chartId: number) => void;
+  refreshing: boolean;
 };
 
 export function TrainingChartGrid({
@@ -22,6 +24,8 @@ export function TrainingChartGrid({
   candlesByChart,
   progressByChart,
   onOpenSingle,
+  onRefreshChart,
+  refreshing,
 }: Props) {
   return (
     <div className="grid h-full grid-cols-2 gap-4">
@@ -36,6 +40,7 @@ export function TrainingChartGrid({
             setActiveChartId(c.chartId);
             onOpenSingle();
           }}
+          onRefresh={onRefreshChart}
         />
       ))}
     </div>

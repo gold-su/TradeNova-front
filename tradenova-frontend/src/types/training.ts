@@ -251,3 +251,19 @@ export type SessionAiPayload = {
   warnings: string[];
   strengths: string[];
 };
+
+export type ChartRefreshType = "RANDOM" | "TRAINING_SECTOR" | "EXCHANGE_SECTOR";
+
+export type TrainingSector =
+  | "SEMICONDUCTOR"
+  | "SECONDARY_BATTERY"
+  | "PLATFORM"
+  | "BIO"
+  | "FINANCE"
+  | "DEFENSE"
+  | "SHIPBUILDING";
+
+export type ChartRefreshRequest = {
+  refreshType: ChartRefreshType;
+  optionValue: string | null;
+};

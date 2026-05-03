@@ -21,13 +21,21 @@ type Props = {
   chart: TrainingChartDto | null;
   progress: ProgressResponse | null;
   candles: Candle[];
+  onRefresh: (chartId: number) => void;
+  refreshing: boolean;
 };
 
-export function TrainingChartSingle({ chart, progress, candles }: Props) {
+export function TrainingChartSingle({
+  chart,
+  progress,
+  candles,
+  onRefresh,
+  refreshing,
+}: Props) {
   if (!chart) {
     return (
       <div className="flex h-full items-center justify-center rounded-2xl border border-border/60 bg-background/20 text-sm text-muted-foreground">
-        차트를 선택해줘
+        차트를 선택하세요.
       </div>
     );
   }
@@ -44,10 +52,24 @@ export function TrainingChartSingle({ chart, progress, candles }: Props) {
             <span className="text-muted-foreground">· {chart.symbolName}</span>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={refreshing}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRefresh(chart.chartId);
+            }}
+            className="rounded-lg border border-border/60 px-3 py-2 text-xs hover:bg-background/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {refreshing ? "..." : "↻"}
+          </button>
 
-        <div className="text-right text-sm">
-          <div>idx: {progress?.progressIndex ?? "-"}</div>
-          <div>px: {n2(progress?.currentPrice)}</div>
+          <div className="text-right text-sm">
+            <div>idx: {progress?.progressIndex ?? "-"}</div>
+            <div>px: {n2(progress?.currentPrice)}</div>
+          </div>
         </div>
       </div>
 

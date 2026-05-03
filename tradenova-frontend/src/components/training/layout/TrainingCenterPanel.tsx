@@ -20,6 +20,8 @@ type Props = {
   activeProgress: ProgressResponse | null;
   visibleActiveCandles: Candle[];
   error: string | null;
+  onRefreshChart: (chartId: number) => void;
+  refreshing: boolean;
 };
 
 export function TrainingCenterPanel({
@@ -33,7 +35,9 @@ export function TrainingCenterPanel({
   activeChart,
   activeProgress,
   visibleActiveCandles,
+  onRefreshChart,
   error,
+  refreshing,
 }: Props) {
   return (
     <main className="flex-1 overflow-hidden p-4">
@@ -49,6 +53,8 @@ export function TrainingCenterPanel({
 
         {viewMode === "single" && (
           <button
+            type="button"
+            disabled={refreshing}
             onClick={() => setViewMode("grid")}
             className="rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
           >
@@ -72,12 +78,16 @@ export function TrainingCenterPanel({
             candlesByChart={candlesByChart}
             progressByChart={progressByChart}
             onOpenSingle={() => setViewMode("single")}
+            onRefreshChart={onRefreshChart}
+            refreshing={refreshing}
           />
         ) : (
           <TrainingChartSingle
             chart={activeChart}
             progress={activeProgress}
             candles={visibleActiveCandles}
+            onRefresh={onRefreshChart}
+            refreshing={refreshing}
           />
         )}
       </div>

@@ -23,6 +23,8 @@ type Props = {
   candles: Candle[];
   progress: ProgressResponse | null;
   onClick: () => void;
+  onRefresh: (chartId: number) => void;
+  refreshing: boolean;
 };
 
 export function TrainingChartTile({
@@ -31,16 +33,25 @@ export function TrainingChartTile({
   candles,
   progress,
   onClick,
+  onRefresh,
+  refreshing,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
     : candles;
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onClick();
+        }
+      }}
       className={[
-        "group relative rounded-2xl border border-border/60 bg-background/10 p-2 text-left",
+        "group relative cursor-pointer rounded-2xl border border-border/60 bg-background/10 p-2 text-left",
         active ? "ring-2 ring-primary/40" : "hover:bg-background/20",
       ].join(" ")}
     >
@@ -55,13 +66,28 @@ export function TrainingChartTile({
           </div>
         </div>
 
-        <div className="text-right text-xs text-muted-foreground">
-          <div>idx: {progress?.progressIndex ?? "-"}</div>
-          <div>
-            px:{" "}
-            <span className="text-foreground">
-              {n2(progress?.currentPrice)}
-            </span>
+        <div className="flex items-center gap-2">
+          {/* 새로고침 버튼 */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRefresh(chart.chartId);
+            }}
+            className="rounded-lg border border-border/60 px-2 py-1 text-[11px] hover:bg-background/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {refreshing ? "..." : "↻"}
+          </button>
+
+          <div className="text-right text-xs text-muted-foreground">
+            <div>idx: {progress?.progressIndex ?? "-"}</div>
+            <div>
+              px:{" "}
+              <span className="text-foreground">
+                {n2(progress?.currentPrice)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -90,6 +116,6 @@ export function TrainingChartTile({
           <div className="font-semibold">{n2(progress?.avgPrice)}</div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
