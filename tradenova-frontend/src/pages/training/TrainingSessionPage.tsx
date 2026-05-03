@@ -44,6 +44,8 @@ export default function TrainingSessionPage() {
         error={page.error}
         onRefreshChart={page.onRefreshChart}
         refreshing={page.loading}
+        refreshRequest={page.refreshRequest}
+        setRefreshRequest={page.setRefreshRequest}
       />
 
       <TrainingRightPanel

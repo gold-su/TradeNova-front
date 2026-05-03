@@ -11,6 +11,7 @@ import type {
   RiskRuleResponse,
   ActiveTrainingSessionResponse,
   SessionFinishResponse,
+  ChartRefreshRequest,
 } from "@/types/training";
 
 export const trainingApi = {

@@ -161,6 +161,10 @@ export function useTrainingSessionPage() {
     chartAiError: ai.chartAiError,
     loadLatestChartAi: ai.loadLatestChartAi,
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
+
+    // chart Refresh
     onRefreshChart: core.onRefreshChart,
+    refreshRequest: core.refreshRequest,
+    setRefreshRequest: core.setRefreshRequest,
   };
 }

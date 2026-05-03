@@ -6,6 +6,7 @@ import type {
   ProgressResponse,
   TrainingChartDto,
   TrainingStatus,
+  ChartRefreshRequest,
 } from "@/types/training";
 import type {
   CandlesMap,
@@ -57,6 +58,12 @@ export function useTrainingSessionCore() {
   const [activeSessionLoading, setActiveSessionLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 차트 새로고침 드롭다운
+  const [refreshRequest, setRefreshRequest] = useState<ChartRefreshRequest>({
+    refreshType: "RANDOM",
+    optionValue: null,
+  });
+  
   /**
    * chartIndex 순서대로 항상 정렬된 차트 목록
    * UI에서는 이 값을 기준으로 쓰는 것이 안정적이다.
@@ -328,10 +335,7 @@ export function useTrainingSessionCore() {
       setLoading(true);
       setError(null);
 
-      const res = await trainingApi.refreshChart(chartId, {
-        refreshType: "RANDOM",
-        optionValue: null,
-      });
+      const res = await trainingApi.refreshChart(chartId, refreshRequest);
 
       setCharts((prev) =>
         prev.map((c) => (c.chartIndex === res.chartIndex ? res : c)),
@@ -461,5 +465,7 @@ export function useTrainingSessionCore() {
 
     onFinishSession,
     onRefreshChart,
+    refreshRequest,
+    setRefreshRequest,
   };
 }

@@ -7,6 +7,14 @@ import type {
 import type { ViewMode } from "@/pages/training/useTrainingSessionPage";
 import { TrainingChartGrid } from "@/components/training/chart/TrainingChartGrid";
 import { TrainingChartSingle } from "@/components/training/chart/TrainingChartSingle";
+import type { ChartRefreshRequest } from "@/types/training";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -22,6 +30,8 @@ type Props = {
   error: string | null;
   onRefreshChart: (chartId: number) => void;
   refreshing: boolean;
+  refreshRequest: ChartRefreshRequest;
+  setRefreshRequest: React.Dispatch<React.SetStateAction<ChartRefreshRequest>>;
 };
 
 export function TrainingCenterPanel({
@@ -38,10 +48,12 @@ export function TrainingCenterPanel({
   onRefreshChart,
   error,
   refreshing,
+  refreshRequest,
+  setRefreshRequest,
 }: Props) {
   return (
     <main className="flex-1 overflow-hidden p-4">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground">Active Chart</div>
           <div className="text-lg font-semibold">
@@ -51,16 +63,63 @@ export function TrainingCenterPanel({
           </div>
         </div>
 
-        {viewMode === "single" && (
-          <button
-            type="button"
-            disabled={refreshing}
-            onClick={() => setViewMode("grid")}
-            className="rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
+        <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-background/30 px-3 py-2">
+          {/* 라벨 */}
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            새로고침
+          </span>
+
+          {/* 타입 선택 */}
+          <Select
+            value={refreshRequest.refreshType}
+            onValueChange={(value) => {
+              const type = value as ChartRefreshRequest["refreshType"];
+
+              setRefreshRequest({
+                refreshType: type,
+                optionValue:
+                  type === "RANDOM"
+                    ? null
+                    : (refreshRequest.optionValue ?? "SEMICONDUCTOR"),
+              });
+            }}
           >
-            Grid로 보기
-          </button>
-        )}
+            <SelectTrigger className="h-8 w-[120px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="RANDOM">전체 랜덤</SelectItem>
+              <SelectItem value="TRAINING_SECTOR">훈련 섹터</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* 옵션 선택 */}
+          <Select
+            value={refreshRequest.optionValue ?? "SEMICONDUCTOR"}
+            onValueChange={(value) =>
+              setRefreshRequest((prev) => ({
+                ...prev,
+                optionValue: value,
+              }))
+            }
+            disabled={refreshRequest.refreshType === "RANDOM"}
+          >
+            <SelectTrigger className="h-8 w-[120px] text-xs bg-background/50 border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="SEMICONDUCTOR">반도체</SelectItem>
+              <SelectItem value="SECONDARY_BATTERY">2차전지</SelectItem>
+              <SelectItem value="PLATFORM">플랫폼</SelectItem>
+              <SelectItem value="BIO">바이오</SelectItem>
+              <SelectItem value="FINANCE">금융</SelectItem>
+              <SelectItem value="DEFENSE">방산</SelectItem>
+              <SelectItem value="SHIPBUILDING">조선</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error && (
