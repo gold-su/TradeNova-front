@@ -267,3 +267,39 @@ export type ChartRefreshRequest = {
   refreshType: ChartRefreshType;
   optionValue: string | null;
 };
+
+export type MaLineSetting = {
+  period: number;
+  color: string;
+  width: number;
+};
+
+export type IndicatorSettings = {
+  volume: {
+    enabled: boolean;
+  };
+  ma: {
+    enabled: boolean;
+    lines: MaLineSetting[];
+  };
+  bollinger: {
+    enabled: boolean;
+    disabled: boolean;
+  };
+  ichimoku: {
+    enabled: boolean;
+    disabled: boolean;
+  };
+  volumeProfile: {
+    enabled: boolean;
+    disabled: boolean;
+  };
+  rsi: {
+    enabled: boolean;
+    disabled: boolean;
+  };
+  macd: {
+    enabled: boolean;
+    disabled: boolean;
+  };
+};

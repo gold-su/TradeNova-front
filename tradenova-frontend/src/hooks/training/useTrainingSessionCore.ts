@@ -7,6 +7,7 @@ import type {
   TrainingChartDto,
   TrainingStatus,
   ChartRefreshRequest,
+  IndicatorSettings,
 } from "@/types/training";
 import type {
   CandlesMap,
@@ -63,7 +64,7 @@ export function useTrainingSessionCore() {
     refreshType: "RANDOM",
     optionValue: null,
   });
-  
+
   /**
    * chartIndex 순서대로 항상 정렬된 차트 목록
    * UI에서는 이 값을 기준으로 쓰는 것이 안정적이다.
@@ -329,8 +330,55 @@ export function useTrainingSessionCore() {
     }
   };
 
-  const onRefreshChart = async (chartId: number) => {
+const DEFAULT_INDICATORS: IndicatorSettings = {
+  volume: {
+    enabled: true,
+  },
+  ma: {
+    enabled: true,
+    lines: [
+      { period: 5, color: "#facc15", width: 1 },
+      { period: 20, color: "#38bdf8", width: 1 },
+      { period: 60, color: "#a78bfa", width: 1 },
+      { period: 120, color: "#22c55e", width: 1 },
+    ],
+  },
+  bollinger: {
+    enabled: false,
+    disabled: true,
+  },
+  ichimoku: {
+    enabled: false,
+    disabled: true,
+  },
+  volumeProfile: {
+    enabled: false,
+    disabled: true,
+  },
+  rsi: {
+    enabled: false,
+    disabled: true,
+  },
+  macd: {
+    enabled: false,
+    disabled: true,
+  },
+};
 
+const [globalIndicators, setGlobalIndicators] =
+  useState<IndicatorSettings>(DEFAULT_INDICATORS);
+  // 차트별 개별 설정
+  const [chartIndicators, setChartIndicators] = useState<
+    Record<number, IndicatorSettings>
+  >({});
+
+  const getIndicatorSettings = (chartId: number | null) => {
+    if (!chartId) return globalIndicators;
+
+    return chartIndicators[chartId] ?? globalIndicators;
+  };
+
+  const onRefreshChart = async (chartId: number) => {
     try {
       setLoading(true);
       setError(null);
@@ -464,8 +512,17 @@ export function useTrainingSessionCore() {
     applyProgress,
 
     onFinishSession,
+
+    // 차트 새로고침
     onRefreshChart,
     refreshRequest,
     setRefreshRequest,
+
+    //지표
+    globalIndicators,
+    setGlobalIndicators,
+    chartIndicators,
+    setChartIndicators,
+    getIndicatorSettings,
   };
 }

@@ -5,6 +5,7 @@ import type {
   TrainingChartDto,
 } from "@/types/training";
 import { TrainingChartTile } from "./TrainingChartTile";
+import type { IndicatorSettings } from "@/types/training";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -15,6 +16,7 @@ type Props = {
   onOpenSingle: () => void;
   onRefreshChart: (chartId: number) => void;
   refreshing: boolean;
+  indicatorSettings: IndicatorSettings;
 };
 
 export function TrainingChartGrid({
@@ -26,6 +28,7 @@ export function TrainingChartGrid({
   onOpenSingle,
   onRefreshChart,
   refreshing,
+  indicatorSettings,
 }: Props) {
   return (
     <div className="grid h-full grid-cols-2 gap-4">
@@ -41,6 +44,8 @@ export function TrainingChartGrid({
             onOpenSingle();
           }}
           onRefresh={onRefreshChart}
+          refreshing={refreshing}
+          indicatorSettings={indicatorSettings}
         />
       ))}
     </div>

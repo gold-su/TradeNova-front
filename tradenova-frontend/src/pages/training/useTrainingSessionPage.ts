@@ -166,5 +166,12 @@ export function useTrainingSessionPage() {
     onRefreshChart: core.onRefreshChart,
     refreshRequest: core.refreshRequest,
     setRefreshRequest: core.setRefreshRequest,
+
+    // 지표
+    globalIndicators: core.globalIndicators,
+    setGlobalIndicators: core.setGlobalIndicators,
+    chartIndicators: core.chartIndicators,
+    setChartIndicators: core.setChartIndicators,
+    getIndicatorSettings: core.getIndicatorSettings,
   };
 }

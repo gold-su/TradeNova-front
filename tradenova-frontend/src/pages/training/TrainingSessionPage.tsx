@@ -46,6 +46,11 @@ export default function TrainingSessionPage() {
         refreshing={page.loading}
         refreshRequest={page.refreshRequest}
         setRefreshRequest={page.setRefreshRequest}
+        globalIndicators={page.globalIndicators}
+        setGlobalIndicators={page.setGlobalIndicators}
+        chartIndicators={page.chartIndicators}
+        setChartIndicators={page.setChartIndicators}
+        getIndicatorSettings={page.getIndicatorSettings}
       />
 
       <TrainingRightPanel

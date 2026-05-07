@@ -7,7 +7,7 @@ import type {
 import type { ViewMode } from "@/pages/training/useTrainingSessionPage";
 import { TrainingChartGrid } from "@/components/training/chart/TrainingChartGrid";
 import { TrainingChartSingle } from "@/components/training/chart/TrainingChartSingle";
-import type { ChartRefreshRequest } from "@/types/training";
+import type { ChartRefreshRequest, IndicatorSettings } from "@/types/training";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
+import { IndicatorDrawer } from "@/components/training/chart/IndicatorDrawer";
+
 
 type Props = {
   charts: TrainingChartDto[];
@@ -32,6 +35,13 @@ type Props = {
   refreshing: boolean;
   refreshRequest: ChartRefreshRequest;
   setRefreshRequest: React.Dispatch<React.SetStateAction<ChartRefreshRequest>>;
+  globalIndicators: IndicatorSettings;
+  setGlobalIndicators: React.Dispatch<React.SetStateAction<IndicatorSettings>>;
+  chartIndicators: Record<number, IndicatorSettings>;
+  setChartIndicators: React.Dispatch<
+    React.SetStateAction<Record<number, IndicatorSettings>>
+  >;
+  getIndicatorSettings: (chartId: number | null) => IndicatorSettings;
 };
 
 export function TrainingCenterPanel({
@@ -50,7 +60,14 @@ export function TrainingCenterPanel({
   refreshing,
   refreshRequest,
   setRefreshRequest,
+  globalIndicators,
+  setGlobalIndicators,
+  chartIndicators,
+  setChartIndicators,
+  getIndicatorSettings,
 }: Props) {
+  const [indicatorOpen, setIndicatorOpen] = useState(false);
+
   return (
     <main className="flex-1 overflow-hidden p-4">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -59,11 +76,19 @@ export function TrainingCenterPanel({
           <div className="text-lg font-semibold">
             {activeChart
               ? `${activeChart.symbolTicker} · ${activeChart.symbolName}`
-              : "차트를 선택해줘"}
+              : "차트를 선택하세요."}
           </div>
         </div>
 
         <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-background/30 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setIndicatorOpen(true)}
+            className="h-9 rounded-xl border border-border/60 bg-background/30 px-3 text-sm hover:bg-background/50"
+          >
+            보조지표
+          </button>
+
           {/* 라벨 */}
           <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             새로고침
@@ -139,6 +164,7 @@ export function TrainingCenterPanel({
             onOpenSingle={() => setViewMode("single")}
             onRefreshChart={onRefreshChart}
             refreshing={refreshing}
+            indicatorSettings={globalIndicators}
           />
         ) : (
           <TrainingChartSingle
@@ -147,9 +173,36 @@ export function TrainingCenterPanel({
             candles={visibleActiveCandles}
             onRefresh={onRefreshChart}
             refreshing={refreshing}
+            indicatorSettings={getIndicatorSettings(activeChartId)}
+            setGlobalIndicators={setGlobalIndicators}
+            setChartIndicators={setChartIndicators}
+            activeChartId={activeChartId}
           />
         )}
       </div>
+      <IndicatorDrawer
+        open={indicatorOpen}
+        onClose={() => setIndicatorOpen(false)}
+        settings={
+          viewMode === "grid"
+            ? globalIndicators
+            : getIndicatorSettings(activeChartId)
+        }
+        onChange={(next) => {
+          if (viewMode === "grid") {
+            setGlobalIndicators(next);
+            return;
+          }
+
+          if (!activeChartId) return;
+
+          setChartIndicators((prev) => ({
+            ...prev,
+            [activeChartId]: next,
+          }));
+        }}
+        modeLabel={viewMode === "grid" ? "전체 차트" : "현재 차트"}
+      />
     </main>
   );
 }

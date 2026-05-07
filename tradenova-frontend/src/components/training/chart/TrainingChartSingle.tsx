@@ -4,6 +4,7 @@ import type {
   ProgressResponse,
   TrainingChartDto,
 } from "@/types/training";
+import type { IndicatorSettings } from "@/types/training";
 
 function n(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
@@ -23,6 +24,7 @@ type Props = {
   candles: Candle[];
   onRefresh: (chartId: number) => void;
   refreshing: boolean;
+  indicatorSettings: IndicatorSettings;
 };
 
 export function TrainingChartSingle({
@@ -31,7 +33,11 @@ export function TrainingChartSingle({
   candles,
   onRefresh,
   refreshing,
+  indicatorSettings,
+  setChartIndicators,
+  activeChartId,
 }: Props) {
+
   if (!chart) {
     return (
       <div className="flex h-full items-center justify-center rounded-2xl border border-border/60 bg-background/20 text-sm text-muted-foreground">
@@ -70,32 +76,23 @@ export function TrainingChartSingle({
             <div>idx: {progress?.progressIndex ?? "-"}</div>
             <div>px: {n2(progress?.currentPrice)}</div>
           </div>
+
         </div>
       </div>
 
+
       <div className="min-h-0 flex-1">
         {candles.length > 0 ? (
-          <CandleChart candles={candles} height={520} />
+          <CandleChart
+            candles={candles}
+            height={520}
+            indicatorSettings={indicatorSettings}
+          />
         ) : (
           <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-xs text-muted-foreground">
             no data
           </div>
         )}
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Cash</div>
-          <div className="font-semibold">{n(progress?.cashBalance)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Qty</div>
-          <div className="font-semibold">{n2(progress?.positionQty)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Avg</div>
-          <div className="font-semibold">{n2(progress?.avgPrice)}</div>
-        </div>
       </div>
     </div>
   );

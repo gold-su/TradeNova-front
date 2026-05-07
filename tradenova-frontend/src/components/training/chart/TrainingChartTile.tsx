@@ -4,6 +4,7 @@ import type {
   ProgressResponse,
   TrainingChartDto,
 } from "@/types/training";
+import type { IndicatorSettings } from "@/types/training";
 
 function n(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
@@ -25,6 +26,7 @@ type Props = {
   onClick: () => void;
   onRefresh: (chartId: number) => void;
   refreshing: boolean;
+  indicatorSettings: IndicatorSettings;
 };
 
 export function TrainingChartTile({
@@ -35,6 +37,7 @@ export function TrainingChartTile({
   onClick,
   onRefresh,
   refreshing,
+  indicatorSettings,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -94,7 +97,11 @@ export function TrainingChartTile({
 
       <div className="h-[220px]">
         {visible.length > 0 ? (
-          <CandleChart candles={visible} height={220} />
+          <CandleChart
+            candles={visible}
+            height={220}
+            indicatorSettings={indicatorSettings}
+          />
         ) : (
           <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-xs text-muted-foreground">
             no data
