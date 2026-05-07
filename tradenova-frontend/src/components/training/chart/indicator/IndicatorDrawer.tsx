@@ -1,21 +1,48 @@
 import type { IndicatorSettings, MaLineSetting } from "@/types/training";
 
+type IndicatorScope = "GLOBAL" | "CHART";
+
 type Props = {
   open: boolean;
   onClose: () => void;
+
+  scope: IndicatorScope;
+  onScopeChange: (scope: IndicatorScope) => void;
+
+  activeChartLabel: string;
+  hasChartOverride: boolean;
+
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
-  modeLabel: string;
+
+  onResetChart: () => void;
+  onApplyChartToGlobal: () => void;
+
+  onResetGlobal: () => void;
+  onClearAllChartOverrides: () => void;
+
+  hasAnyChartOverride: boolean;
+  onResetGlobal: () => void;
+  onClearAllChartOverrides: () => void;
 };
 
-const disabledItems = ["볼린저밴드", "일목균형표", "매물대", "RSI", "MACD"];
+const disabledChartItems = ["볼린저밴드", "일목균형표", "매물대"];
+const disabledSubItems = ["RSI", "MACD"];
 
 export function IndicatorDrawer({
   open,
   onClose,
+  scope,
+  onScopeChange,
+  activeChartLabel,
+  hasChartOverride,
   settings,
   onChange,
-  modeLabel,
+  onResetChart,
+  onApplyChartToGlobal,
+  hasAnyChartOverride,
+  onResetGlobal,
+  onClearAllChartOverrides,
 }: Props) {
   const updateMaLine = (index: number, patch: Partial<MaLineSetting>) => {
     onChange({
@@ -60,27 +87,100 @@ export function IndicatorDrawer({
 
       <aside
         className={[
-          "fixed left-0 top-[56px] z-50 h-[calc(100vh-56px)] w-[300px]",
+          "fixed left-0 top-[56px] z-50 h-[calc(100vh-56px)] w-[320px]",
           "border-r border-border/60 bg-background/95 shadow-2xl backdrop-blur",
           "transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-            <div>
-              <div className="text-sm font-semibold">보조지표</div>
-              <div className="text-[11px] text-muted-foreground">
-                적용 범위: {modeLabel}
+          <div className="border-b border-border/60 px-4 py-3">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">보조지표</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {scope === "GLOBAL"
+                    ? "전체 차트 공통 설정"
+                    : activeChartLabel}
+                </div>
               </div>
+
+              <button
+                onClick={onClose}
+                className="rounded-lg px-2 py-1 text-sm text-muted-foreground hover:bg-background/60"
+              >
+                ×
+              </button>
             </div>
 
-            <button
-              onClick={onClose}
-              className="rounded-lg px-2 py-1 text-sm text-muted-foreground hover:bg-background/60"
-            >
-              ×
-            </button>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => onScopeChange("GLOBAL")}
+                className={[
+                  "rounded-xl border px-3 py-2 transition-colors",
+                  scope === "GLOBAL"
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border/60 bg-background/30 text-muted-foreground",
+                ].join(" ")}
+              >
+                전체 차트
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onScopeChange("CHART")}
+                className={[
+                  "rounded-xl border px-3 py-2 transition-colors",
+                  scope === "CHART"
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border/60 bg-background/30 text-muted-foreground",
+                ].join(" ")}
+              >
+                현재 차트만
+              </button>
+            </div>
+            {scope === "GLOBAL" && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={onResetGlobal}
+                  className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
+                >
+                  전체 설정 초기화
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClearAllChartOverrides}
+                  disabled={!hasAnyChartOverride}
+                  className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  모든 개별 지표 해제
+                </button>
+              </div>
+            )}
+            {scope === "CHART" && (
+              <div className="mt-2 flex gap-2">
+                {hasChartOverride && (
+                  <button
+                    type="button"
+                    onClick={onResetChart}
+                    className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
+                  >
+                    전체 설정으로 되돌리기
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={onApplyChartToGlobal}
+                  className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
+                >
+                  이 설정을 전체 적용
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -161,7 +261,7 @@ export function IndicatorDrawer({
               </div>
             )}
 
-            {disabledItems.slice(0, 3).map((name) => (
+            {disabledChartItems.map((name) => (
               <DisabledIndicatorRow key={name} label={name} />
             ))}
 
@@ -178,7 +278,7 @@ export function IndicatorDrawer({
               }
             />
 
-            {disabledItems.slice(3).map((name) => (
+            {disabledSubItems.map((name) => (
               <DisabledIndicatorRow key={name} label={name} />
             ))}
           </div>

@@ -16,8 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { IndicatorDrawer } from "@/components/training/chart/IndicatorDrawer";
-
+import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
+import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -68,6 +68,10 @@ export function TrainingCenterPanel({
 }: Props) {
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 
+  const [indicatorScope, setIndicatorScope] = useState<"GLOBAL" | "CHART">(
+    "GLOBAL",
+  );
+
   return (
     <main className="flex-1 overflow-hidden p-4">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -83,7 +87,10 @@ export function TrainingCenterPanel({
         <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-background/30 px-3 py-2">
           <button
             type="button"
-            onClick={() => setIndicatorOpen(true)}
+            onClick={() => {
+              setIndicatorScope("GLOBAL");
+              setIndicatorOpen(true);
+            }}
             className="h-9 rounded-xl border border-border/60 bg-background/30 px-3 text-sm hover:bg-background/50"
           >
             보조지표
@@ -164,7 +171,8 @@ export function TrainingCenterPanel({
             onOpenSingle={() => setViewMode("single")}
             onRefreshChart={onRefreshChart}
             refreshing={refreshing}
-            indicatorSettings={globalIndicators}
+            globalIndicators={globalIndicators}
+            chartIndicators={chartIndicators}
           />
         ) : (
           <TrainingChartSingle
@@ -183,13 +191,21 @@ export function TrainingCenterPanel({
       <IndicatorDrawer
         open={indicatorOpen}
         onClose={() => setIndicatorOpen(false)}
+        scope={indicatorScope}
+        onScopeChange={setIndicatorScope}
+        activeChartLabel={
+          activeChart
+            ? `Chart ${activeChart.chartIndex + 1} · ${activeChart.symbolName}`
+            : "현재 차트"
+        }
+        hasChartOverride={!!(activeChartId && chartIndicators[activeChartId])}
         settings={
-          viewMode === "grid"
+          indicatorScope === "GLOBAL"
             ? globalIndicators
             : getIndicatorSettings(activeChartId)
         }
         onChange={(next) => {
-          if (viewMode === "grid") {
+          if (indicatorScope === "GLOBAL") {
             setGlobalIndicators(next);
             return;
           }
@@ -201,7 +217,32 @@ export function TrainingCenterPanel({
             [activeChartId]: next,
           }));
         }}
-        modeLabel={viewMode === "grid" ? "전체 차트" : "현재 차트"}
+        onResetChart={() => {
+          if (!activeChartId) return;
+
+          setChartIndicators((prev) => {
+            const next = { ...prev };
+            delete next[activeChartId];
+            return next;
+          });
+
+          setIndicatorScope("GLOBAL");
+        }}
+        onApplyChartToGlobal={() => {
+          if (!activeChartId) return;
+
+          const current = getIndicatorSettings(activeChartId);
+
+          setGlobalIndicators(current);
+          setIndicatorScope("GLOBAL");
+        }}
+        hasAnyChartOverride={Object.keys(chartIndicators).length > 0}
+        onResetGlobal={() => {
+          setGlobalIndicators(DEFAULT_INDICATORS);
+        }}
+        onClearAllChartOverrides={() => {
+          setChartIndicators({});
+        }}
       />
     </main>
   );

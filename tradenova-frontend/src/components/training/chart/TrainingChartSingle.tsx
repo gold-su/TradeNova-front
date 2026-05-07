@@ -34,8 +34,6 @@ export function TrainingChartSingle({
   onRefresh,
   refreshing,
   indicatorSettings,
-  setChartIndicators,
-  activeChartId,
 }: Props) {
 
   if (!chart) {

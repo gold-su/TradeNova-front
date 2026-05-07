@@ -17,6 +17,8 @@ type Props = {
   onRefreshChart: (chartId: number) => void;
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
+  globalIndicators: IndicatorSettings;
+  chartIndicators: Record<number, IndicatorSettings>;
 };
 
 export function TrainingChartGrid({
@@ -29,6 +31,8 @@ export function TrainingChartGrid({
   onRefreshChart,
   refreshing,
   indicatorSettings,
+  globalIndicators,
+  chartIndicators,
 }: Props) {
   return (
     <div className="grid h-full grid-cols-2 gap-4">
@@ -45,7 +49,8 @@ export function TrainingChartGrid({
           }}
           onRefresh={onRefreshChart}
           refreshing={refreshing}
-          indicatorSettings={indicatorSettings}
+          indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
+          hasIndicatorOverride={!!chartIndicators[c.chartId]}
         />
       ))}
     </div>

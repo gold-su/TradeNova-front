@@ -27,6 +27,7 @@ type Props = {
   onRefresh: (chartId: number) => void;
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
+  hasIndicatorOverride?: boolean;
 };
 
 export function TrainingChartTile({
@@ -38,6 +39,7 @@ export function TrainingChartTile({
   onRefresh,
   refreshing,
   indicatorSettings,
+  hasIndicatorOverride,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -66,6 +68,11 @@ export function TrainingChartTile({
           <div className="text-sm font-semibold">
             {chart.symbolTicker}{" "}
             <span className="text-muted-foreground">· {chart.symbolName}</span>
+            {hasIndicatorOverride && (
+              <span className="ml-2 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] text-primary">
+                개별 지표 적용됨
+              </span>
+            )}
           </div>
         </div>
 
