@@ -75,8 +75,6 @@ export default function TrainingSessionPage() {
         openSellModal={page.openSellModal}
         sessionAiPayload={page.sessionAiPayload}
         sessionAiLoading={page.sessionAiLoading}
-        sessionAiPayload={page.sessionAiPayload}
-        sessionAiLoading={page.sessionAiLoading}
         chartAiPayload={page.chartAiPayload}
         chartAiLoading={page.chartAiLoading}
         onAnalyzeChartAi={page.onAnalyzeChartAi}

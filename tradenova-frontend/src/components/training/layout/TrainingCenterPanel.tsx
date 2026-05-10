@@ -53,7 +53,6 @@ export function TrainingCenterPanel({
   candlesByChart,
   progressByChart,
   activeChart,
-  activeProgress,
   visibleActiveCandles,
   onRefreshChart,
   error,

@@ -80,6 +80,7 @@ export function TrainingChartTile({
           {/* 새로고침 버튼 */}
           <button
             type="button"
+            disabled={refreshing}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

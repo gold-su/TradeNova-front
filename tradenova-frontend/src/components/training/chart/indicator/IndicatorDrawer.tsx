@@ -1,4 +1,10 @@
-import type { IndicatorSettings, MaLineSetting } from "@/types/training";
+import { useState } from "react";
+import type { IndicatorSettings } from "@/types/training";
+import {
+  INDICATOR_META,
+  type IndicatorKey,
+} from "@/components/training/chart/indicator/indicatorMeta";
+import { IndicatorConfigPanel } from "@/components/training/chart/indicator/IndicatorConfigPanel";
 
 type IndicatorScope = "GLOBAL" | "CHART";
 
@@ -11,23 +17,16 @@ type Props = {
 
   activeChartLabel: string;
   hasChartOverride: boolean;
+  hasAnyChartOverride: boolean;
 
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 
   onResetChart: () => void;
   onApplyChartToGlobal: () => void;
-
-  onResetGlobal: () => void;
-  onClearAllChartOverrides: () => void;
-
-  hasAnyChartOverride: boolean;
   onResetGlobal: () => void;
   onClearAllChartOverrides: () => void;
 };
-
-const disabledChartItems = ["볼린저밴드", "일목균형표", "매물대"];
-const disabledSubItems = ["RSI", "MACD"];
 
 export function IndicatorDrawer({
   open,
@@ -36,53 +35,122 @@ export function IndicatorDrawer({
   onScopeChange,
   activeChartLabel,
   hasChartOverride,
+  hasAnyChartOverride,
   settings,
   onChange,
   onResetChart,
   onApplyChartToGlobal,
-  hasAnyChartOverride,
   onResetGlobal,
   onClearAllChartOverrides,
 }: Props) {
-  const updateMaLine = (index: number, patch: Partial<MaLineSetting>) => {
-    onChange({
-      ...settings,
-      ma: {
-        ...settings.ma,
-        lines: settings.ma.lines.map((line, i) =>
-          i === index ? { ...line, ...patch } : line,
-        ),
-      },
-    });
+  const [selectedConfig, setSelectedConfig] = useState<IndicatorKey | null>(
+    null,
+  );
+
+  const getChecked = (key: IndicatorKey) => {
+    switch (key) {
+      case "ma":
+        return settings.ma.enabled;
+      case "volume":
+        return settings.volume.enabled;
+      case "bollinger":
+        return settings.bollinger.enabled;
+      case "ichimoku":
+        return settings.ichimoku.enabled;
+      case "volumeProfile":
+        return settings.volumeProfile.enabled;
+      case "rsi":
+        return settings.rsi.enabled;
+      case "macd":
+        return settings.macd.enabled;
+      default:
+        return false;
+    }
   };
 
-  const addMaLine = () => {
-    onChange({
-      ...settings,
-      ma: {
-        ...settings.ma,
-        lines: [
-          ...settings.ma.lines,
-          { period: 10, color: "#f97316", width: 1 },
-        ],
-      },
-    });
+  const toggleIndicator = (key: IndicatorKey, checked: boolean) => {
+    switch (key) {
+      case "ma":
+        onChange({
+          ...settings,
+          ma: {
+            ...settings.ma,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "volume":
+        onChange({
+          ...settings,
+          volume: {
+            ...settings.volume,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "bollinger":
+        onChange({
+          ...settings,
+          bollinger: {
+            ...settings.bollinger,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "ichimoku":
+        onChange({
+          ...settings,
+          ichimoku: {
+            ...settings.ichimoku,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "volumeProfile":
+        onChange({
+          ...settings,
+          volumeProfile: {
+            ...settings.volumeProfile,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "rsi":
+        onChange({
+          ...settings,
+          rsi: {
+            ...settings.rsi,
+            enabled: checked,
+          },
+        });
+        return;
+
+      case "macd":
+        onChange({
+          ...settings,
+          macd: {
+            ...settings.macd,
+            enabled: checked,
+          },
+        });
+        return;
+    }
   };
 
-  const removeMaLine = (index: number) => {
-    onChange({
-      ...settings,
-      ma: {
-        ...settings.ma,
-        lines: settings.ma.lines.filter((_, i) => i !== index),
-      },
-    });
+  const closeAll = () => {
+    setSelectedConfig(null);
+    onClose();
   };
 
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-black/20" onClick={closeAll} />
       )}
 
       <aside
@@ -93,7 +161,7 @@ export function IndicatorDrawer({
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
-        <div className="flex h-full flex-col">
+        <div className="relative flex h-full flex-col">
           <div className="border-b border-border/60 px-4 py-3">
             <div className="mb-3 flex items-center justify-between">
               <div>
@@ -106,7 +174,7 @@ export function IndicatorDrawer({
               </div>
 
               <button
-                onClick={onClose}
+                onClick={closeAll}
                 className="rounded-lg px-2 py-1 text-sm text-muted-foreground hover:bg-background/60"
               >
                 ×
@@ -140,6 +208,7 @@ export function IndicatorDrawer({
                 현재 차트만
               </button>
             </div>
+
             {scope === "GLOBAL" && (
               <div className="mt-2 flex gap-2">
                 <button
@@ -160,6 +229,7 @@ export function IndicatorDrawer({
                 </button>
               </div>
             )}
+
             {scope === "CHART" && (
               <div className="mt-2 flex gap-2">
                 {hasChartOverride && (
@@ -191,97 +261,45 @@ export function IndicatorDrawer({
 
             <SectionTitle>차트지표</SectionTitle>
 
-            <IndicatorRow
-              checked={settings.ma.enabled}
-              label="이동평균선"
-              onToggle={(checked) =>
-                onChange({
-                  ...settings,
-                  ma: { ...settings.ma, enabled: checked },
-                })
-              }
-            />
-
-            {settings.ma.enabled && (
-              <div className="mb-3 rounded-xl border border-border/60 bg-background/30 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    이동평균선 설정
-                  </span>
-                  <button
-                    type="button"
-                    onClick={addMaLine}
-                    className="rounded-md border border-border/60 px-2 py-1 text-[11px] hover:bg-background/60"
-                  >
-                    + 기간 추가
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {settings.ma.lines.map((line, index) => (
-                    <div
-                      key={`${line.period}-${index}`}
-                      className="grid grid-cols-[1fr_54px_42px_24px] items-center gap-2 text-xs"
-                    >
-                      <div className="text-muted-foreground">
-                        {line.period}일 선
-                      </div>
-
-                      <input
-                        type="number"
-                        min={1}
-                        value={line.period}
-                        onChange={(e) =>
-                          updateMaLine(index, {
-                            period: Number(e.target.value),
-                          })
-                        }
-                        className="h-7 rounded-md border border-border/60 bg-background px-2 text-xs outline-none"
-                      />
-
-                      <input
-                        type="color"
-                        value={line.color}
-                        onChange={(e) =>
-                          updateMaLine(index, { color: e.target.value })
-                        }
-                        className="h-7 w-10 cursor-pointer rounded border border-border/60 bg-background"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeMaLine(index)}
-                        className="text-muted-foreground hover:text-red-400"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {disabledChartItems.map((name) => (
-              <DisabledIndicatorRow key={name} label={name} />
+            {INDICATOR_META.filter((x) => x.group === "chart").map((item) => (
+              <IndicatorRow
+                key={item.key}
+                checked={getChecked(item.key)}
+                label={item.label}
+                disabled={item.disabled}
+                onToggle={(checked) => toggleIndicator(item.key, checked)}
+                onConfigClick={
+                  item.configurable && !item.disabled
+                    ? () => setSelectedConfig(item.key)
+                    : undefined
+                }
+              />
             ))}
 
             <SectionTitle>보조지표</SectionTitle>
 
-            <IndicatorRow
-              checked={settings.volume.enabled}
-              label="거래량"
-              onToggle={(checked) =>
-                onChange({
-                  ...settings,
-                  volume: { enabled: checked },
-                })
-              }
-            />
-
-            {disabledSubItems.map((name) => (
-              <DisabledIndicatorRow key={name} label={name} />
+            {INDICATOR_META.filter((x) => x.group === "sub").map((item) => (
+              <IndicatorRow
+                key={item.key}
+                checked={getChecked(item.key)}
+                label={item.label}
+                disabled={item.disabled}
+                onToggle={(checked) => toggleIndicator(item.key, checked)}
+                onConfigClick={
+                  item.configurable && !item.disabled
+                    ? () => setSelectedConfig(item.key)
+                    : undefined
+                }
+              />
             ))}
           </div>
+
+          <IndicatorConfigPanel
+            selectedKey={selectedConfig}
+            settings={settings}
+            onChange={onChange}
+            onClose={() => setSelectedConfig(null)}
+          />
         </div>
       </aside>
     </>
@@ -299,18 +317,33 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function IndicatorRow({
   checked,
   label,
+  disabled,
   onToggle,
+  onConfigClick,
 }: {
   checked: boolean;
   label: string;
+  disabled?: boolean;
   onToggle: (checked: boolean) => void;
+  onConfigClick?: () => void;
 }) {
   return (
-    <div className="mb-2 flex items-center justify-between rounded-xl px-2 py-2 hover:bg-background/40">
-      <label className="flex cursor-pointer items-center gap-3 text-sm">
+    <div
+      className={[
+        "mb-2 flex items-center justify-between rounded-xl px-2 py-2",
+        disabled ? "opacity-40" : "hover:bg-background/40",
+      ].join(" ")}
+    >
+      <label
+        className={[
+          "flex items-center gap-3 text-sm",
+          disabled ? "cursor-not-allowed" : "cursor-pointer",
+        ].join(" ")}
+      >
         <input
           type="checkbox"
           checked={checked}
+          disabled={disabled}
           onChange={(e) => onToggle(e.target.checked)}
         />
         <span>{label}</span>
@@ -318,24 +351,11 @@ function IndicatorRow({
 
       <button
         type="button"
-        className="text-muted-foreground hover:text-foreground"
+        disabled={disabled || !onConfigClick}
+        onClick={onConfigClick}
+        className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         title="설정"
       >
-        ⚙
-      </button>
-    </div>
-  );
-}
-
-function DisabledIndicatorRow({ label }: { label: string }) {
-  return (
-    <div className="mb-2 flex items-center justify-between rounded-xl px-2 py-2 opacity-40">
-      <label className="flex items-center gap-3 text-sm">
-        <input type="checkbox" disabled />
-        <span>{label}</span>
-      </label>
-
-      <button type="button" disabled className="text-muted-foreground">
         ⚙
       </button>
     </div>
