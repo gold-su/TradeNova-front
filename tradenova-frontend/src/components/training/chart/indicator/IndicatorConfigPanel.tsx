@@ -17,7 +17,7 @@ export function IndicatorConfigPanel({
   if (!selectedKey) return null;
 
   return (
-    <aside className="absolute left-[320px] top-0 z-50 h-full w-[340px] border-r border-border/60 bg-background/95 shadow-2xl backdrop-blur">
+    <aside className="absolute left-[320px] top-4 z-50 max-h-[520px] w-[340px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur">
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         <div>
           <div className="text-sm font-semibold">지표 설정</div>
@@ -35,7 +35,7 @@ export function IndicatorConfigPanel({
         </button>
       </div>
 
-      <div className="h-[calc(100%-49px)] overflow-y-auto p-4">
+      <div className="max-h-[455px] overflow-y-auto p-4">
         {selectedKey === "ma" ? (
           <MaConfig settings={settings} onChange={onChange} />
         ) : (
@@ -114,7 +114,7 @@ function MaConfig({
           {settings.ma.lines.map((line, index) => (
             <div
               key={`${line.period}-${index}`}
-              className="grid grid-cols-[52px_1fr_44px_34px] items-center gap-2 rounded-xl border border-border/40 bg-background/20 px-2 py-2 text-xs"
+              className="grid grid-cols-[36px_1fr_42px_24px] items-center gap-2 rounded-xl border border-border/40 bg-background/20 px-2 py-2 text-xs"
             >
               <span className="text-muted-foreground">MA</span>
 
@@ -125,7 +125,7 @@ function MaConfig({
                 onChange={(e) =>
                   updateLine(index, { period: Number(e.target.value) })
                 }
-                className="h-8 rounded-md border border-border/60 bg-background px-2 outline-none"
+                className="no-number-spinner h-8 min-w-0 rounded-md border border-border/60 bg-background px-2 outline-none"
               />
 
               <input
@@ -138,7 +138,7 @@ function MaConfig({
               <button
                 type="button"
                 onClick={() => removeLine(index)}
-                className="text-muted-foreground hover:text-red-400"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-background/60 hover:text-red-400"
               >
                 ×
               </button>

@@ -80,7 +80,7 @@ export function TrainingRightPanel({
 }: Props) {
   return (
     <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
-      <div className="h-full space-y-4 overflow-y-auto pr-1">
+      <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
         {sessionAiPayload && (

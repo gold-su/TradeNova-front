@@ -270,7 +270,10 @@ export function IndicatorDrawer({
                 onToggle={(checked) => toggleIndicator(item.key, checked)}
                 onConfigClick={
                   item.configurable && !item.disabled
-                    ? () => setSelectedConfig(item.key)
+                    ? () =>
+                        setSelectedConfig((prev) =>
+                          prev === item.key ? null : item.key,
+                        )
                     : undefined
                 }
               />
@@ -287,7 +290,10 @@ export function IndicatorDrawer({
                 onToggle={(checked) => toggleIndicator(item.key, checked)}
                 onConfigClick={
                   item.configurable && !item.disabled
-                    ? () => setSelectedConfig(item.key)
+                    ? () =>
+                        setSelectedConfig((prev) =>
+                          prev === item.key ? null : item.key,
+                        )
                     : undefined
                 }
               />

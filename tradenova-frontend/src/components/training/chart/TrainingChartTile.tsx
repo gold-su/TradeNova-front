@@ -116,21 +116,6 @@ export function TrainingChartTile({
           </div>
         )}
       </div>
-
-      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
-          <div className="text-muted-foreground">Cash</div>
-          <div className="font-semibold">{n(progress?.cashBalance)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
-          <div className="text-muted-foreground">Qty</div>
-          <div className="font-semibold">{n2(progress?.positionQty)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-2">
-          <div className="text-muted-foreground">Avg</div>
-          <div className="font-semibold">{n2(progress?.avgPrice)}</div>
-        </div>
-      </div>
     </div>
   );
 }

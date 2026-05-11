@@ -64,6 +64,7 @@ export function TrainingCenterPanel({
   chartIndicators,
   setChartIndicators,
   getIndicatorSettings,
+  activeProgress,
 }: Props) {
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 

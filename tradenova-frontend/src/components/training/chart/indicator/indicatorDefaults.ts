@@ -26,10 +26,10 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   },
   rsi: {
     enabled: false,
-    disabled: true,
+    disabled: false,
   },
   macd: {
     enabled: false,
-    disabled: true,
+    disabled: false,
   },
 };

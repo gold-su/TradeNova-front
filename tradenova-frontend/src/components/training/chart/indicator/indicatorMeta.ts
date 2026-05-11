@@ -55,13 +55,13 @@ export const INDICATOR_META: {
     label: "RSI",
     group: "sub",
     configurable: true,
-    disabled: true,
+    disabled: false,
   },
   {
     key: "macd",
     label: "MACD",
     group: "sub",
     configurable: true,
-    disabled: true,
+    disabled: false,
   },
 ];

@@ -49,7 +49,7 @@ export function TrainingLeftPanel({
 }: Props) {
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 p-4">
-      <div className="h-full space-y-4 overflow-y-auto pr-1">
+      <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
         <SessionInfoCard sessionId={sessionId} status={status} />
 
         <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
