@@ -8,6 +8,8 @@ type Props = {
   chart: IChartApi;
   candles: Candle[];
   period?: number;
+  upper?: number;
+  lower?: number;
 };
 
 function levelData(candles: Candle[], value: number): LineData[] {
@@ -21,7 +23,13 @@ function levelData(candles: Candle[], value: number): LineData[] {
   }));
 }
 
-export function createRsiPane({ chart, candles, period = 14 }: Props) {
+export function createRsiPane({
+  chart,
+  candles,
+  period = 14,
+  upper = 70,
+  lower = 30,
+}: Props) {
   const rsiSeries = chart.addSeries(LineSeries, {
     color: "#f97316",
     lineWidth: 1,
@@ -45,8 +53,8 @@ export function createRsiPane({ chart, candles, period = 14 }: Props) {
   });
 
   rsiSeries.setData(calculateRSI(candles, period));
-  upperLine.setData(levelData(candles, 70));
-  lowerLine.setData(levelData(candles, 30));
+  upperLine.setData(levelData(candles, upper));
+  lowerLine.setData(levelData(candles, lower));
 
   chart.priceScale("right").applyOptions({
     autoScale: false,

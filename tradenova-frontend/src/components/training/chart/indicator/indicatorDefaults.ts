@@ -27,9 +27,18 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   rsi: {
     enabled: false,
     disabled: false,
+
+    period: 14,
+
+    upper: 70,
+    lower: 30,
   },
   macd: {
     enabled: false,
     disabled: false,
+
+    fastPeriod: 12,
+    slowPeriod: 26,
+    signalPeriod: 9,
   },
 };

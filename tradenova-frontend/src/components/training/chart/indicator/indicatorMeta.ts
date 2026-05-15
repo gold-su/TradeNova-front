@@ -42,7 +42,6 @@ export const INDICATOR_META: {
     configurable: true,
     disabled: true,
   },
-
   {
     key: "volume",
     label: "거래량",

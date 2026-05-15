@@ -24,6 +24,7 @@ type Props = {
   candles: Candle[];
   progress: ProgressResponse | null;
   onClick: () => void;
+  onDoubleClick: () => void;
   onRefresh: (chartId: number) => void;
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
@@ -36,6 +37,7 @@ export function TrainingChartTile({
   candles,
   progress,
   onClick,
+  onDoubleClick,
   onRefresh,
   refreshing,
   indicatorSettings,
@@ -45,19 +47,26 @@ export function TrainingChartTile({
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
     : candles;
 
+  const subPaneCount =
+    Number(indicatorSettings.rsi.enabled) +
+    Number(indicatorSettings.macd.enabled);
+
+  const chartHeight = subPaneCount > 0 ? 320 + subPaneCount * 110 : 260;
+
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           onClick();
         }
       }}
       className={[
-        "group relative cursor-pointer rounded-2xl border border-border/60 bg-background/10 p-2 text-left",
-        active ? "ring-2 ring-primary/40" : "hover:bg-background/20",
+        "group relative flex min-h-0 cursor-pointer flex-col rounded-2xl border border-border/40 bg-background/10 p-3 text-left",
+        active ? "ring-1 ring-primary/40" : "hover:border-border/80",
       ].join(" ")}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -103,11 +112,11 @@ export function TrainingChartTile({
         </div>
       </div>
 
-      <div className="h-[220px]">
+      <div className="min-h-0 flex-1" style={{ height: chartHeight }}>
         {visible.length > 0 ? (
           <CandleChart
             candles={visible}
-            height={220}
+            height={chartHeight}
             indicatorSettings={indicatorSettings}
           />
         ) : (

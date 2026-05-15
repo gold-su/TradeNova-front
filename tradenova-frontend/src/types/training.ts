@@ -296,10 +296,19 @@ export type IndicatorSettings = {
   };
   rsi: {
     enabled: boolean;
-    disabled: boolean;
+    disabled?: boolean;
+
+    period: number;
+
+    upper: number;
+    lower: number;
   };
   macd: {
     enabled: boolean;
-    disabled: boolean;
+    disabled?: boolean;
+
+    fastPeriod: number;
+    slowPeriod: number;
+    signalPeriod: number;
   };
 };

@@ -16,7 +16,6 @@ type Props = {
   onOpenSingle: () => void;
   onRefreshChart: (chartId: number) => void;
   refreshing: boolean;
-  indicatorSettings: IndicatorSettings;
   globalIndicators: IndicatorSettings;
   chartIndicators: Record<number, IndicatorSettings>;
 };
@@ -30,29 +29,33 @@ export function TrainingChartGrid({
   onOpenSingle,
   onRefreshChart,
   refreshing,
-  indicatorSettings,
   globalIndicators,
   chartIndicators,
 }: Props) {
   return (
-    <div className="grid h-full grid-cols-2 gap-4">
-      {charts.map((c) => (
-        <TrainingChartTile
-          key={c.chartId}
-          chart={c}
-          active={activeChartId === c.chartId}
-          candles={candlesByChart[c.chartId] ?? []}
-          progress={progressByChart[c.chartId] ?? null}
-          onClick={() => {
-            setActiveChartId(c.chartId);
-            onOpenSingle();
-          }}
-          onRefresh={onRefreshChart}
-          refreshing={refreshing}
-          indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
-          hasIndicatorOverride={!!chartIndicators[c.chartId]}
-        />
-      ))}
+    <div className="thin-scrollbar h-full overflow-y-auto pr-1">
+      <div className="grid min-h-full grid-cols-2 grid-rows-2 gap-3 pb-2">
+        {charts.map((c) => (
+          <TrainingChartTile
+            key={c.chartId}
+            chart={c}
+            active={activeChartId === c.chartId}
+            candles={candlesByChart[c.chartId] ?? []}
+            progress={progressByChart[c.chartId] ?? null}
+            onClick={() => {
+              setActiveChartId(c.chartId);
+            }}
+            onDoubleClick={() => {
+              setActiveChartId(c.chartId);
+              onOpenSingle();
+            }}
+            onRefresh={onRefreshChart}
+            refreshing={refreshing}
+            indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
+            hasIndicatorOverride={!!chartIndicators[c.chartId]}
+          />
+        ))}
+      </div>
     </div>
   );
 }
