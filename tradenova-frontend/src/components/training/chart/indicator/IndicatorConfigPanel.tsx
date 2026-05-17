@@ -95,6 +95,29 @@ function MaConfig({
     });
   };
 
+  function ConfigColorRow({
+    label,
+    value,
+    onChange,
+  }: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+  }) {
+    return (
+      <label className="grid grid-cols-[90px_1fr] items-center gap-3">
+        <span className="text-muted-foreground">{label}</span>
+
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-full cursor-pointer rounded-md border border-border/60 bg-background"
+        />
+      </label>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
@@ -206,6 +229,23 @@ function RsiConfig({
             max={100}
             onChange={(value) => update({ lower: value })}
           />
+          <ConfigColorRow
+            label="RSI 색상"
+            value={settings.rsi.color}
+            onChange={(value) => update({ color: value })}
+          />
+
+          <ConfigColorRow
+            label="상단선 색상"
+            value={settings.rsi.upperColor}
+            onChange={(value) => update({ upperColor: value })}
+          />
+
+          <ConfigColorRow
+            label="하단선 색상"
+            value={settings.rsi.lowerColor}
+            onChange={(value) => update({ lowerColor: value })}
+          />
         </div>
       </div>
 
@@ -263,6 +303,29 @@ function MacdConfig({
             value={settings.macd.signalPeriod}
             min={1}
             onChange={(value) => update({ signalPeriod: value })}
+          />
+          <ConfigColorRow
+            label="MACD 색상"
+            value={settings.macd.macdColor}
+            onChange={(value) => update({ macdColor: value })}
+          />
+
+          <ConfigColorRow
+            label="Signal 색상"
+            value={settings.macd.signalColor}
+            onChange={(value) => update({ signalColor: value })}
+          />
+
+          <ConfigColorRow
+            label="양수 막대"
+            value={settings.macd.histogramUpColor}
+            onChange={(value) => update({ histogramUpColor: value })}
+          />
+
+          <ConfigColorRow
+            label="음수 막대"
+            value={settings.macd.histogramDownColor}
+            onChange={(value) => update({ histogramDownColor: value })}
           />
         </div>
       </div>

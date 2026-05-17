@@ -297,18 +297,22 @@ export type IndicatorSettings = {
   rsi: {
     enabled: boolean;
     disabled?: boolean;
-
     period: number;
-
     upper: number;
     lower: number;
+    color: string;
+    upperColor: string;
+    lowerColor: string;
   };
   macd: {
     enabled: boolean;
     disabled?: boolean;
-
     fastPeriod: number;
     slowPeriod: number;
     signalPeriod: number;
+    macdColor: string;
+    signalColor: string;
+    histogramUpColor: string;
+    histogramDownColor: string;
   };
 };

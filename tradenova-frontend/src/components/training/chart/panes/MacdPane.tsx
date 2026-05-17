@@ -5,13 +5,23 @@ import {
   type ISeriesApi,
 } from "lightweight-charts";
 
+type Props = {
+  chart: IChartApi;
+  macdColor?: string;
+  signalColor?: string;
+};
+
 export type MacdSeriesRefs = {
   histogramSeries: ISeriesApi<typeof HistogramSeries>;
   macdSeries: ISeriesApi<typeof LineSeries>;
   signalSeries: ISeriesApi<typeof LineSeries>;
 };
 
-export function createMacdSeries(chart: IChartApi): MacdSeriesRefs {
+export function createMacdSeries({
+  chart,
+  macdColor = "#f97316",
+  signalColor = "#38bdf8",
+}: Props): MacdSeriesRefs {
   const histogramSeries = chart.addSeries(HistogramSeries, {
     priceFormat: {
       type: "price",
@@ -22,14 +32,14 @@ export function createMacdSeries(chart: IChartApi): MacdSeriesRefs {
   });
 
   const macdSeries = chart.addSeries(LineSeries, {
-    color: "#f97316",
+    color: macdColor,
     lineWidth: 1,
     priceLineVisible: false,
     lastValueVisible: true,
   });
 
   const signalSeries = chart.addSeries(LineSeries, {
-    color: "#38bdf8",
+    color: signalColor,
     lineWidth: 1,
     priceLineVisible: false,
     lastValueVisible: true,

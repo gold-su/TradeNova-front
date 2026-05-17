@@ -154,7 +154,12 @@ export default function CandleChart({
       });
 
       rsiChartRef.current = rsiChart;
-      rsiSeriesRef.current = createRsiSeries(rsiChart);
+      rsiSeriesRef.current = createRsiSeries({
+        chart: rsiChart,
+        rsiColor: indicatorSettings.rsi.color,
+        upperColor: indicatorSettings.rsi.upperColor,
+        lowerColor: indicatorSettings.rsi.lowerColor,
+      });
     }
 
     if (showMacd && macdEl) {
@@ -190,7 +195,11 @@ export default function CandleChart({
       });
 
       macdChartRef.current = macdChart;
-      macdSeriesRef.current = createMacdSeries(macdChart);
+      macdSeriesRef.current = createMacdSeries({
+        chart: macdChart,
+        macdColor: indicatorSettings.macd.macdColor,
+        signalColor: indicatorSettings.macd.signalColor,
+      });
     }
 
     const syncSubPanes = () => {
@@ -333,6 +342,8 @@ export default function CandleChart({
         indicatorSettings.macd.fastPeriod,
         indicatorSettings.macd.slowPeriod,
         indicatorSettings.macd.signalPeriod,
+        indicatorSettings.macd.histogramUpColor,
+        indicatorSettings.macd.histogramDownColor,
       );
 
       macdSeriesRef.current.histogramSeries.setData(macd.histogram);

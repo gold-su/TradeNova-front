@@ -27,18 +27,23 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   rsi: {
     enabled: false,
     disabled: false,
-
     period: 14,
-
     upper: 70,
     lower: 30,
+    color: "#f97316",
+    upperColor: "rgba(239,68,68,0.45)",
+    lowerColor: "rgba(34,197,94,0.45)",
   },
+
   macd: {
     enabled: false,
     disabled: false,
-
     fastPeriod: 12,
     slowPeriod: 26,
     signalPeriod: 9,
+    macdColor: "#f97316",
+    signalColor: "#38bdf8",
+    histogramUpColor: "rgba(34,197,94,0.45)",
+    histogramDownColor: "rgba(239,68,68,0.45)",
   },
 };

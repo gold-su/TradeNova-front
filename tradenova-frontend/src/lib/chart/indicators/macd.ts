@@ -21,6 +21,8 @@ export function calculateMACD(
   fastPeriod = 12,
   slowPeriod = 26,
   signalPeriod = 9,
+  histogramUpColor = "rgba(34,197,94,0.45)",
+  histogramDownColor = "rgba(239,68,68,0.45)",
 ): {
   macdLine: LineData[];
   signalLine: LineData[];
@@ -65,7 +67,7 @@ export function calculateMACD(
     histogram.push({
       time,
       value: Number(histRaw[i].toFixed(2)),
-      color: histRaw[i] >= 0 ? "rgba(34,197,94,0.45)" : "rgba(239,68,68,0.45)",
+      color: histRaw[i] >= 0 ? histogramUpColor : histogramDownColor,
     });
   }
 
