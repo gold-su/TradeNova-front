@@ -123,14 +123,11 @@ function MaConfig({
             >
               <span className="text-muted-foreground">MA</span>
 
-              <input
-                type="number"
-                min={1}
+              <ConfigNumberInput
                 value={line.period}
-                onChange={(e) =>
-                  updateLine(index, { period: Number(e.target.value) })
-                }
-                className="no-number-spinner h-8 min-w-0 rounded-md border border-border/60 bg-background px-2 outline-none"
+                min={1}
+                onCommit={(value) => updateLine(index, { period: value })}
+                className="min-w-0"
               />
 
               <input

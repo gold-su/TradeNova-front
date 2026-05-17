@@ -2,10 +2,34 @@ import { useEffect, useMemo, useRef } from "react";
 import { createChart, type IChartApi } from "lightweight-charts";
 import type { Candle, IndicatorSettings } from "@/types/training";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
-import { createMainPricePane } from "@/components/training/chart/panes/MainPricePane";
-import { createVolumePane } from "@/components/training/chart/panes/VolumePane";
-import { createRsiPane } from "@/components/training/chart/panes/RsiPane";
-import { createMacdPane } from "@/components/training/chart/panes/MacdPane";
+
+import {
+  createMainPriceSeries,
+  syncMaSeries,
+  type MainPriceSeriesRefs,
+} from "@/components/training/chart/panes/MainPricePane";
+import {
+  createVolumeSeries,
+  type VolumeSeriesRefs,
+} from "@/components/training/chart/panes/VolumePane";
+import {
+  createRsiSeries,
+  type RsiSeriesRefs,
+} from "@/components/training/chart/panes/RsiPane";
+import {
+  createMacdSeries,
+  type MacdSeriesRefs,
+} from "@/components/training/chart/panes/MacdPane";
+
+import {
+  levelData,
+  normalizeMaLines,
+  toCandlestickData,
+  toMovingAverageData,
+  toVolumeData,
+} from "@/lib/chart/indicators/seriesData";
+import { calculateRSI } from "@/lib/chart/indicators/rsi";
+import { calculateMACD } from "@/lib/chart/indicators/macd";
 
 type Props = {
   candles: Candle[];
@@ -20,12 +44,19 @@ export default function CandleChart({
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
-
   const macdContainerRef = useRef<HTMLDivElement | null>(null);
-  const macdChartRef = useRef<IChartApi | null>(null);
 
   const mainChartRef = useRef<IChartApi | null>(null);
   const rsiChartRef = useRef<IChartApi | null>(null);
+  const macdChartRef = useRef<IChartApi | null>(null);
+
+  const mainSeriesRef = useRef<MainPriceSeriesRefs | null>(null);
+  const volumeSeriesRef = useRef<VolumeSeriesRefs | null>(null);
+  const rsiSeriesRef = useRef<RsiSeriesRefs | null>(null);
+  const macdSeriesRef = useRef<MacdSeriesRefs | null>(null);
+
+  const prevCandleLengthRef = useRef(0);
+  const initializedRef = useRef(false);
 
   const showRsi = indicatorSettings.rsi.enabled;
   const showMacd = indicatorSettings.macd.enabled;
@@ -34,16 +65,19 @@ export default function CandleChart({
   const subPaneHeight = subPaneCount > 0 ? 90 : 0;
   const totalSubHeight = subPaneHeight * subPaneCount;
   const totalGapHeight = subPaneCount > 0 ? 8 * subPaneCount : 0;
-
   const mainHeight = Math.max(120, height - totalSubHeight - totalGapHeight);
 
-  const visibleRangeRef = useRef<any>(null);
+  const maLines = useMemo(() => {
+    if (!indicatorSettings.ma.enabled) return [];
+    return normalizeMaLines(indicatorSettings.ma.lines);
+  }, [indicatorSettings.ma.enabled, indicatorSettings.ma.lines]);
 
-  const settingsKey = useMemo(
-    () => JSON.stringify(indicatorSettings),
-    [indicatorSettings],
-  );
-
+  /**
+   * 차트 생성 effect
+   * - createChart는 여기서만 실행
+   * - candles 변경으로는 재생성하지 않음
+   * - RSI/MACD 표시 여부처럼 pane 구조가 바뀔 때만 재생성
+   */
   useEffect(() => {
     const mainEl = mainContainerRef.current;
     const rsiEl = rsiContainerRef.current;
@@ -82,22 +116,10 @@ export default function CandleChart({
     });
 
     mainChartRef.current = mainChart;
-
-    createMainPricePane({
-      chart: mainChart,
-      candles,
-      indicatorSettings,
-    });
-
-    if (indicatorSettings.volume.enabled) {
-      createVolumePane({
-        chart: mainChart,
-        candles,
-      });
-    }
+    mainSeriesRef.current = createMainPriceSeries(mainChart);
 
     let rsiChart: IChartApi | null = null;
-
+    let macdChart: IChartApi | null = null;
 
     if (showRsi && rsiEl) {
       rsiChart = createChart(rsiEl, {
@@ -113,10 +135,10 @@ export default function CandleChart({
         },
         rightPriceScale: {
           borderColor: "rgba(255,255,255,0.12)",
-          autoScale: true,
+          autoScale: false,
           scaleMargins: {
-            top: 0.12,
-            bottom: 0.12,
+            top: 0.1,
+            bottom: 0.1,
           },
         },
         timeScale: {
@@ -132,35 +154,8 @@ export default function CandleChart({
       });
 
       rsiChartRef.current = rsiChart;
-
-      createRsiPane({
-        chart: rsiChart,
-        candles,
-
-        period: indicatorSettings.rsi.period,
-        upper: indicatorSettings.rsi.upper,
-        lower: indicatorSettings.rsi.lower,
-      });
-
-      const syncFromMain = () => {
-        const range = mainChart.timeScale().getVisibleLogicalRange();
-        if (range) {
-          rsiChart?.timeScale().setVisibleLogicalRange(range);
-        }
-      };
-
-      const syncFromRsi = () => {
-        const range = rsiChart?.timeScale().getVisibleLogicalRange();
-        if (range) {
-          mainChart.timeScale().setVisibleLogicalRange(range);
-        }
-      };
-
-      mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncFromMain);
-      rsiChart.timeScale().subscribeVisibleLogicalRangeChange(syncFromRsi);
+      rsiSeriesRef.current = createRsiSeries(rsiChart);
     }
-
-    let macdChart: IChartApi | null = null;
 
     if (showMacd && macdEl) {
       macdChart = createChart(macdEl, {
@@ -195,48 +190,18 @@ export default function CandleChart({
       });
 
       macdChartRef.current = macdChart;
-
-      createMacdPane({
-        chart: macdChart,
-        candles,
-        fastPeriod: indicatorSettings.macd.fastPeriod,
-        slowPeriod: indicatorSettings.macd.slowPeriod,
-        signalPeriod: indicatorSettings.macd.signalPeriod,
-      });
-
-      const syncFromMainToMacd = () => {
-        const range = mainChart.timeScale().getVisibleLogicalRange();
-        if (range) {
-          macdChart?.timeScale().setVisibleLogicalRange(range);
-        }
-      };
-
-      const syncFromMacd = () => {
-        const range = macdChart?.timeScale().getVisibleLogicalRange();
-        if (range) {
-          mainChart.timeScale().setVisibleLogicalRange(range);
-        }
-      };
-
-      mainChart
-        .timeScale()
-        .subscribeVisibleLogicalRangeChange(syncFromMainToMacd);
-      macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncFromMacd);
+      macdSeriesRef.current = createMacdSeries(macdChart);
     }
 
-    const savedRange = visibleRangeRef.current;
+    const syncSubPanes = () => {
+      const range = mainChart.timeScale().getVisibleLogicalRange();
+      if (!range) return;
 
-    requestAnimationFrame(() => {
-      if (savedRange) {
-        mainChart.timeScale().setVisibleLogicalRange(savedRange);
-        rsiChart?.timeScale().setVisibleLogicalRange(savedRange);
-        macdChart?.timeScale().setVisibleLogicalRange(savedRange);
-      } else {
-        mainChart.timeScale().fitContent();
-        rsiChart?.timeScale().fitContent();
-        macdChart?.timeScale().fitContent();
-      }
-    });
+      rsiChart?.timeScale().setVisibleLogicalRange(range);
+      macdChart?.timeScale().setVisibleLogicalRange(range);
+    };
+
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncSubPanes);
 
     const ro = new ResizeObserver(() => {
       mainChart.applyOptions({
@@ -261,6 +226,7 @@ export default function CandleChart({
 
     ro.observe(mainEl);
     if (rsiEl) ro.observe(rsiEl);
+    if (macdEl) ro.observe(macdEl);
 
     mainChart.applyOptions({
       width: mainEl.clientWidth,
@@ -282,30 +248,119 @@ export default function CandleChart({
     }
 
     return () => {
-      visibleRangeRef.current = mainChart.timeScale().getVisibleLogicalRange();
-
+      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncSubPanes);
       ro.disconnect();
 
       mainChart.remove();
       rsiChart?.remove();
+      macdChart?.remove();
 
       mainChartRef.current = null;
       rsiChartRef.current = null;
-      macdChart?.remove();
       macdChartRef.current = null;
+
+      mainSeriesRef.current = null;
+      volumeSeriesRef.current = null;
+      rsiSeriesRef.current = null;
+      macdSeriesRef.current = null;
+
+      initializedRef.current = false;
+      prevCandleLengthRef.current = 0;
     };
-  }, [
-    candles,
-    height,
-    mainHeight,
-    showRsi,
-    showMacd,
-    subPaneHeight,
-    settingsKey,
-  ]);
+  }, [height, mainHeight, showRsi, showMacd, subPaneHeight]);
+
+  /**
+   * 데이터 업데이트 effect
+   * - candles 변경 시 chart를 재생성하지 않고 setData만 실행
+   * - NEXT로 봉이 하나 늘어나면 오른쪽 끝으로 부드럽게 이동
+   */
+  useEffect(() => {
+    const mainChart = mainChartRef.current;
+    const mainSeries = mainSeriesRef.current;
+
+    if (!mainChart || !mainSeries) return;
+
+    const candleData = toCandlestickData(candles);
+    mainSeries.candleSeries.setData(candleData);
+
+    mainChart.applyOptions({
+      rightPriceScale: {
+        scaleMargins: {
+          top: 0.08,
+          bottom: indicatorSettings.volume.enabled ? 0.22 : 0.08,
+        },
+      },
+    });
+
+    if (indicatorSettings.volume.enabled) {
+      if (!volumeSeriesRef.current) {
+        volumeSeriesRef.current = createVolumeSeries(mainChart);
+      }
+
+      volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
+    } else if (volumeSeriesRef.current) {
+      mainChart.removeSeries(volumeSeriesRef.current.volumeSeries);
+      volumeSeriesRef.current = null;
+    }
+
+    syncMaSeries({
+      chart: mainChart,
+      maSeriesMap: mainSeries.maSeriesMap,
+      lines: maLines,
+    });
+
+    maLines.forEach((line) => {
+      mainSeries.maSeriesMap[line.period]?.setData(
+        toMovingAverageData(candles, line.period),
+      );
+    });
+
+    if (showRsi && rsiChartRef.current && rsiSeriesRef.current) {
+      const rsiData = calculateRSI(candles, indicatorSettings.rsi.period);
+
+      rsiSeriesRef.current.rsiSeries.setData(rsiData);
+      rsiSeriesRef.current.upperLine.setData(
+        levelData(candles, indicatorSettings.rsi.upper),
+      );
+      rsiSeriesRef.current.lowerLine.setData(
+        levelData(candles, indicatorSettings.rsi.lower),
+      );
+    }
+
+    if (showMacd && macdChartRef.current && macdSeriesRef.current) {
+      const macd = calculateMACD(
+        candles,
+        indicatorSettings.macd.fastPeriod,
+        indicatorSettings.macd.slowPeriod,
+        indicatorSettings.macd.signalPeriod,
+      );
+
+      macdSeriesRef.current.histogramSeries.setData(macd.histogram);
+      macdSeriesRef.current.macdSeries.setData(macd.macdLine);
+      macdSeriesRef.current.signalSeries.setData(macd.signalLine);
+    }
+
+    const isFirstDataLoad = !initializedRef.current;
+    const isNextCandle = candles.length > prevCandleLengthRef.current;
+
+    requestAnimationFrame(() => {
+      if (isFirstDataLoad) {
+        mainChart.timeScale().fitContent();
+        rsiChartRef.current?.timeScale().fitContent();
+        macdChartRef.current?.timeScale().fitContent();
+      } else if (isNextCandle) {
+        mainChart.timeScale().scrollToPosition(0, true);
+        rsiChartRef.current?.timeScale().scrollToPosition(0, true);
+        macdChartRef.current?.timeScale().scrollToPosition(0, true);
+      }
+    });
+
+    initializedRef.current = true;
+    prevCandleLengthRef.current = candles.length;
+  }, [candles, indicatorSettings, maLines, showRsi, showMacd]);
 
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <div className="mb-2 flex flex-wrap items-center gap-2 px-1 text-[11px] text-muted-foreground">
         {indicatorSettings.volume.enabled && <span>Volume</span>}
 
@@ -316,8 +371,19 @@ export default function CandleChart({
             </span>
           ))}
 
-        {showRsi && <span className="text-orange-400">RSI14</span>}
-        {showMacd && <span className="text-sky-400">MACD</span>}
+        {showRsi && (
+          <span className="text-orange-400">
+            RSI{indicatorSettings.rsi.period}
+          </span>
+        )}
+
+        {showMacd && (
+          <span className="text-sky-400">
+            MACD {indicatorSettings.macd.fastPeriod}{" "}
+            {indicatorSettings.macd.slowPeriod}{" "}
+            {indicatorSettings.macd.signalPeriod}
+          </span>
+        )}
       </div>
 
       <div
@@ -329,7 +395,7 @@ export default function CandleChart({
       {showRsi && (
         <div className="mt-2 rounded-xl border border-border/40 bg-background/10 p-2">
           <div className="mb-1 px-1 text-[10px] text-muted-foreground">
-            RSI 14
+            RSI {indicatorSettings.rsi.period}
           </div>
           <div
             ref={rsiContainerRef}
@@ -342,7 +408,9 @@ export default function CandleChart({
       {showMacd && (
         <div className="mt-2 rounded-xl border border-border/40 bg-background/10 p-2">
           <div className="mb-1 px-1 text-[10px] text-muted-foreground">
-            MACD 12 26 9
+            MACD {indicatorSettings.macd.fastPeriod}{" "}
+            {indicatorSettings.macd.slowPeriod}{" "}
+            {indicatorSettings.macd.signalPeriod}
           </div>
           <div
             ref={macdContainerRef}

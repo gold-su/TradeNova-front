@@ -1,77 +1,17 @@
-// 차트의 메인 가격 영역 담당. 캔들 + 이동평균선을 그림
 import {
   CandlestickSeries,
   LineSeries,
   type IChartApi,
   type ISeriesApi,
-  type CandlestickData,
-  type LineData,
 } from "lightweight-charts";
+import type { MaLineSetting } from "@/types/training";
 
-import type {
-  Candle,
-  IndicatorSettings,
-  MaLineSetting,
-} from "@/types/training";
-
-function toCandlestickData(candles: Candle[]): CandlestickData[] {
-  return candles
-    .map((x) => ({
-      time: Math.floor(x.t / 1000),
-      open: x.o,
-      high: x.h,
-      low: x.l,
-      close: x.c,
-    }))
-    .sort((a, b) => Number(a.time) - Number(b.time));
-}
-
-function toMovingAverageData(candles: Candle[], period: number): LineData[] {
-  const sorted = candles.slice().sort((a, b) => a.t - b.t);
-
-  const result: LineData[] = [];
-
-  for (let i = period - 1; i < sorted.length; i++) {
-    const window = sorted.slice(i - period + 1, i + 1);
-
-    const avg = window.reduce((sum, c) => sum + c.c, 0) / period;
-
-    result.push({
-      time: Math.floor(sorted[i].t / 1000),
-      value: avg,
-    });
-  }
-
-  return result;
-}
-
-function normalizeMaLines(lines: MaLineSetting[]): MaLineSetting[] {
-  const map = new Map<number, MaLineSetting>();
-
-  lines.forEach((line) => {
-    if (!Number.isFinite(line.period) || line.period <= 0) return;
-
-    map.set(line.period, {
-      period: line.period,
-      color: line.color || "#facc15",
-      width: line.width || 1,
-    });
-  });
-
-  return Array.from(map.values()).sort((a, b) => a.period - b.period);
-}
-
-type Props = {
-  chart: IChartApi;
-  candles: Candle[];
-  indicatorSettings: IndicatorSettings;
+export type MainPriceSeriesRefs = {
+  candleSeries: ISeriesApi<typeof CandlestickSeries>;
+  maSeriesMap: Record<number, ISeriesApi<typeof LineSeries>>;
 };
 
-export function createMainPricePane({
-  chart,
-  candles,
-  indicatorSettings,
-}: Props) {
+export function createMainPriceSeries(chart: IChartApi): MainPriceSeriesRefs {
   const candleSeries = chart.addSeries(CandlestickSeries, {
     upColor: "#22c55e",
     downColor: "#ef4444",
@@ -81,24 +21,45 @@ export function createMainPricePane({
     wickDownColor: "#ef4444",
   });
 
-  candleSeries.setData(toCandlestickData(candles));
-
-  const maLines = indicatorSettings.ma.enabled
-    ? normalizeMaLines(indicatorSettings.ma.lines)
-    : [];
-
-  maLines.forEach((line) => {
-    const maSeries = chart.addSeries(LineSeries, {
-      color: line.color,
-      lineWidth: line.width as 1 | 2 | 3 | 4,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-
-    maSeries.setData(toMovingAverageData(candles, line.period));
-  });
-
   return {
     candleSeries,
+    maSeriesMap: {},
   };
+}
+
+export function syncMaSeries({
+  chart,
+  maSeriesMap,
+  lines,
+}: {
+  chart: IChartApi;
+  maSeriesMap: Record<number, ISeriesApi<typeof LineSeries>>;
+  lines: MaLineSetting[];
+}) {
+  const currentPeriods = new Set(lines.map((line) => line.period));
+
+  Object.keys(maSeriesMap).forEach((key) => {
+    const period = Number(key);
+
+    if (!currentPeriods.has(period)) {
+      chart.removeSeries(maSeriesMap[period]);
+      delete maSeriesMap[period];
+    }
+  });
+
+  lines.forEach((line) => {
+    if (!maSeriesMap[line.period]) {
+      maSeriesMap[line.period] = chart.addSeries(LineSeries, {
+        color: line.color,
+        lineWidth: line.width as 1 | 2 | 3 | 4,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+    }
+
+    maSeriesMap[line.period].applyOptions({
+      color: line.color,
+      lineWidth: line.width as 1 | 2 | 3 | 4,
+    });
+  });
 }
