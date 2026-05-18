@@ -47,6 +47,9 @@ export function IndicatorDrawer({
     null,
   );
 
+  //검색
+  const [keyword, setKeyword] = useState("");
+
   const getChecked = (key: IndicatorKey) => {
     switch (key) {
       case "ma":
@@ -147,6 +150,18 @@ export function IndicatorDrawer({
     onClose();
   };
 
+  const normalizedKeyword = keyword.trim().toLowerCase();
+
+  const chartIndicators = INDICATOR_META.filter(
+    (x) =>
+      x.group === "chart" && x.label.toLowerCase().includes(normalizedKeyword),
+  );
+
+  const subIndicators = INDICATOR_META.filter(
+    (x) =>
+      x.group === "sub" && x.label.toLowerCase().includes(normalizedKeyword),
+  );
+
   return (
     <>
       {open && (
@@ -205,7 +220,7 @@ export function IndicatorDrawer({
                     : "border-border/60 bg-background/30 text-muted-foreground",
                 ].join(" ")}
               >
-                현재 차트만
+                선택 차트만
               </button>
             </div>
 
@@ -254,50 +269,76 @@ export function IndicatorDrawer({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            <input
-              placeholder="지표명 검색"
-              className="mb-4 h-9 w-full rounded-xl border border-border/60 bg-background px-3 text-sm outline-none"
-            />
+            <div className="relative mb-4">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                🔍
+              </span>
+
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="지표명 검색"
+                className="h-10 w-full rounded-xl border border-border/60 bg-background px-9 text-sm outline-none focus:border-primary/50"
+              />
+
+              {keyword && (
+                <button
+                  type="button"
+                  onClick={() => setKeyword("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  ×
+                </button>
+              )}
+            </div>
 
             <SectionTitle>차트지표</SectionTitle>
 
-            {INDICATOR_META.filter((x) => x.group === "chart").map((item) => (
-              <IndicatorRow
-                key={item.key}
-                checked={getChecked(item.key)}
-                label={item.label}
-                disabled={item.disabled}
-                onToggle={(checked) => toggleIndicator(item.key, checked)}
-                onConfigClick={
-                  item.configurable && !item.disabled
-                    ? () =>
-                        setSelectedConfig((prev) =>
-                          prev === item.key ? null : item.key,
-                        )
-                    : undefined
-                }
-              />
-            ))}
+            {chartIndicators.length > 0 ? (
+              chartIndicators.map((item) => (
+                <IndicatorRow
+                  key={item.key}
+                  checked={getChecked(item.key)}
+                  label={item.label}
+                  disabled={item.disabled}
+                  onToggle={(checked) => toggleIndicator(item.key, checked)}
+                  onConfigClick={
+                    item.configurable && !item.disabled
+                      ? () =>
+                          setSelectedConfig((prev) =>
+                            prev === item.key ? null : item.key,
+                          )
+                      : undefined
+                  }
+                />
+              ))
+            ) : (
+              <EmptySearchResult />
+            )}
 
             <SectionTitle>보조지표</SectionTitle>
 
-            {INDICATOR_META.filter((x) => x.group === "sub").map((item) => (
-              <IndicatorRow
-                key={item.key}
-                checked={getChecked(item.key)}
-                label={item.label}
-                disabled={item.disabled}
-                onToggle={(checked) => toggleIndicator(item.key, checked)}
-                onConfigClick={
-                  item.configurable && !item.disabled
-                    ? () =>
-                        setSelectedConfig((prev) =>
-                          prev === item.key ? null : item.key,
-                        )
-                    : undefined
-                }
-              />
-            ))}
+            {subIndicators.length > 0 ? (
+              subIndicators.map((item) => (
+                <IndicatorRow
+                  key={item.key}
+                  checked={getChecked(item.key)}
+                  label={item.label}
+                  disabled={item.disabled}
+                  onToggle={(checked) => toggleIndicator(item.key, checked)}
+                  onConfigClick={
+                    item.configurable && !item.disabled
+                      ? () =>
+                          setSelectedConfig((prev) =>
+                            prev === item.key ? null : item.key,
+                          )
+                      : undefined
+                  }
+                />
+              ))
+            ) : (
+              <EmptySearchResult />
+            )}
           </div>
 
           <IndicatorConfigPanel
@@ -316,6 +357,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="mb-2 mt-4 border-b border-border/60 pb-2 text-xs text-muted-foreground">
       {children}
+    </div>
+  );
+}
+
+function EmptySearchResult() {
+  return (
+    <div className="flex h-[88px] items-center justify-center text-sm text-muted-foreground">
+      검색결과가 없습니다
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import type { IndicatorSettings, MaLineSetting } from "@/types/training";
 import type { IndicatorKey } from "./indicatorMeta";
 import { ConfigNumberInput } from "./ConfigNumberInput";
+import { DEFAULT_INDICATORS } from "./indicatorDefaults";
+import { IndicatorSectionHeader } from "./IndicatorSectionHeader";
 
 type Props = {
   selectedKey: IndicatorKey | null;
@@ -95,40 +97,24 @@ function MaConfig({
     });
   };
 
-  function ConfigColorRow({
-    label,
-    value,
-    onChange,
-  }: {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-  }) {
-    return (
-      <label className="grid grid-cols-[90px_1fr] items-center gap-3">
-        <span className="text-muted-foreground">{label}</span>
-
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full cursor-pointer rounded-md border border-border/60 bg-background"
-        />
-      </label>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold">이동평균선</div>
-            <div className="text-[11px] text-muted-foreground">
-              기간, 색상, 선 굵기를 설정합니다.
-            </div>
-          </div>
+        <IndicatorSectionHeader
+          title="이동평균선"
+          description="기간, 색상, 선 굵기를 설정합니다."
+          onReset={() =>
+            onChange({
+              ...settings,
+              ma: {
+                ...DEFAULT_INDICATORS.ma,
+                enabled: settings.ma.enabled,
+              },
+            })
+          }
+        />
 
+        <div className="mb-3 flex justify-end">
           <button
             type="button"
             onClick={addLine}
@@ -199,12 +185,19 @@ function RsiConfig({
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <div className="mb-3">
-          <div className="text-sm font-semibold">RSI</div>
-          <div className="text-[11px] text-muted-foreground">
-            기간과 과매수/과매도 기준선을 설정합니다.
-          </div>
-        </div>
+        <IndicatorSectionHeader
+          title="RSI"
+          description="기간과 과매수/과매도 기준선을 설정합니다."
+          onReset={() =>
+            onChange({
+              ...settings,
+              rsi: {
+                ...DEFAULT_INDICATORS.rsi,
+                enabled: settings.rsi.enabled,
+              },
+            })
+          }
+        />
 
         <div className="space-y-3 text-xs">
           <ConfigNumberRow
@@ -229,6 +222,7 @@ function RsiConfig({
             max={100}
             onChange={(value) => update({ lower: value })}
           />
+
           <ConfigColorRow
             label="RSI 색상"
             value={settings.rsi.color}
@@ -276,12 +270,19 @@ function MacdConfig({
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <div className="mb-3">
-          <div className="text-sm font-semibold">MACD</div>
-          <div className="text-[11px] text-muted-foreground">
-            단기 EMA, 장기 EMA, 시그널 기간을 설정합니다.
-          </div>
-        </div>
+        <IndicatorSectionHeader
+          title="MACD"
+          description="단기 EMA, 장기 EMA, 시그널 기간을 설정합니다."
+          onReset={() =>
+            onChange({
+              ...settings,
+              macd: {
+                ...DEFAULT_INDICATORS.macd,
+                enabled: settings.macd.enabled,
+              },
+            })
+          }
+        />
 
         <div className="space-y-3 text-xs">
           <ConfigNumberRow
@@ -304,6 +305,7 @@ function MacdConfig({
             min={1}
             onChange={(value) => update({ signalPeriod: value })}
           />
+
           <ConfigColorRow
             label="MACD 색상"
             value={settings.macd.macdColor}
@@ -361,5 +363,30 @@ function ConfigNumberRow({
         onCommit={onChange}
       />
     </label>
+  );
+}
+
+function ConfigColorRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[90px_1fr] items-center gap-3">
+      <span className="text-muted-foreground text-xs">{label}</span>
+
+      <div className="flex justify-end">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-12 cursor-pointer rounded-md border border-border/60 bg-background p-1"
+        />
+      </div>
+    </div>
   );
 }

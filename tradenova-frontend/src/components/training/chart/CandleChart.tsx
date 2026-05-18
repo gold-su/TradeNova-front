@@ -325,6 +325,19 @@ export default function CandleChart({
     });
 
     if (showRsi && rsiChartRef.current && rsiSeriesRef.current) {
+      
+      rsiSeriesRef.current.rsiSeries.applyOptions({
+        color: indicatorSettings.rsi.color,
+      });
+
+      rsiSeriesRef.current.upperLine.applyOptions({
+        color: indicatorSettings.rsi.upperColor,
+      });
+
+      rsiSeriesRef.current.lowerLine.applyOptions({
+        color: indicatorSettings.rsi.lowerColor,
+      });
+      
       const rsiData = calculateRSI(candles, indicatorSettings.rsi.period);
 
       rsiSeriesRef.current.rsiSeries.setData(rsiData);
@@ -337,6 +350,15 @@ export default function CandleChart({
     }
 
     if (showMacd && macdChartRef.current && macdSeriesRef.current) {
+      
+      macdSeriesRef.current.macdSeries.applyOptions({
+        color: indicatorSettings.macd.macdColor,
+      });
+
+      macdSeriesRef.current.signalSeries.applyOptions({
+        color: indicatorSettings.macd.signalColor,
+      });
+      
       const macd = calculateMACD(
         candles,
         indicatorSettings.macd.fastPeriod,
