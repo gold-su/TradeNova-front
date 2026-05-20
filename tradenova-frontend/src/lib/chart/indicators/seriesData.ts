@@ -30,13 +30,39 @@ export function toVolumeData(candles: Candle[]): HistogramData[] {
 export function toMovingAverageData(
   candles: Candle[],
   period: number,
+  type: "SMA" | "EMA" | "WMA" = "SMA",
 ): LineData[] {
   const sorted = candles.slice().sort((a, b) => a.t - b.t);
   const result: LineData[] = [];
 
+  if (type === "EMA") {
+    const k = 2 / (period + 1);
+    let ema: number | null = null;
+
+    sorted.forEach((c, i) => {
+      if (i < period - 1) return;
+
+      if (ema === null) {
+        const first = sorted.slice(i - period + 1, i + 1);
+        ema = first.reduce((sum, x) => sum + x.c, 0) / period;
+      } else {
+        ema = c.c * k + ema * (1 - k);
+      }
+
+      result.push({ time: Math.floor(c.t / 1000), value: ema });
+    });
+
+    return result;
+  }
+
   for (let i = period - 1; i < sorted.length; i++) {
     const window = sorted.slice(i - period + 1, i + 1);
-    const avg = window.reduce((sum, c) => sum + c.c, 0) / period;
+
+    const avg =
+      type === "WMA"
+        ? window.reduce((sum, c, idx) => sum + c.c * (idx + 1), 0) /
+          ((period * (period + 1)) / 2)
+        : window.reduce((sum, c) => sum + c.c, 0) / period;
 
     if (!Number.isFinite(avg)) continue;
 

@@ -268,6 +268,8 @@ export type ChartRefreshRequest = {
   optionValue: string | null;
 };
 
+export type MaType = "SMA" | "WMA" | "EMA";
+
 export type MaLineSetting = {
   period: number;
   color: string;
@@ -280,6 +282,7 @@ export type IndicatorSettings = {
   };
   ma: {
     enabled: boolean;
+    type: MaType;
     lines: MaLineSetting[];
   };
   bollinger: {

@@ -320,7 +320,7 @@ export default function CandleChart({
 
     maLines.forEach((line) => {
       mainSeries.maSeriesMap[line.period]?.setData(
-        toMovingAverageData(candles, line.period),
+        toMovingAverageData(candles, line.period, indicatorSettings.ma.type),
       );
     });
 
@@ -398,11 +398,21 @@ export default function CandleChart({
         {indicatorSettings.volume.enabled && <span>Volume</span>}
 
         {indicatorSettings.ma.enabled &&
-          indicatorSettings.ma.lines.map((line) => (
-            <span key={line.period} style={{ color: line.color }}>
-              MA{line.period}
-            </span>
-          ))}
+          indicatorSettings.ma.lines.map((line) => {
+            const prefix =
+              indicatorSettings.ma.type === "EMA"
+                ? "EMA"
+                : indicatorSettings.ma.type === "WMA"
+                  ? "WMA"
+                  : "MA";
+
+            return (
+              <span key={line.period} style={{ color: line.color }}>
+                {prefix}
+                {line.period}
+              </span>
+            );
+          })}
 
         {showRsi && (
           <span className="text-orange-400">

@@ -3,6 +3,8 @@ import type { IndicatorKey } from "./indicatorMeta";
 import { ConfigNumberInput } from "./ConfigNumberInput";
 import { DEFAULT_INDICATORS } from "./indicatorDefaults";
 import { IndicatorSectionHeader } from "./IndicatorSectionHeader";
+import { useState } from "react";
+import { IndicatorConfigTabs } from "./IndicatorConfigTabs";
 
 type Props = {
   selectedKey: IndicatorKey | null;
@@ -62,6 +64,8 @@ function MaConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const [tab, setTab] = useState<"variables" | "style">("variables");
+
   const updateLine = (index: number, patch: Partial<MaLineSetting>) => {
     onChange({
       ...settings,
@@ -99,65 +103,160 @@ function MaConfig({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <IndicatorSectionHeader
-          title="이동평균선"
-          description="기간, 색상, 선 굵기를 설정합니다."
-          onReset={() =>
-            onChange({
-              ...settings,
-              ma: {
-                ...DEFAULT_INDICATORS.ma,
-                enabled: settings.ma.enabled,
-              },
-            })
-          }
-        />
+      <div className="rounded-2xl border border-border/30 bg-background/20 p-3">
+        <div className="mb-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-sm font-semibold">이동평균선</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                기간, 색상, 선 굵기를 설정합니다.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mb-4">
+          <div className="mb-2 text-xs font-medium text-foreground/80">
+            가중치 선택
+          </div>
 
-        <div className="mb-3 flex justify-end">
+          <div className="grid grid-cols-3 gap-1.5 pb-1">
+            {[
+              { value: "SMA", label: "단순" },
+              { value: "WMA", label: "가중" },
+              { value: "EMA", label: "지수" },
+            ].map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...settings,
+                    ma: {
+                      ...settings.ma,
+                      type: item.value as IndicatorSettings["ma"]["type"],
+                    },
+                  })
+                }
+                className={[
+                  "rounded-lg border px-2 py-1.5 text-[11px] transition",
+                  settings.ma.type === item.value
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border/50 bg-background/20 text-muted-foreground hover:bg-background/50",
+                ].join(" ")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mb-3 flex items-center justify-between border-b border-border/30">
+          <IndicatorConfigTabs value={tab} onChange={setTab} />
+
           <button
             type="button"
-            onClick={addLine}
-            className="rounded-lg border border-border/60 px-2 py-1 text-xs hover:bg-background/50"
+            onClick={() =>
+              onChange({
+                ...settings,
+                ma: {
+                  ...DEFAULT_INDICATORS.ma,
+                  enabled: settings.ma.enabled,
+                },
+              })
+            }
+            className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
           >
-            + 추가
+            초기화 ↻
           </button>
         </div>
 
-        <div className="space-y-2">
-          {settings.ma.lines.map((line, index) => (
-            <div
-              key={`${line.period}-${index}`}
-              className="grid grid-cols-[36px_1fr_42px_24px] items-center gap-2 rounded-xl border border-border/40 bg-background/20 px-2 py-2 text-xs"
-            >
-              <span className="text-muted-foreground">MA</span>
-
-              <ConfigNumberInput
-                value={line.period}
-                min={1}
-                onCommit={(value) => updateLine(index, { period: value })}
-                className="min-w-0"
-              />
-
-              <input
-                type="color"
-                value={line.color}
-                onChange={(e) => updateLine(index, { color: e.target.value })}
-                className="h-8 w-10 cursor-pointer rounded border border-border/60 bg-background"
-              />
-
+        {tab === "variables" ? (
+          <>
+            <div className="mb-3 flex justify-end">
               <button
                 type="button"
-                onClick={() => removeLine(index)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-background/60 hover:text-red-400"
+                onClick={addLine}
+                className="rounded-lg border border-border/30 px-2 py-1 text-xs hover:bg-background/50"
               >
-                ×
+                + 추가
               </button>
             </div>
-          ))}
-        </div>
-      </div>
 
+            <div className="space-y-1.5">
+              {settings.ma.lines.map((line, index) => (
+                <div
+                  key={`${line.period}-${index}`}
+                  className="grid grid-cols-[64px_1fr_28px] items-center gap-2 rounded-lg border border-border/20 bg-background/5 px-2 py-1.5 text-xs"
+                >
+                  <span className="text-sm text-foreground/85">
+                    {line.period}일 선
+                  </span>
+
+                  <ConfigNumberInput
+                    value={line.period}
+                    min={1}
+                    onCommit={(value) => updateLine(index, { period: value })}
+                    className="min-w-0"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeLine(index)}
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-background/60 hover:text-red-400"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-1.5">
+            {settings.ma.lines.map((line, index) => (
+              <div
+                key={`${line.period}-${index}`}
+                className="grid grid-cols-[58px_132px_62px] items-center gap-2 rounded-lg border border-border/20 bg-background/10 px-2 py-1.5 text-xs"
+              >
+                <span className="text-sm font-medium text-foreground/85">
+                  MA{line.period}
+                </span>
+
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className="text-[11px] text-muted-foreground/55">
+                    굵기
+                  </span>
+
+                  <ConfigNumberInput
+                    value={line.width}
+                    min={1}
+                    max={4}
+                    size="compact"
+                    onCommit={(value) => updateLine(index, { width: value })}
+                  />
+
+                  <span className="text-[11px] text-muted-foreground/55">
+                    pt
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className="text-[11px] text-muted-foreground/55">
+                    색상
+                  </span>
+
+                  <input
+                    type="color"
+                    value={line.color}
+                    onChange={(e) =>
+                      updateLine(index, { color: e.target.value })
+                    }
+                    className="h-8 w-8 cursor-pointer rounded-md border border-border/50 bg-background p-0.5"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
         현재 차트 봉 개수보다 큰 기간은 선이 표시되지 않을 수 있습니다.
       </div>
@@ -172,6 +271,8 @@ function RsiConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const [tab, setTab] = useState<"variables" | "style">("variables");
+
   const update = (patch: Partial<IndicatorSettings["rsi"]>) => {
     onChange({
       ...settings,
@@ -184,63 +285,83 @@ function RsiConfig({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <IndicatorSectionHeader
-          title="RSI"
-          description="기간과 과매수/과매도 기준선을 설정합니다."
-          onReset={() =>
-            onChange({
-              ...settings,
-              rsi: {
-                ...DEFAULT_INDICATORS.rsi,
-                enabled: settings.rsi.enabled,
-              },
-            })
-          }
-        />
-
-        <div className="space-y-3 text-xs">
-          <ConfigNumberRow
-            label="기간"
-            value={settings.rsi.period}
-            min={1}
-            onChange={(value) => update({ period: value })}
-          />
-
-          <ConfigNumberRow
-            label="과매수선"
-            value={settings.rsi.upper}
-            min={1}
-            max={100}
-            onChange={(value) => update({ upper: value })}
-          />
-
-          <ConfigNumberRow
-            label="과매도선"
-            value={settings.rsi.lower}
-            min={1}
-            max={100}
-            onChange={(value) => update({ lower: value })}
-          />
-
-          <ConfigColorRow
-            label="RSI 색상"
-            value={settings.rsi.color}
-            onChange={(value) => update({ color: value })}
-          />
-
-          <ConfigColorRow
-            label="상단선 색상"
-            value={settings.rsi.upperColor}
-            onChange={(value) => update({ upperColor: value })}
-          />
-
-          <ConfigColorRow
-            label="하단선 색상"
-            value={settings.rsi.lowerColor}
-            onChange={(value) => update({ lowerColor: value })}
-          />
+      <div className="rounded-2xl border border-border/60 bg-background/20 p-3">
+        <div className="mb-3">
+          <div className="text-sm font-semibold">RSI</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            기간과 과매수/과매도 기준선을 설정합니다.
+          </div>
         </div>
+
+        <div className="mb-3 flex items-center justify-between border-b border-border/30">
+          <IndicatorConfigTabs value={tab} onChange={setTab} />
+
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...settings,
+                rsi: {
+                  ...DEFAULT_INDICATORS.rsi,
+                  enabled: settings.rsi.enabled,
+                },
+              })
+            }
+            className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
+          >
+            초기화 ↻
+          </button>
+        </div>
+
+        {tab === "variables" ? (
+          <div className="space-y-3 text-xs">
+            <ConfigNumberRow
+              label="기간"
+              value={settings.rsi.period}
+              min={1}
+              onChange={(value) => update({ period: value })}
+            />
+
+            <ConfigNumberRow
+              label="과매수선"
+              value={settings.rsi.upper}
+              min={1}
+              max={100}
+              onChange={(value) => update({ upper: value })}
+            />
+
+            <ConfigNumberRow
+              label="과매도선"
+              value={settings.rsi.lower}
+              min={1}
+              max={100}
+              onChange={(value) => update({ lower: value })}
+            />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <StyleColorRow
+              label="RSI"
+              colorLabel="색상"
+              value={settings.rsi.color}
+              onChange={(value) => update({ color: value })}
+            />
+
+            <StyleColorRow
+              label="상단선"
+              colorLabel="색상"
+              value={settings.rsi.upperColor}
+              onChange={(value) => update({ upperColor: value })}
+            />
+
+            <StyleColorRow
+              label="하단선"
+              colorLabel="색상"
+              value={settings.rsi.lowerColor}
+              onChange={(value) => update({ lowerColor: value })}
+            />
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
@@ -257,6 +378,8 @@ function MacdConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const [tab, setTab] = useState<"variables" | "style">("variables");
+
   const update = (patch: Partial<IndicatorSettings["macd"]>) => {
     onChange({
       ...settings,
@@ -269,67 +392,88 @@ function MacdConfig({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-        <IndicatorSectionHeader
-          title="MACD"
-          description="단기 EMA, 장기 EMA, 시그널 기간을 설정합니다."
-          onReset={() =>
-            onChange({
-              ...settings,
-              macd: {
-                ...DEFAULT_INDICATORS.macd,
-                enabled: settings.macd.enabled,
-              },
-            })
-          }
-        />
-
-        <div className="space-y-3 text-xs">
-          <ConfigNumberRow
-            label="Fast EMA"
-            value={settings.macd.fastPeriod}
-            min={1}
-            onChange={(value) => update({ fastPeriod: value })}
-          />
-
-          <ConfigNumberRow
-            label="Slow EMA"
-            value={settings.macd.slowPeriod}
-            min={1}
-            onChange={(value) => update({ slowPeriod: value })}
-          />
-
-          <ConfigNumberRow
-            label="Signal"
-            value={settings.macd.signalPeriod}
-            min={1}
-            onChange={(value) => update({ signalPeriod: value })}
-          />
-
-          <ConfigColorRow
-            label="MACD 색상"
-            value={settings.macd.macdColor}
-            onChange={(value) => update({ macdColor: value })}
-          />
-
-          <ConfigColorRow
-            label="Signal 색상"
-            value={settings.macd.signalColor}
-            onChange={(value) => update({ signalColor: value })}
-          />
-
-          <ConfigColorRow
-            label="양수 막대"
-            value={settings.macd.histogramUpColor}
-            onChange={(value) => update({ histogramUpColor: value })}
-          />
-
-          <ConfigColorRow
-            label="음수 막대"
-            value={settings.macd.histogramDownColor}
-            onChange={(value) => update({ histogramDownColor: value })}
-          />
+      <div className="rounded-2xl border border-border/60 bg-background/20 p-3">
+        <div className="mb-3">
+          <div className="text-sm font-semibold">MACD</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            단기 EMA, 장기 EMA, 시그널 기간을 설정합니다.
+          </div>
         </div>
+
+        <div className="mb-3 flex items-center justify-between border-b border-border/30">
+          <IndicatorConfigTabs value={tab} onChange={setTab} />
+
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...settings,
+                macd: {
+                  ...DEFAULT_INDICATORS.macd,
+                  enabled: settings.macd.enabled,
+                },
+              })
+            }
+            className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
+          >
+            초기화 ↻
+          </button>
+        </div>
+
+        {tab === "variables" ? (
+          <div className="space-y-3 text-xs">
+            <ConfigNumberRow
+              label="Fast EMA"
+              value={settings.macd.fastPeriod}
+              min={1}
+              onChange={(value) => update({ fastPeriod: value })}
+            />
+
+            <ConfigNumberRow
+              label="Slow EMA"
+              value={settings.macd.slowPeriod}
+              min={1}
+              onChange={(value) => update({ slowPeriod: value })}
+            />
+
+            <ConfigNumberRow
+              label="Signal"
+              value={settings.macd.signalPeriod}
+              min={1}
+              onChange={(value) => update({ signalPeriod: value })}
+            />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <StyleColorRow
+              label="MACD"
+              colorLabel="색상"
+              value={settings.macd.macdColor}
+              onChange={(value) => update({ macdColor: value })}
+            />
+
+            <StyleColorRow
+              label="Signal"
+              colorLabel="색상"
+              value={settings.macd.signalColor}
+              onChange={(value) => update({ signalColor: value })}
+            />
+
+            <StyleColorRow
+              label="양수 막대"
+              colorLabel="색상"
+              value={settings.macd.histogramUpColor}
+              onChange={(value) => update({ histogramUpColor: value })}
+            />
+
+            <StyleColorRow
+              label="음수 막대"
+              colorLabel="색상"
+              value={settings.macd.histogramDownColor}
+              onChange={(value) => update({ histogramDownColor: value })}
+            />
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
@@ -366,27 +510,31 @@ function ConfigNumberRow({
   );
 }
 
-function ConfigColorRow({
+function StyleColorRow({
   label,
+  colorLabel = "색상",
   value,
   onChange,
 }: {
   label: string;
+  colorLabel?: string;
   value: string;
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-[90px_1fr] items-center gap-3">
-      <span className="text-muted-foreground text-xs">{label}</span>
+    <div className="grid grid-cols-[84px_1fr_42px] items-center gap-2 rounded-lg border border-border/20 bg-background/10 px-2 py-1.5 text-xs">
+      <span className="text-sm font-medium text-foreground/85">{label}</span>
 
-      <div className="flex justify-end">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-12 cursor-pointer rounded-md border border-border/60 bg-background p-1"
-        />
-      </div>
+      <span className="text-right text-[11px] text-muted-foreground/55">
+        {colorLabel}
+      </span>
+
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="ml-auto h-8 w-8 cursor-pointer rounded-md border border-border/50 bg-background p-0.5"
+      />
     </div>
   );
 }

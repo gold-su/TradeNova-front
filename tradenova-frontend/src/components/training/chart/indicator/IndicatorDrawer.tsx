@@ -5,6 +5,7 @@ import {
   type IndicatorKey,
 } from "@/components/training/chart/indicator/indicatorMeta";
 import { IndicatorConfigPanel } from "@/components/training/chart/indicator/IndicatorConfigPanel";
+import { Search, Settings } from "lucide-react";
 
 type IndicatorScope = "GLOBAL" | "CHART";
 
@@ -270,15 +271,25 @@ export function IndicatorDrawer({
 
           <div className="flex-1 overflow-y-auto p-4">
             <div className="relative mb-4">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                🔍
-              </span>
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50"
+              />
 
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="지표명 검색"
-                className="h-10 w-full rounded-xl border border-border/60 bg-background px-9 text-sm outline-none focus:border-primary/50"
+                className="
+                h-10 w-full rounded-xl border border-white/[0.06]
+                bg-white/[0.03]
+                px-9 text-sm outline-none
+                transition-all duration-150
+                placeholder:text-muted-foreground/60
+                focus:border-primary/50
+                focus:bg-background
+                focus:ring-1 focus:ring-primary/20
+                "
               />
 
               {keyword && (
@@ -292,7 +303,7 @@ export function IndicatorDrawer({
               )}
             </div>
 
-            <SectionTitle>차트지표</SectionTitle>
+            <SectionTitle compact={!!keyword}>차트지표</SectionTitle>
 
             {chartIndicators.length > 0 ? (
               chartIndicators.map((item) => (
@@ -316,7 +327,7 @@ export function IndicatorDrawer({
               <EmptySearchResult />
             )}
 
-            <SectionTitle>보조지표</SectionTitle>
+            <SectionTitle compact={!!keyword}>보조지표</SectionTitle>
 
             {subIndicators.length > 0 ? (
               subIndicators.map((item) => (
@@ -353,9 +364,20 @@ export function IndicatorDrawer({
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({
+  children,
+  compact = false,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
-    <div className="mb-2 mt-4 border-b border-border/60 pb-2 text-xs text-muted-foreground">
+    <div
+      className={[
+        "border-b border-border/60 pb-2 text-xs text-muted-foreground",
+        compact ? "mb-2 mt-3" : "mb-3 mt-5",
+      ].join(" ")}
+    >
       {children}
     </div>
   );
@@ -363,7 +385,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function EmptySearchResult() {
   return (
-    <div className="flex h-[88px] items-center justify-center text-sm text-muted-foreground">
+    <div className="flex h-[72px] items-center justify-center text-sm text-muted-foreground/45">
       검색결과가 없습니다
     </div>
   );
@@ -408,10 +430,10 @@ function IndicatorRow({
         type="button"
         disabled={disabled || !onConfigClick}
         onClick={onConfigClick}
-        className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-white/[0.05] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
         title="설정"
       >
-        ⚙
+        <Settings size={15} strokeWidth={1.8} />
       </button>
     </div>
   );

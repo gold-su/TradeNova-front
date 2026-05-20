@@ -6,6 +6,8 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   },
   ma: {
     enabled: true,
+    disabled: false,
+    type: "SMA",
     lines: [
       { period: 5, color: "#facc15", width: 1 },
       { period: 20, color: "#38bdf8", width: 1 },
@@ -34,7 +36,6 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
     upperColor: "rgba(239,68,68,0.45)",
     lowerColor: "rgba(34,197,94,0.45)",
   },
-
   macd: {
     enabled: false,
     disabled: false,
