@@ -57,9 +57,12 @@ export function syncMaSeries({
       });
     }
 
-    maSeriesMap[line.period].applyOptions({
+    maSeriesMap[line.period] = chart.addSeries(LineSeries, {
       color: line.color,
       lineWidth: line.width as 1 | 2 | 3 | 4,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
     });
   });
 }

@@ -5,7 +5,8 @@ export type IndicatorKey =
   | "ichimoku"
   | "volumeProfile"
   | "rsi"
-  | "macd";
+  | "macd"
+  | "bollinger";
 
 export const INDICATOR_META: {
   key: IndicatorKey;
@@ -26,7 +27,7 @@ export const INDICATOR_META: {
     label: "볼린저밴드",
     group: "chart",
     configurable: true,
-    disabled: true,
+    disabled: false,
   },
   {
     key: "ichimoku",

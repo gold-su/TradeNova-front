@@ -1,4 +1,6 @@
-import CandleChart from "@/components/training/chart/CandleChart";
+import CandleChart, {
+  type TradeChartMarker,
+} from "@/components/training/chart/CandleChart";
 import type {
   Candle,
   ProgressResponse,
@@ -29,6 +31,7 @@ type Props = {
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
   hasIndicatorOverride?: boolean;
+  tradeMarkers?: TradeChartMarker[];
 };
 
 export function TrainingChartTile({
@@ -42,6 +45,7 @@ export function TrainingChartTile({
   refreshing,
   indicatorSettings,
   hasIndicatorOverride,
+  tradeMarkers = [],
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -118,6 +122,7 @@ export function TrainingChartTile({
             candles={visible}
             height={chartHeight}
             indicatorSettings={indicatorSettings}
+            tradeMarkers={tradeMarkers}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-xs text-muted-foreground">

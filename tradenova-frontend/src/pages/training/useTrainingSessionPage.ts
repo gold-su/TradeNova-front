@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { TradeResponse } from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
 import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
 import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
 import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
+import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -25,6 +26,10 @@ export function useTrainingSessionPage() {
 
   // ===== AI 로직 =====
   const ai = useTrainingAi(core.sessionId, core.activeChartId);
+
+  const [tradeMarkersByChart, setTradeMarkersByChart] = useState<
+    Record<number, TradeChartMarker[]>
+  >({});
 
   /**
    * 거래 응답을 progress map에 반영하는 함수
@@ -50,6 +55,33 @@ export function useTrainingSessionPage() {
     });
   };
 
+  const addTradeMarker = ({
+    side,
+    res,
+    qty,
+  }: {
+    side: "BUY" | "SELL";
+    res: TradeResponse;
+    qty?: number;
+  }) => {
+    const markerTime =
+      core.visibleActiveCandles[core.visibleActiveCandles.length - 1]?.t ??
+      Date.now();
+
+    const marker: TradeChartMarker = {
+      id: `${res.chartId}-${res.tradeId}-${side}`,
+      side,
+      time: markerTime,
+      price: Number(res.executedPrice),
+      qty,
+    };
+
+    setTradeMarkersByChart((prev) => ({
+      ...prev,
+      [res.chartId]: [...(prev[res.chartId] ?? []), marker],
+    }));
+  };
+
   // ===== 거래 로직 =====
   const trade = useTrainingTrade({
     activeChartId: core.activeChartId,
@@ -61,6 +93,7 @@ export function useTrainingSessionPage() {
       core.setError(message);
     },
     applyTrade,
+    onTradeExecuted: addTradeMarker,
   });
 
   /**
@@ -173,5 +206,7 @@ export function useTrainingSessionPage() {
     chartIndicators: core.chartIndicators,
     setChartIndicators: core.setChartIndicators,
     getIndicatorSettings: core.getIndicatorSettings,
+
+    tradeMarkersByChart,
   };
 }

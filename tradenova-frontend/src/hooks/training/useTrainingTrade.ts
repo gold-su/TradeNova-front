@@ -24,6 +24,11 @@ type UseTrainingTradeParams = {
   setSnapshots: React.Dispatch<React.SetStateAction<ReportDocumentResponse[]>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
   applyTrade: (res: TradeResponse) => void;
+  onTradeExecuted?: (input: {
+    side: "BUY" | "SELL";
+    res: TradeResponse;
+    qty?: number;
+  }) => void;
 };
 
 export function useTrainingTrade({
@@ -33,6 +38,7 @@ export function useTrainingTrade({
   setSnapshots,
   setError,
   applyTrade,
+  onTradeExecuted,
 }: UseTrainingTradeParams) {
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeType, setTradeType] = useState<"BUY" | "SELL" | null>(null);
@@ -67,6 +73,12 @@ export function useTrainingTrade({
 
       // 거래 결과를 상위 진행 상태에 반영
       applyTrade(tradeRes);
+
+      onTradeExecuted?.({
+        side: tradeType,
+        res: tradeRes,
+        qty: tradeForm.qty,
+      });
 
       // 거래 이벤트 저장
       await reportApi.createEvent(activeChartId, {
@@ -108,6 +120,12 @@ export function useTrainingTrade({
 
       const res = await trainingApi.sellAll(activeChartId);
       applyTrade(res);
+
+      onTradeExecuted?.({
+        side: "SELL",
+        res,
+      });
+
       await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL ALL 실패");
@@ -127,7 +145,7 @@ export function useTrainingTrade({
   };
 
   return {
-    tradeModalOpen, 
+    tradeModalOpen,
     setTradeModalOpen,
     tradeType,
     tradeForm,

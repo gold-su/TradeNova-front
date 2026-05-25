@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
-import { createChart, type IChartApi } from "lightweight-charts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createChart,
+  LineSeries,
+  createSeriesMarkers,
+  type IChartApi,
+  type ISeriesApi,
+} from "lightweight-charts";
 import type { Candle, IndicatorSettings } from "@/types/training";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
-
+import { calculateBollinger } from "@/lib/chart/indicators/bollinger";
 import {
   createMainPriceSeries,
   syncMaSeries,
@@ -20,7 +26,6 @@ import {
   createMacdSeries,
   type MacdSeriesRefs,
 } from "@/components/training/chart/panes/MacdPane";
-
 import {
   levelData,
   normalizeMaLines,
@@ -31,16 +36,52 @@ import {
 import { calculateRSI } from "@/lib/chart/indicators/rsi";
 import { calculateMACD } from "@/lib/chart/indicators/macd";
 
+export type TradeChartMarker = {
+  id: string;
+  side: "BUY" | "SELL";
+  time: number; // epoch millis
+  price: number;
+  qty?: number;
+};
+
 type Props = {
   candles: Candle[];
   height?: number;
   indicatorSettings?: IndicatorSettings;
+  tradeMarkers?: TradeChartMarker[];
 };
+
+function formatTooltipDate(timestamp: number) {
+  const date = new Date(timestamp);
+
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const day = weekdays[date.getDay()];
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  return `(${day}) ${yyyy}.${mm}.${dd}`;
+}
+
+function formatAxisMonth(timestamp: number) {
+  const date = new Date(timestamp);
+
+  const yyyy = date.getFullYear();
+  const month = date.getMonth() + 1;
+
+  if (month === 1) {
+    return String(yyyy);
+  }
+
+  return `${month}월`;
+}
 
 export default function CandleChart({
   candles,
   height = 520,
   indicatorSettings = DEFAULT_INDICATORS,
+  tradeMarkers = [],
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
@@ -54,9 +95,28 @@ export default function CandleChart({
   const volumeSeriesRef = useRef<VolumeSeriesRefs | null>(null);
   const rsiSeriesRef = useRef<RsiSeriesRefs | null>(null);
   const macdSeriesRef = useRef<MacdSeriesRefs | null>(null);
+  const bollingerSeriesRef = useRef<{
+    upper: ISeriesApi<typeof LineSeries>;
+    middle: ISeriesApi<typeof LineSeries>;
+    lower: ISeriesApi<typeof LineSeries>;
+  } | null>(null);
 
   const prevCandleLengthRef = useRef(0);
   const initializedRef = useRef(false);
+
+  const tradeMarkersRef = useRef<any>(null);
+
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    candle: Candle;
+  } | null>(null);
+
+  const [tradeTooltip, setTradeTooltip] = useState<{
+    x: number;
+    y: number;
+    trade: TradeChartMarker;
+  } | null>(null);
 
   const showRsi = indicatorSettings.rsi.enabled;
   const showMacd = indicatorSettings.macd.enabled;
@@ -70,7 +130,62 @@ export default function CandleChart({
   const maLines = useMemo(() => {
     if (!indicatorSettings.ma.enabled) return [];
     return normalizeMaLines(indicatorSettings.ma.lines);
-  }, [indicatorSettings.ma.enabled, indicatorSettings.ma.lines]);
+  }, [
+    indicatorSettings.ma.enabled,
+    indicatorSettings.ma.lines,
+    indicatorSettings.ma.type,
+  ]);
+
+  const candleByTime = useMemo(() => {
+    const map = new Map<number, Candle>();
+
+    candles.forEach((candle) => {
+      map.set(Math.floor(candle.t / 1000), candle);
+    });
+
+    return map;
+  }, [candles]);
+
+  const candleByTimeRef = useRef(candleByTime);
+
+  useEffect(() => {
+    candleByTimeRef.current = candleByTime;
+  }, [candleByTime]);
+
+  const tooltipStyle = useMemo(() => {
+    if (!tooltip) return undefined;
+
+    const width = mainContainerRef.current?.clientWidth ?? 0;
+    const tooltipWidth = 150;
+    const gap = 12;
+
+    const left =
+      tooltip.x + tooltipWidth + gap > width
+        ? tooltip.x - tooltipWidth - gap
+        : tooltip.x + gap;
+
+    return {
+      left: Math.max(8, left),
+      top: Math.max(36, tooltip.y - 12),
+    };
+  }, [tooltip]);
+
+  const tradeMarkersByTime = useMemo(() => {
+    const map = new Map<number, TradeChartMarker[]>();
+
+    tradeMarkers.forEach((marker) => {
+      const time = Math.floor(marker.time / 1000);
+      map.set(time, [...(map.get(time) ?? []), marker]);
+    });
+
+    return map;
+  }, [tradeMarkers]);
+
+  const tradeMarkersByTimeRef = useRef(tradeMarkersByTime);
+
+  useEffect(() => {
+    tradeMarkersByTimeRef.current = tradeMarkersByTime;
+  }, [tradeMarkersByTime]);
 
   /**
    * 차트 생성 effect
@@ -92,6 +207,16 @@ export default function CandleChart({
         background: { color: "transparent" },
         textColor: "#9CA3AF",
       },
+      localization: {
+        timeFormatter: (time: any) => {
+          const timestamp =
+            typeof time === "number"
+              ? time * 1000
+              : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
+
+          return formatTooltipDate(timestamp);
+        },
+      },
       grid: {
         vertLines: { color: "rgba(255,255,255,0.06)" },
         horzLines: { color: "rgba(255,255,255,0.06)" },
@@ -109,14 +234,27 @@ export default function CandleChart({
         rightOffset: 5,
         fixLeftEdge: true,
         fixRightEdge: true,
+        tickMarkFormatter: (time: any) => {
+          const timestamp =
+            typeof time === "number"
+              ? time * 1000
+              : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
+
+          return formatAxisMonth(timestamp);
+        },
       },
       crosshair: {
-        mode: 1,
+        mode: 0,
       },
     });
 
     mainChartRef.current = mainChart;
     mainSeriesRef.current = createMainPriceSeries(mainChart);
+
+    tradeMarkersRef.current = createSeriesMarkers(
+      mainSeriesRef.current.candleSeries,
+      [],
+    );
 
     let rsiChart: IChartApi | null = null;
     let macdChart: IChartApi | null = null;
@@ -149,7 +287,7 @@ export default function CandleChart({
           visible: false,
         },
         crosshair: {
-          mode: 1,
+          mode: 0,
         },
       });
 
@@ -190,7 +328,7 @@ export default function CandleChart({
           visible: false,
         },
         crosshair: {
-          mode: 1,
+          mode: 0,
         },
       });
 
@@ -210,7 +348,101 @@ export default function CandleChart({
       macdChart?.timeScale().setVisibleLogicalRange(range);
     };
 
+    const handleCrosshairMove = (param: any) => {
+      const containerWidth = mainEl.clientWidth;
+      const containerHeight = mainEl.clientHeight;
+
+      if (
+        !param?.point ||
+        param.time === undefined ||
+        param.point.x < 0 ||
+        param.point.y < 0 ||
+        param.point.x > containerWidth ||
+        param.point.y > containerHeight
+      ) {
+        setTooltip(null);
+        setTradeTooltip(null);
+        return;
+      }
+
+      const time =
+        typeof param.time === "number" ? param.time : Number(param.time);
+
+      const candle = candleByTimeRef.current.get(time);
+
+      if (!candle || !mainSeriesRef.current) {
+        setTooltip(null);
+        setTradeTooltip(null);
+        return;
+      }
+
+      const highY = mainSeriesRef.current.candleSeries.priceToCoordinate(
+        candle.h,
+      );
+      const lowY = mainSeriesRef.current.candleSeries.priceToCoordinate(
+        candle.l,
+      );
+
+      if (highY == null || lowY == null) {
+        setTooltip(null);
+        setTradeTooltip(null);
+        return;
+      }
+
+      const tradesAtTime = tradeMarkersByTimeRef.current.get(time) ?? [];
+
+      const hoveredTrade = tradesAtTime.find((trade) => {
+        if (!mainSeriesRef.current) return false;
+
+        const tradeY = mainSeriesRef.current.candleSeries.priceToCoordinate(
+          trade.price,
+        );
+
+        if (tradeY == null) return false;
+
+        const xTolerance = 12;
+        const yTolerance = 18;
+
+        return (
+          Math.abs(
+            param.point.x -
+              (mainChart.timeScale().timeToCoordinate(time as any) ?? 0),
+          ) <= xTolerance && Math.abs(param.point.y - tradeY) <= yTolerance
+        );
+      });
+
+      if (hoveredTrade) {
+        setTradeTooltip({
+          x: param.point.x,
+          y: param.point.y,
+          trade: hoveredTrade,
+        });
+      } else {
+        setTradeTooltip(null);
+      }
+
+      const top = Math.min(highY, lowY);
+      const bottom = Math.max(highY, lowY);
+
+      const tolerance = 8;
+      const isNearCandle =
+        param.point.y >= top - tolerance && param.point.y <= bottom + tolerance;
+
+      if (!isNearCandle) {
+        setTooltip(null);
+        setTradeTooltip(null);
+        return;
+      }
+
+      setTooltip({
+        x: param.point.x,
+        y: param.point.y,
+        candle,
+      });
+    };
+
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncSubPanes);
+    mainChart.subscribeCrosshairMove(handleCrosshairMove);
 
     const ro = new ResizeObserver(() => {
       mainChart.applyOptions({
@@ -258,6 +490,7 @@ export default function CandleChart({
 
     return () => {
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncSubPanes);
+      mainChart.unsubscribeCrosshairMove(handleCrosshairMove);
       ro.disconnect();
 
       mainChart.remove();
@@ -272,9 +505,10 @@ export default function CandleChart({
       volumeSeriesRef.current = null;
       rsiSeriesRef.current = null;
       macdSeriesRef.current = null;
-
+      bollingerSeriesRef.current = null;
       initializedRef.current = false;
       prevCandleLengthRef.current = 0;
+      tradeMarkersRef.current = null;
     };
   }, [height, mainHeight, showRsi, showMacd, subPaneHeight]);
 
@@ -324,8 +558,65 @@ export default function CandleChart({
       );
     });
 
+    if (indicatorSettings.bollinger.enabled) {
+      if (!bollingerSeriesRef.current) {
+        bollingerSeriesRef.current = {
+          upper: mainChart.addSeries(LineSeries, {
+            color: indicatorSettings.bollinger.upperColor,
+            lineWidth: indicatorSettings.bollinger.upperWidth as 1 | 2 | 3 | 4,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+          }),
+          middle: mainChart.addSeries(LineSeries, {
+            color: indicatorSettings.bollinger.middleColor,
+            lineWidth: indicatorSettings.bollinger.middleWidth as 1 | 2 | 3 | 4,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+          }),
+          lower: mainChart.addSeries(LineSeries, {
+            color: indicatorSettings.bollinger.lowerColor,
+            lineWidth: indicatorSettings.bollinger.lowerWidth as 1 | 2 | 3 | 4,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+          }),
+        };
+      }
+
+      bollingerSeriesRef.current.upper.applyOptions({
+        color: indicatorSettings.bollinger.upperColor,
+        lineWidth: indicatorSettings.bollinger.upperWidth as 1 | 2 | 3 | 4,
+      });
+
+      bollingerSeriesRef.current.middle.applyOptions({
+        color: indicatorSettings.bollinger.middleColor,
+        lineWidth: indicatorSettings.bollinger.middleWidth as 1 | 2 | 3 | 4,
+      });
+
+      bollingerSeriesRef.current.lower.applyOptions({
+        color: indicatorSettings.bollinger.lowerColor,
+        lineWidth: indicatorSettings.bollinger.lowerWidth as 1 | 2 | 3 | 4,
+      });
+
+      const bollinger = calculateBollinger(
+        candles,
+        indicatorSettings.bollinger.period,
+        indicatorSettings.bollinger.multiplier,
+      );
+
+      bollingerSeriesRef.current.upper.setData(bollinger.upper);
+      bollingerSeriesRef.current.middle.setData(bollinger.middle);
+      bollingerSeriesRef.current.lower.setData(bollinger.lower);
+    } else if (bollingerSeriesRef.current) {
+      mainChart.removeSeries(bollingerSeriesRef.current.upper);
+      mainChart.removeSeries(bollingerSeriesRef.current.middle);
+      mainChart.removeSeries(bollingerSeriesRef.current.lower);
+      bollingerSeriesRef.current = null;
+    }
+
     if (showRsi && rsiChartRef.current && rsiSeriesRef.current) {
-      
       rsiSeriesRef.current.rsiSeries.applyOptions({
         color: indicatorSettings.rsi.color,
       });
@@ -337,7 +628,7 @@ export default function CandleChart({
       rsiSeriesRef.current.lowerLine.applyOptions({
         color: indicatorSettings.rsi.lowerColor,
       });
-      
+
       const rsiData = calculateRSI(candles, indicatorSettings.rsi.period);
 
       rsiSeriesRef.current.rsiSeries.setData(rsiData);
@@ -350,7 +641,6 @@ export default function CandleChart({
     }
 
     if (showMacd && macdChartRef.current && macdSeriesRef.current) {
-      
       macdSeriesRef.current.macdSeries.applyOptions({
         color: indicatorSettings.macd.macdColor,
       });
@@ -358,7 +648,7 @@ export default function CandleChart({
       macdSeriesRef.current.signalSeries.applyOptions({
         color: indicatorSettings.macd.signalColor,
       });
-      
+
       const macd = calculateMACD(
         candles,
         indicatorSettings.macd.fastPeriod,
@@ -367,7 +657,6 @@ export default function CandleChart({
         indicatorSettings.macd.histogramUpColor,
         indicatorSettings.macd.histogramDownColor,
       );
-
       macdSeriesRef.current.histogramSeries.setData(macd.histogram);
       macdSeriesRef.current.macdSeries.setData(macd.macdLine);
       macdSeriesRef.current.signalSeries.setData(macd.signalLine);
@@ -392,8 +681,22 @@ export default function CandleChart({
     prevCandleLengthRef.current = candles.length;
   }, [candles, indicatorSettings, maLines, showRsi, showMacd]);
 
+  useEffect(() => {
+    if (!tradeMarkersRef.current) return;
+
+    tradeMarkersRef.current.setMarkers(
+      tradeMarkers.map((marker) => ({
+        time: Math.floor(marker.time / 1000) as any,
+        position: marker.side === "BUY" ? "belowBar" : "aboveBar",
+        color: marker.side === "BUY" ? "#22c55e" : "#ef4444",
+        shape: marker.side === "BUY" ? "arrowUp" : "arrowDown",
+        text: "",
+      })),
+    );
+  }, [tradeMarkers]);
+
   return (
-    <div className="h-full w-full">
+    <div className="relative h-full w-full">
       <div className="mb-2 flex flex-wrap items-center gap-2 px-1 text-[11px] text-muted-foreground">
         {indicatorSettings.volume.enabled && <span>Volume</span>}
 
@@ -427,6 +730,12 @@ export default function CandleChart({
             {indicatorSettings.macd.signalPeriod}
           </span>
         )}
+
+        {indicatorSettings.bollinger.enabled && (
+          <span style={{ color: indicatorSettings.bollinger.upperColor }}>
+            BB {indicatorSettings.bollinger.period}
+          </span>
+        )}
       </div>
 
       <div
@@ -434,6 +743,78 @@ export default function CandleChart({
         className="w-full"
         style={{ height: mainHeight }}
       />
+
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-20 w-[150px] rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-[11px] shadow-xl backdrop-blur"
+          style={tooltipStyle}
+        >
+          {formatTooltipDate(tooltip.candle.t)}
+
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted-foreground">
+            <span>시가</span>
+            <span className="text-right text-foreground">
+              {tooltip.candle.o.toLocaleString()}
+            </span>
+
+            <span>고가</span>
+            <span className="text-right text-red-400">
+              {tooltip.candle.h.toLocaleString()}
+            </span>
+
+            <span>저가</span>
+            <span className="text-right text-blue-400">
+              {tooltip.candle.l.toLocaleString()}
+            </span>
+
+            <span>종가</span>
+            <span className="text-right text-foreground">
+              {tooltip.candle.c.toLocaleString()}
+            </span>
+
+            <span>거래량</span>
+            <span className="text-right text-foreground">
+              {tooltip.candle.v.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {tradeTooltip && (
+        <div
+          className="pointer-events-none absolute z-30 w-[140px] rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-[11px] shadow-xl backdrop-blur"
+          style={{
+            left: Math.max(8, tradeTooltip.x + 12),
+            top: Math.max(36, tradeTooltip.y - 12),
+          }}
+        >
+          <div
+            className={
+              tradeTooltip.trade.side === "BUY"
+                ? "font-semibold text-green-400"
+                : "font-semibold text-red-400"
+            }
+          >
+            {tradeTooltip.trade.side}
+          </div>
+
+          <div className="mt-1 flex justify-between text-muted-foreground">
+            <span>가격</span>
+            <span className="text-foreground">
+              {tradeTooltip.trade.price.toLocaleString()}
+            </span>
+          </div>
+
+          {tradeTooltip.trade.qty && (
+            <div className="flex justify-between text-muted-foreground">
+              <span>수량</span>
+              <span className="text-foreground">
+                {tradeTooltip.trade.qty}주
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {showRsi && (
         <div className="mt-2 rounded-xl border border-border/40 bg-background/10 p-2">

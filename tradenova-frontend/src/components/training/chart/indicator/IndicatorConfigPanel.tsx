@@ -47,6 +47,8 @@ export function IndicatorConfigPanel({
           <RsiConfig settings={settings} onChange={onChange} />
         ) : selectedKey === "macd" ? (
           <MacdConfig settings={settings} onChange={onChange} />
+        ) : selectedKey === "bollinger" ? (
+          <BollingerConfig settings={settings} onChange={onChange} />
         ) : (
           <div className="rounded-2xl border border-border/60 bg-background/30 p-4 text-sm text-muted-foreground">
             아직 설정 UI가 준비되지 않은 지표입니다.
@@ -483,6 +485,107 @@ function MacdConfig({
   );
 }
 
+function BollingerConfig({
+  settings,
+  onChange,
+}: {
+  settings: IndicatorSettings;
+  onChange: (next: IndicatorSettings) => void;
+}) {
+  const [tab, setTab] = useState<"variables" | "style">("variables");
+
+  const update = (patch: Partial<IndicatorSettings["bollinger"]>) => {
+    onChange({
+      ...settings,
+      bollinger: {
+        ...settings.bollinger,
+        ...patch,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border/60 bg-background/20 p-3">
+        <div className="mb-3">
+          <div className="text-sm font-semibold">볼린저밴드</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            기간과 표준편차 배수를 설정합니다.
+          </div>
+        </div>
+
+        <div className="mb-3 flex items-center justify-between border-b border-border/30">
+          <IndicatorConfigTabs value={tab} onChange={setTab} />
+
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...settings,
+                bollinger: {
+                  ...DEFAULT_INDICATORS.bollinger,
+                  enabled: settings.bollinger.enabled,
+                },
+              })
+            }
+            className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
+          >
+            초기화 ↻
+          </button>
+        </div>
+
+        {tab === "variables" ? (
+          <div className="space-y-3 text-xs">
+            <ConfigNumberRow
+              label="기간"
+              value={settings.bollinger.period}
+              min={1}
+              onChange={(value) => update({ period: value })}
+            />
+
+            <ConfigNumberRow
+              label="표준편차"
+              value={settings.bollinger.multiplier}
+              min={1}
+              onChange={(value) => update({ multiplier: value })}
+            />
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <StyleLineRow
+              label="상단선"
+              color={settings.bollinger.upperColor}
+              width={settings.bollinger.upperWidth}
+              onColorChange={(value) => update({ upperColor: value })}
+              onWidthChange={(value) => update({ upperWidth: value })}
+            />
+
+            <StyleLineRow
+              label="중심선"
+              color={settings.bollinger.middleColor}
+              width={settings.bollinger.middleWidth}
+              onColorChange={(value) => update({ middleColor: value })}
+              onWidthChange={(value) => update({ middleWidth: value })}
+            />
+
+            <StyleLineRow
+              label="하단선"
+              color={settings.bollinger.lowerColor}
+              width={settings.bollinger.lowerWidth}
+              onColorChange={(value) => update({ lowerColor: value })}
+              onWidthChange={(value) => update({ lowerWidth: value })}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
+        일반적으로 20일, 표준편차 2배 설정을 많이 사용합니다.
+      </div>
+    </div>
+  );
+}
+
 function ConfigNumberRow({
   label,
   value,
@@ -535,6 +638,51 @@ function StyleColorRow({
         onChange={(e) => onChange(e.target.value)}
         className="ml-auto h-8 w-8 cursor-pointer rounded-md border border-border/50 bg-background p-0.5"
       />
+    </div>
+  );
+}
+
+function StyleLineRow({
+  label,
+  color,
+  width,
+  onColorChange,
+  onWidthChange,
+}: {
+  label: string;
+  color: string;
+  width: number;
+  onColorChange: (value: string) => void;
+  onWidthChange: (value: number) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[58px_132px_62px] items-center gap-2 rounded-lg border border-border/20 bg-background/10 px-2 py-1.5 text-xs">
+      <span className="text-sm font-medium text-foreground/85">{label}</span>
+
+      <div className="flex items-center justify-end gap-1.5">
+        <span className="text-[11px] text-muted-foreground/55">굵기</span>
+
+        <ConfigNumberInput
+          value={width}
+          min={1}
+          max={4}
+          size="compact"
+          onCommit={onWidthChange}
+        />
+
+        <span className="text-[11px] text-muted-foreground/55">pt</span>
+      </div>
+
+      <div className="flex items-center justify-end gap-1.5">
+        <span className="text-[11px] text-muted-foreground/55">색상</span>
+
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => onColorChange(e.target.value)}
+          className="h-8 w-8 cursor-pointer rounded-md border border-border/50 bg-background p-0.5"
+        />
+      </div>
     </div>
   );
 }

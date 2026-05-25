@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
+import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -42,6 +43,7 @@ type Props = {
     React.SetStateAction<Record<number, IndicatorSettings>>
   >;
   getIndicatorSettings: (chartId: number | null) => IndicatorSettings;
+  tradeMarkersByChart: Record<number, TradeChartMarker[]>;
 };
 
 export function TrainingCenterPanel({
@@ -65,6 +67,7 @@ export function TrainingCenterPanel({
   setChartIndicators,
   getIndicatorSettings,
   activeProgress,
+  tradeMarkersByChart = {},
 }: Props) {
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 
@@ -173,6 +176,7 @@ export function TrainingCenterPanel({
             refreshing={refreshing}
             globalIndicators={globalIndicators}
             chartIndicators={chartIndicators}
+            tradeMarkersByChart={tradeMarkersByChart ?? {}}
           />
         ) : (
           <TrainingChartSingle
@@ -185,6 +189,9 @@ export function TrainingCenterPanel({
             setGlobalIndicators={setGlobalIndicators}
             setChartIndicators={setChartIndicators}
             activeChartId={activeChartId}
+            tradeMarkers={
+              activeChartId ? (tradeMarkersByChart[activeChartId] ?? []) : []
+            }
           />
         )}
       </div>

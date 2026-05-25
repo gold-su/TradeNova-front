@@ -16,7 +16,17 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   },
   bollinger: {
     enabled: false,
-    disabled: true,
+
+    period: 20,
+    multiplier: 2,
+
+    upperColor: "#60a5fa",
+    middleColor: "#facc15",
+    lowerColor: "#60a5fa",
+
+    upperWidth: 1,
+    middleWidth: 1,
+    lowerWidth: 1,
   },
   ichimoku: {
     enabled: false,

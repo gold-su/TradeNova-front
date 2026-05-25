@@ -20,6 +20,8 @@ import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indica
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 
+const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
+
 /**
  * 훈련 화면의 "세션/차트/캔들/진행도" 핵심 로직을 담당하는 훅
  *
@@ -333,7 +335,6 @@ export function useTrainingSessionCore() {
     }
   };
 
-
   const [globalIndicators, setGlobalIndicators] = useState<IndicatorSettings>(
     () => {
       try {
@@ -367,7 +368,25 @@ export function useTrainingSessionCore() {
   // 차트별 개별 설정
   const [chartIndicators, setChartIndicators] = useState<
     Record<number, IndicatorSettings>
-  >({});
+  >(() => {
+    try {
+      const saved = localStorage.getItem(CHART_INDICATOR_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        CHART_INDICATOR_STORAGE_KEY,
+        JSON.stringify(chartIndicators),
+      );
+    } catch {
+      // localStorage 사용 불가 환경 대비
+    }
+  }, [chartIndicators]);
 
   const getIndicatorSettings = (chartId: number | null) => {
     if (!chartId) return globalIndicators;

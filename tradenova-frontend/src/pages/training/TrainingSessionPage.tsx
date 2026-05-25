@@ -51,6 +51,7 @@ export default function TrainingSessionPage() {
         chartIndicators={page.chartIndicators}
         setChartIndicators={page.setChartIndicators}
         getIndicatorSettings={page.getIndicatorSettings}
+        tradeMarkersByChart={page.tradeMarkersByChart ?? {}}
       />
 
       <TrainingRightPanel

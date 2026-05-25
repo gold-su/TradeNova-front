@@ -1,4 +1,6 @@
-import CandleChart from "@/components/training/chart/CandleChart";
+import CandleChart, {
+  type TradeChartMarker,
+} from "@/components/training/chart/CandleChart";
 import type {
   Candle,
   ProgressResponse,
@@ -25,6 +27,7 @@ type Props = {
   onRefresh: (chartId: number) => void;
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
+  tradeMarkers?: TradeChartMarker[];
 };
 
 export function TrainingChartSingle({
@@ -34,8 +37,8 @@ export function TrainingChartSingle({
   onRefresh,
   refreshing,
   indicatorSettings,
+  tradeMarkers = [],
 }: Props) {
-
   if (!chart) {
     return (
       <div className="flex h-full items-center justify-center rounded-2xl border border-border/60 bg-background/20 text-sm text-muted-foreground">
@@ -74,10 +77,8 @@ export function TrainingChartSingle({
             <div>idx: {progress?.progressIndex ?? "-"}</div>
             <div>px: {n2(progress?.currentPrice)}</div>
           </div>
-
         </div>
       </div>
-
 
       <div className="min-h-0 flex-1">
         {candles.length > 0 ? (
@@ -85,6 +86,7 @@ export function TrainingChartSingle({
             candles={candles}
             height={520}
             indicatorSettings={indicatorSettings}
+            tradeMarkers={tradeMarkers}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-xs text-muted-foreground">

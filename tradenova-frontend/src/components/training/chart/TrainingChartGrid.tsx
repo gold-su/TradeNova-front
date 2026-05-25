@@ -6,6 +6,7 @@ import type {
 } from "@/types/training";
 import { TrainingChartTile } from "./TrainingChartTile";
 import type { IndicatorSettings } from "@/types/training";
+import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -18,6 +19,7 @@ type Props = {
   refreshing: boolean;
   globalIndicators: IndicatorSettings;
   chartIndicators: Record<number, IndicatorSettings>;
+  tradeMarkersByChart: Record<number, TradeChartMarker[]>;
 };
 
 export function TrainingChartGrid({
@@ -31,6 +33,7 @@ export function TrainingChartGrid({
   refreshing,
   globalIndicators,
   chartIndicators,
+  tradeMarkersByChart = {},
 }: Props) {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto pr-1">
@@ -53,6 +56,7 @@ export function TrainingChartGrid({
             refreshing={refreshing}
             indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
             hasIndicatorOverride={!!chartIndicators[c.chartId]}
+            tradeMarkers={tradeMarkersByChart[c.chartId] ?? []}
           />
         ))}
       </div>

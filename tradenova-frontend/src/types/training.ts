@@ -276,27 +276,43 @@ export type MaLineSetting = {
   width: number;
 };
 
+export type BollingerSettings = {
+  enabled: boolean;
+  period: number;
+  multiplier: number;
+
+  upperColor: string;
+  middleColor: string;
+  lowerColor: string;
+
+  upperWidth: number;
+  middleWidth: number;
+  lowerWidth: number;
+};
+
 export type IndicatorSettings = {
   volume: {
     enabled: boolean;
   };
+
   ma: {
     enabled: boolean;
     type: MaType;
     lines: MaLineSetting[];
   };
-  bollinger: {
-    enabled: boolean;
-    disabled: boolean;
-  };
+
+  bollinger: BollingerSettings;
+
   ichimoku: {
     enabled: boolean;
     disabled: boolean;
   };
+
   volumeProfile: {
     enabled: boolean;
     disabled: boolean;
   };
+
   rsi: {
     enabled: boolean;
     disabled?: boolean;
@@ -307,6 +323,7 @@ export type IndicatorSettings = {
     upperColor: string;
     lowerColor: string;
   };
+
   macd: {
     enabled: boolean;
     disabled?: boolean;
