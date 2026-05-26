@@ -86,6 +86,7 @@ export type TradeResponse = {
   positionQty: number;
   avgPrice: number;
   executedPrice: number;
+  candleTime: number;
 };
 
 export type RiskRuleUpsertRequest = {

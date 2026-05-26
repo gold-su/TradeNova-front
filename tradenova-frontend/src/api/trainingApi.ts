@@ -12,6 +12,7 @@ import type {
   ActiveTrainingSessionResponse,
   SessionFinishResponse,
   ChartRefreshRequest,
+  TrainingTradeItemResponse,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -55,6 +56,13 @@ export const trainingApi = {
   sellAll: (chartId: number) =>
     http
       .post<TradeResponse>(`/api/training/charts/${chartId}/trades/sell-all`)
+      .then((r) => r.data),
+
+  getTrades: (chartId: number) =>
+    http
+      .get<
+        TrainingTradeItemResponse[]
+      >(`/api/training/charts/${chartId}/trades`)
       .then((r) => r.data),
 
   // ===== Risk Rule =====

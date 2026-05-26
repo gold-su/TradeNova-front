@@ -90,6 +90,19 @@ export type TradeResponse = {
   positionQty: number;
   avgPrice: number;
   executedPrice: number;
+  candleTime: number;
+};
+
+export type TrainingTradeItemResponse = {
+  tradeId: number;
+  chartId: number;
+  accountId: number;
+  symbolId: number;
+  side: "BUY" | "SELL";
+  price: number;
+  qty: number;
+  createdAt: string;
+  candleTime: number;
 };
 
 // ===== Risk Rule =====

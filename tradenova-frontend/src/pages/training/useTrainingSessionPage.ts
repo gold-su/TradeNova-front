@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useTrainingTradeMarkers } from "@/hooks/training/useTrainingTradeMarkers";
 import type { TradeResponse } from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
 import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
@@ -27,9 +28,11 @@ export function useTrainingSessionPage() {
   // ===== AI 로직 =====
   const ai = useTrainingAi(core.sessionId, core.activeChartId);
 
-  const [tradeMarkersByChart, setTradeMarkersByChart] = useState<
-    Record<number, TradeChartMarker[]>
-  >({});
+  // ===== marker =====
+  const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
+    useTrainingTradeMarkers();
+
+ 
 
   /**
    * 거래 응답을 progress map에 반영하는 함수
@@ -55,33 +58,6 @@ export function useTrainingSessionPage() {
     });
   };
 
-  const addTradeMarker = ({
-    side,
-    res,
-    qty,
-  }: {
-    side: "BUY" | "SELL";
-    res: TradeResponse;
-    qty?: number;
-  }) => {
-    const markerTime =
-      core.visibleActiveCandles[core.visibleActiveCandles.length - 1]?.t ??
-      Date.now();
-
-    const marker: TradeChartMarker = {
-      id: `${res.chartId}-${res.tradeId}-${side}`,
-      side,
-      time: markerTime,
-      price: Number(res.executedPrice),
-      qty,
-    };
-
-    setTradeMarkersByChart((prev) => ({
-      ...prev,
-      [res.chartId]: [...(prev[res.chartId] ?? []), marker],
-    }));
-  };
-
   // ===== 거래 로직 =====
   const trade = useTrainingTrade({
     activeChartId: core.activeChartId,
@@ -94,6 +70,7 @@ export function useTrainingSessionPage() {
     },
     applyTrade,
     onTradeExecuted: addTradeMarker,
+    currentPositionQty: core.activeProgress?.positionQty,
   });
 
   /**
@@ -115,6 +92,14 @@ export function useTrainingSessionPage() {
    * 에러는 core / report 중 먼저 있는 것을 보여준다.
    */
   const error = core.error ?? report.error;
+
+  /**
+   * 세션 차트 로드 후 자동 복원
+   */
+  useEffect(() => {
+    const chartIds = core.charts.map((chart) => chart.chartId);
+    loadTradeMarkers(chartIds);
+  }, [core.charts, loadTradeMarkers]);
 
   return {
     // ===== 화면 모드 =====
@@ -208,5 +193,12 @@ export function useTrainingSessionPage() {
     getIndicatorSettings: core.getIndicatorSettings,
 
     tradeMarkersByChart,
+    currentPositionQty: core.activeProgress?.positionQty,
+    onTradeExecuted: (input) =>
+      addTradeMarker({
+        ...input,
+        fallbackTime:
+          core.visibleActiveCandles[core.visibleActiveCandles.length - 1]?.t,
+      }),
   };
 }

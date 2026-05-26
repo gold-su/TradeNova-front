@@ -19,9 +19,9 @@ import type {
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
-
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
-
+const TRAINING_VIEW_MODE_KEY = "tradenova.training.viewMode";
+const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
 /**
  * 훈련 화면의 "세션/차트/캔들/진행도" 핵심 로직을 담당하는 훅
  *
@@ -40,7 +40,10 @@ const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
  */
 export function useTrainingSessionCore() {
   // ===== 화면 제어 상태 =====
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
+    return saved === "single" || saved === "grid" ? saved : "grid";
+  });
   const [syncNext, setSyncNext] = useState(true);
 
   // ===== 세션 기본 상태 =====
@@ -53,7 +56,10 @@ export function useTrainingSessionCore() {
 
   // ===== 차트 선택 상태 =====
   const [charts, setCharts] = useState<TrainingChartDto[]>([]);
-  const [activeChartId, setActiveChartId] = useState<number | null>(null);
+  const [activeChartId, setActiveChartId] = useState<number | null>(() => {
+    const saved = localStorage.getItem(TRAINING_ACTIVE_CHART_KEY);
+    return saved ? Number(saved) : null;
+  });
 
   // ===== 차트 데이터 상태 =====
   const [candlesByChart, setCandlesByChart] = useState<CandlesMap>({});
@@ -136,8 +142,14 @@ export function useTrainingSessionCore() {
     setCharts(sorted);
     setStatus(session.status);
 
-    const first = sorted[0] ?? null;
-    setActiveChartId(first?.chartId ?? null);
+    const savedChartId = Number(
+      localStorage.getItem(TRAINING_ACTIVE_CHART_KEY),
+    );
+    const restoredChart = sorted.find(
+      (chart) => chart.chartId === savedChartId,
+    );
+
+    setActiveChartId(restoredChart?.chartId ?? sorted[0]?.chartId ?? null);
 
     // 각 차트의 캔들을 병렬 로드
     const candlePairs = await Promise.all(
@@ -387,6 +399,16 @@ export function useTrainingSessionCore() {
       // localStorage 사용 불가 환경 대비
     }
   }, [chartIndicators]);
+
+  useEffect(() => {
+    localStorage.setItem(TRAINING_VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (activeChartId) {
+      localStorage.setItem(TRAINING_ACTIVE_CHART_KEY, String(activeChartId));
+    }
+  }, [activeChartId]);
 
   const getIndicatorSettings = (chartId: number | null) => {
     if (!chartId) return globalIndicators;

@@ -24,6 +24,7 @@ type UseTrainingTradeParams = {
   setSnapshots: React.Dispatch<React.SetStateAction<ReportDocumentResponse[]>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
   applyTrade: (res: TradeResponse) => void;
+  currentPositionQty?: number;
   onTradeExecuted?: (input: {
     side: "BUY" | "SELL";
     res: TradeResponse;
@@ -39,6 +40,7 @@ export function useTrainingTrade({
   setError,
   applyTrade,
   onTradeExecuted,
+  currentPositionQty,
 }: UseTrainingTradeParams) {
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeType, setTradeType] = useState<"BUY" | "SELL" | null>(null);
@@ -118,12 +120,15 @@ export function useTrainingTrade({
       setLoading(true);
       setError(null);
 
+      const sellQty = currentPositionQty ?? undefined;
+
       const res = await trainingApi.sellAll(activeChartId);
       applyTrade(res);
 
       onTradeExecuted?.({
         side: "SELL",
         res,
+        qty: sellQty,
       });
 
       await loadEvents(activeChartId);

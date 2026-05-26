@@ -170,6 +170,24 @@ export default function CandleChart({
     };
   }, [tooltip]);
 
+  const tradeTooltipStyle = useMemo(() => {
+    if (!tradeTooltip) return undefined;
+
+    const width = mainContainerRef.current?.clientWidth ?? 0;
+    const tooltipWidth = 140;
+    const gap = 12;
+
+    const left =
+      tradeTooltip.x + tooltipWidth + gap > width
+        ? tradeTooltip.x - tooltipWidth - gap
+        : tradeTooltip.x + gap;
+
+    return {
+      left: Math.max(8, left),
+      top: Math.max(36, tradeTooltip.y - 12),
+    };
+  }, [tradeTooltip]);
+
   const tradeMarkersByTime = useMemo(() => {
     const map = new Map<number, TradeChartMarker[]>();
 
@@ -391,42 +409,59 @@ export default function CandleChart({
 
       const tradesAtTime = tradeMarkersByTimeRef.current.get(time) ?? [];
 
-      const hoveredTrade = tradesAtTime.find((trade) => {
-        if (!mainSeriesRef.current) return false;
+      const candleX = mainChart.timeScale().timeToCoordinate(time as any);
 
-        const tradeY = mainSeriesRef.current.candleSeries.priceToCoordinate(
-          trade.price,
+      if (candleX == null) {
+        setTooltip(null);
+        setTradeTooltip(null);
+        return;
+      }
+
+      const hoveredTrade = tradesAtTime.find((trade) => {
+        if (!mainSeriesRef.current || candleX == null) return false;
+
+        const highY = mainSeriesRef.current.candleSeries.priceToCoordinate(
+          candle.h,
+        );
+        const lowY = mainSeriesRef.current.candleSeries.priceToCoordinate(
+          candle.l,
         );
 
-        if (tradeY == null) return false;
+        if (highY == null || lowY == null) return false;
 
-        const xTolerance = 12;
-        const yTolerance = 18;
+        const markerY = trade.side === "BUY" ? lowY + 22 : highY - 22;
+
+        const xTolerance = 16;
+        const yTolerance = 22;
 
         return (
-          Math.abs(
-            param.point.x -
-              (mainChart.timeScale().timeToCoordinate(time as any) ?? 0),
-          ) <= xTolerance && Math.abs(param.point.y - tradeY) <= yTolerance
+          Math.abs(param.point.x - candleX) <= xTolerance &&
+          Math.abs(param.point.y - markerY) <= yTolerance
         );
       });
 
       if (hoveredTrade) {
+        setTooltip(null);
         setTradeTooltip({
           x: param.point.x,
           y: param.point.y,
           trade: hoveredTrade,
         });
-      } else {
-        setTradeTooltip(null);
+        return;
       }
+
+      setTradeTooltip(null);
 
       const top = Math.min(highY, lowY);
       const bottom = Math.max(highY, lowY);
 
+      const isNearCandleX = Math.abs(param.point.x - candleX) <= 10;
+
       const tolerance = 8;
       const isNearCandle =
-        param.point.y >= top - tolerance && param.point.y <= bottom + tolerance;
+        isNearCandleX &&
+        param.point.y >= top - tolerance &&
+        param.point.y <= bottom + tolerance;
 
       if (!isNearCandle) {
         setTooltip(null);
@@ -783,10 +818,7 @@ export default function CandleChart({
       {tradeTooltip && (
         <div
           className="pointer-events-none absolute z-30 w-[140px] rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-[11px] shadow-xl backdrop-blur"
-          style={{
-            left: Math.max(8, tradeTooltip.x + 12),
-            top: Math.max(36, tradeTooltip.y - 12),
-          }}
+          style={tradeTooltipStyle}
         >
           <div
             className={

@@ -186,9 +186,6 @@ export function TrainingCenterPanel({
             onRefresh={onRefreshChart}
             refreshing={refreshing}
             indicatorSettings={getIndicatorSettings(activeChartId)}
-            setGlobalIndicators={setGlobalIndicators}
-            setChartIndicators={setChartIndicators}
-            activeChartId={activeChartId}
             tradeMarkers={
               activeChartId ? (tradeMarkersByChart[activeChartId] ?? []) : []
             }
