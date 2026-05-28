@@ -2,17 +2,20 @@
 import http from "@/api/http";
 
 export type PaperAccountResponse = {
-    id: number;
-    name: string;
-    description?: string | null;
-    cashBalance: number;
-    isDefault?: boolean;
+  id: number;
+  name: string;
+  description?: string | null;
+  initialBalance: number;
+  cashBalance: number;
+  baseCurrency: "KRW" | "USD" | "YEN";
+  isDefault: boolean;
+  createdAt: string;
 };
 
 export type PaperAccountCreateRequest = {
-    name: string;
-    description?: string | null;
-    initialCash?: number; // 백엔드 DTO랑 다르면 제거/수정
+  name: string;
+  description?: string | null;
+  initialBalance: number;
 };
 
 export type PaperAccountUpdateRequest = {

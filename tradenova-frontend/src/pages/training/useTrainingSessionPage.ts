@@ -7,6 +7,7 @@ import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
 import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
+import { paperAccountApi } from "@/api/paperAccountApi";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -121,6 +122,8 @@ export function useTrainingSessionPage() {
 
     activeSessionLoading: core.activeSessionLoading,
     loadActiveSession: core.loadActiveSession,
+
+    loadAccounts: core.loadAccounts,
 
     // ===== 차트 데이터 =====
     candlesByChart: core.candlesByChart,

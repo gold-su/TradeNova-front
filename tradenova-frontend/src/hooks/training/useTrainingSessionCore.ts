@@ -17,6 +17,7 @@ import type {
   ViewMode,
 } from "./training.types";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
+import { paperAccountApi } from "@/api/paperAccountApi";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
@@ -475,27 +476,29 @@ export function useTrainingSessionCore() {
     }
   };
 
+  const loadAccounts = async (selectAccountId?: number) => {
+    try {
+      const list = await paperAccountApi.list();
+
+      setAccounts(list);
+
+      if (selectAccountId) {
+        setAccountId(selectAccountId);
+        return;
+      }
+
+      const def = list.find((a) => a.isDefault) ?? list[0];
+      setAccountId((prev) => prev ?? def?.id ?? null);
+    } catch (e) {
+      console.warn("계좌 목록 로드 실패", e);
+    }
+  };
+
   /**
-   * 계좌 목록을 최초 1회 불러온다.
-   * active 세션이 accountId를 먼저 세팅했더라도
-   * 여기서는 기존 값이 없을 때만 기본 계좌를 채운다.
+   * 계좌 목록 불러온다.
    */
   useEffect(() => {
-    (async () => {
-      try {
-        const list = await http
-          .get<PaperAccountDto[]>("/api/paper-accounts")
-          .then((r) => r.data);
-
-        setAccounts(list);
-
-        const def = list.find((a) => a.isDefault) ?? list[0];
-
-        setAccountId((prev) => prev ?? def?.id ?? null);
-      } catch (e) {
-        console.warn("계좌 목록 로드 실패", e);
-      }
-    })();
+    loadAccounts();
   }, []);
 
   /**
@@ -519,7 +522,8 @@ export function useTrainingSessionCore() {
     accounts,
     accountId,
     setAccountId,
-
+    loadAccounts,
+    
     charts: sortedCharts,
     setCharts,
 

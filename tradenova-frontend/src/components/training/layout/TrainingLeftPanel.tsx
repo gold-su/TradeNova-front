@@ -6,6 +6,7 @@ import type {
 } from "@/hooks/training/training.types";
 import { SessionInfoCard } from "@/components/training/common/SessionInfoCard";
 
+
 type Props = {
   sessionId: number | null;
   status: TrainingStatus;
@@ -47,6 +48,8 @@ export function TrainingLeftPanel({
   sessionAiLoading,
   sessionAiExists,
 }: Props) {
+  const hasSession = !!sessionId;
+
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 p-4">
       <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
@@ -54,6 +57,7 @@ export function TrainingLeftPanel({
 
         <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
           <div className="mb-2 text-sm font-semibold">계좌</div>
+
           <select
             value={accountId ?? ""}
             onChange={(e) =>
@@ -67,95 +71,100 @@ export function TrainingLeftPanel({
               </option>
             ))}
           </select>
+
+          {!hasSession && (
+            <div className="mt-2 text-[11px] leading-5 text-muted-foreground">
+              훈련을 시작할 계좌를 선택하세요.
+            </div>
+          )}
         </div>
-
-        <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-          <div className="mb-2 text-sm font-semibold">보기</div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`rounded-xl px-3 py-2 text-sm ${
-                viewMode === "grid"
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border/60 bg-background"
-              }`}
-            >
-              Grid
-            </button>
-            <button
-              onClick={() => setViewMode("single")}
-              className={`rounded-xl px-3 py-2 text-sm ${
-                viewMode === "single"
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border/60 bg-background"
-              }`}
-            >
-              Single
-            </button>
-          </div>
-
-          <label className="mt-3 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={syncNext}
-              onChange={(e) => setSyncNext(e.target.checked)}
-            />
-            Grid에서 NEXT 동기 진행
-          </label>
-        </div>
-
-        <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-          <div className="mb-2 text-sm font-semibold">차트 목록</div>
-          <div className="space-y-2">
-            {charts.map((c) => (
+        {hasSession && (
+          <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
+            <div className="mb-2 text-sm font-semibold">보기</div>
+            <div className="flex gap-2">
               <button
-                key={c.chartId}
-                onClick={() => setActiveChartId(c.chartId)}
-                className={`w-full rounded-xl border px-3 py-3 text-left ${
-                  activeChartId === c.chartId
-                    ? "border-primary/40 bg-primary/10"
-                    : "border-border/60 bg-background/20"
+                onClick={() => setViewMode("grid")}
+                className={`rounded-xl px-3 py-2 text-sm ${
+                  viewMode === "grid"
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border/60 bg-background"
                 }`}
               >
-                <div className="text-xs text-muted-foreground">
-                  Chart {c.chartIndex + 1}
-                </div>
-                <div className="text-sm font-semibold">
-                  {c.symbolTicker}{" "}
-                  <span className="text-muted-foreground">
-                    · {c.symbolName}
-                  </span>
-                </div>
+                Grid
               </button>
-            ))}
-          </div>
-        </div>
+              <button
+                onClick={() => setViewMode("single")}
+                className={`rounded-xl px-3 py-2 text-sm ${
+                  viewMode === "single"
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border/60 bg-background"
+                }`}
+              >
+                Single
+              </button>
+            </div>
 
-        <button
-          onClick={onCreateSession}
-          disabled={loading}
-          className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-        >
-          {loading ? "생성 중..." : "새 훈련 시작"}
-        </button>
-        <button
-          onClick={onFinishSession}
-          disabled={loading || !sessionId || status === "COMPLETED"}
-          className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
-        >
-          세션 종료
-        </button>
-        <button
-          onClick={onAnalyzeSessionAi}
-          disabled={loading || sessionAiLoading || !sessionId}
-          className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
-        >
-          {sessionAiLoading
-            ? "세션 AI 분석 중..."
-            : sessionAiExists
-              ? "세션 AI 다시 보기"
-              : "세션 AI 분석"}
-        </button>
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={syncNext}
+                onChange={(e) => setSyncNext(e.target.checked)}
+              />
+              Grid에서 NEXT 동기 진행
+            </label>
+          </div>
+        )}
+        {hasSession && (
+          <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
+            <div className="mb-2 text-sm font-semibold">차트 목록</div>
+            <div className="space-y-2">
+              {charts.map((c) => (
+                <button
+                  key={c.chartId}
+                  onClick={() => setActiveChartId(c.chartId)}
+                  className={`w-full rounded-xl border px-3 py-3 text-left ${
+                    activeChartId === c.chartId
+                      ? "border-primary/40 bg-primary/10"
+                      : "border-border/60 bg-background/20"
+                  }`}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    Chart {c.chartIndex + 1}
+                  </div>
+                  <div className="text-sm font-semibold">
+                    {c.symbolTicker}{" "}
+                    <span className="text-muted-foreground">
+                      · {c.symbolName}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {hasSession && (
+          <>
+            <button
+              onClick={onFinishSession}
+              disabled={loading || status === "COMPLETED"}
+              className="w-full rounded-2xl border border-red-500/40 bg-background px-4 py-3 text-sm font-semibold text-red-300 disabled:opacity-50"
+            >
+              세션 종료
+            </button>
+
+            <button
+              onClick={onAnalyzeSessionAi}
+              disabled={loading || sessionAiLoading}
+              className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold disabled:opacity-50"
+            >
+              {sessionAiLoading
+                ? "세션 AI 분석 중..."
+                : sessionAiExists
+                  ? "세션 AI 다시 보기"
+                  : "세션 AI 분석"}
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );
