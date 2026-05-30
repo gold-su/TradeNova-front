@@ -34,11 +34,14 @@ export type TrainingChartDto = {
   symbolId: number;
   symbolTicker: string;
   symbolName: string;
+  trainingSector: string;
   bars: number;
   progressIndex: number;
+  status: "IN_PROGRESS" | "COMPLETED";
   startDate: string;
   endDate: string;
 };
+
 
 export type CreateSessionRequest = {
   accountId: number;

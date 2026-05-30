@@ -35,8 +35,9 @@ export type ProgressMap = Record<number, ProgressResponse>;
 export type PaperAccountDto = {
   id: number;
   name: string;
-  description?: string | null;
+  initialBalance: number;
   cashBalance: number;
+  description?: string | null;
   isDefault?: boolean;
 };
 

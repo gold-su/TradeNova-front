@@ -101,8 +101,6 @@ export function useTrainingAi(
    * 차트 AI 최신 결과 조회
    */
   const loadLatestChartAi = async (targetChartId?: number | null) => {
-    
-    console.log("analyze chartId =", chartId);
 
     const cid = targetChartId ?? chartId;
 
