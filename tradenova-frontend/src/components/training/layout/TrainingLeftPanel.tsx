@@ -136,82 +136,6 @@ export function TrainingLeftPanel({
 
         {hasSession && (
           <section className="border-b border-border/40 py-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-xs font-semibold text-muted-foreground">
-                차트
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                블라인드 훈련
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {charts.map((c) => {
-                const progress =
-                  progressByChart[c.chartId]?.progressIndex ??
-                  c.progressIndex ??
-                  0;
-                const total = Math.max(c.bars - 1, 1);
-                const pct = Math.min(100, Math.round((progress / total) * 100));
-
-                const isActive = activeChartId === c.chartId;
-                const isDone = status === "COMPLETED" || progress >= total;
-
-                return (
-                  <button
-                    key={c.chartId}
-                    onClick={() => setActiveChartId(c.chartId)}
-                    className={[
-                      "w-full rounded-xl px-3 py-2.5 text-left transition",
-                      isActive
-                        ? "bg-primary/10 ring-1 ring-primary/30"
-                        : "hover:bg-background/40",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <div>
-                          <div className="font-medium">
-                            {sectorLabel(c.trainingSector)}
-                          </div>
-
-                          <div className="text-[10px] text-muted-foreground">
-                            Chart {c.chartIndex + 1}
-                          </div>
-                        </div>
-
-                        <span
-                          className={[
-                            "rounded-full px-2 py-0.5 text-[10px]",
-                            isDone
-                              ? "bg-muted/40 text-muted-foreground"
-                              : "bg-green-500/10 text-green-400",
-                          ].join(" ")}
-                        >
-                          {isDone ? "완료" : "진행 중"}
-                        </span>
-                      </div>
-
-                      <span className="text-muted-foreground">
-                        {progress}/{total} · {pct}%
-                      </span>
-                    </div>
-
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted/40">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {hasSession && (
-          <section className="border-b border-border/40 py-4">
             <div className="mb-2 text-xs font-semibold text-muted-foreground">
               보기
             </div>
@@ -248,6 +172,77 @@ export function TrainingLeftPanel({
               />
               Grid에서 NEXT 동기 진행
             </label>
+          </section>
+        )}
+
+        {hasSession && (
+          <section className="border-b border-border/40 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-xs font-semibold text-muted-foreground">
+                차트
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                블라인드 훈련
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {charts.map((c) => {
+                const progress =
+                  progressByChart[c.chartId]?.progressIndex ??
+                  c.progressIndex ??
+                  0;
+                const total = Math.max(c.bars - 1, 1);
+                const pct = Math.min(100, Math.round((progress / total) * 100));
+
+                const isActive = activeChartId === c.chartId;
+                const isDone = status === "COMPLETED" || progress >= total;
+
+                return (
+                  <button
+                    key={c.chartId}
+                    onClick={() => setActiveChartId(c.chartId)}
+                    className={[
+                      "w-full rounded-xl px-3 py-2.5 text-left transition",
+                      isActive
+                        ? "bg-primary/10 ring-1 ring-primary/30"
+                        : "hover:bg-background/40",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <div>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[11px] font-medium text-muted-foreground">
+                            Chart {c.chartIndex + 1} -
+                          </span>
+
+                          <span className="text-sm font-semibold text-foreground">
+                            {sectorLabel(c.trainingSector)}
+                          </span>
+                        </div>
+
+                        {isDone && (
+                          <div className="mt-0.5 text-[10px] text-muted-foreground">
+                            완료된 차트
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="text-muted-foreground">
+                        {progress}/{total} · {pct}%
+                      </span>
+                    </div>
+
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted/40">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </section>
         )}
 
