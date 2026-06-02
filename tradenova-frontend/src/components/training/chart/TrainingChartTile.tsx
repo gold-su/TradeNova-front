@@ -55,7 +55,7 @@ export function TrainingChartTile({
     Number(indicatorSettings.rsi.enabled) +
     Number(indicatorSettings.macd.enabled);
 
-  const chartHeight = subPaneCount > 0 ? 320 + subPaneCount * 110 : 260;
+  const chartHeight = subPaneCount > 0 ? 260 + subPaneCount * 90 : 250;
 
   return (
     <div

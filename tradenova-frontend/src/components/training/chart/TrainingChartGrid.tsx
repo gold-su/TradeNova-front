@@ -37,7 +37,7 @@ export function TrainingChartGrid({
 }: Props) {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto pr-1">
-      <div className="grid min-h-full grid-cols-2 grid-rows-2 gap-3 pb-2">
+      <div className="grid grid-cols-2 gap-3 pb-6">
         {charts.map((c) => (
           <TrainingChartTile
             key={c.chartId}

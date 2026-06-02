@@ -19,6 +19,35 @@ import { useState } from "react";
 import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
+import {
+  PencilLine,
+  Activity,
+  Building2,
+  Newspaper,
+  Camera,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+function sectorLabel(sector?: string) {
+  switch (sector) {
+    case "SEMICONDUCTOR":
+      return "반도체";
+    case "SECONDARY_BATTERY":
+      return "2차전지";
+    case "PLATFORM":
+      return "플랫폼";
+    case "BIO":
+      return "바이오";
+    case "FINANCE":
+      return "금융";
+    case "DEFENSE":
+      return "방산";
+    case "SHIPBUILDING":
+      return "조선";
+    default:
+      return "블라인드";
+  }
+}
 
 type Props = {
   charts: TrainingChartDto[];
@@ -75,36 +104,124 @@ export function TrainingCenterPanel({
     "GLOBAL",
   );
 
+  const [visibleError, setVisibleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!error) return;
+
+    setVisibleError(error);
+
+    const timer = window.setTimeout(() => {
+      setVisibleError(null);
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
   return (
-    <main className="flex-1 overflow-hidden p-4">
-      <div className="mb-4 flex items-center justify-between gap-4">
+    <main className="flex-1 overflow-hidden px-3 py-2">
+      <div className="mb-2 flex items-center justify-between border-b border-border/40 pb-3">
         <div>
-          <div className="text-xs text-muted-foreground">Active Chart</div>
-          <div className="text-lg font-semibold">
-            {activeChart
-              ? `${activeChart.symbolTicker} · ${activeChart.symbolName}`
-              : "차트를 선택하세요."}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Active Chart
+            </span>
+
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+              Blind training
+            </span>
+          </div>
+
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Chart {activeChart ? activeChart.chartIndex + 1 : "-"} -
+            </span>
+
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              {activeChart
+                ? sectorLabel(activeChart.trainingSector)
+                : "차트를 선택하세요"}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-background/30 px-3 py-2">
+        <div className="flex rounded-xl bg-background/40 p-1">
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              viewMode === "grid"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Grid
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("single")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              viewMode === "single"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Single
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-2 flex items-center justify-between gap-2 border-b border-border/40 pb-2">
+        <div className="mb-2 flex h-10 items-center justify-between border-b border-border/40">
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+          >
+            <PencilLine className="h-3.5 w-3.5" />
+            그리기
+          </button>
+
           <button
             type="button"
             onClick={() => {
               setIndicatorScope("GLOBAL");
               setIndicatorOpen(true);
             }}
-            className="h-9 rounded-xl border border-border/60 bg-background/30 px-3 text-sm hover:bg-background/50"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
           >
+            <Activity className="h-3.5 w-3.5" />
             보조지표
           </button>
 
-          {/* 라벨 */}
-          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            새로고침
-          </span>
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            재무
+          </button>
 
-          {/* 타입 선택 */}
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+          >
+            <Newspaper className="h-3.5 w-3.5" />
+            뉴스
+          </button>
+
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+          >
+            <Camera className="h-3.5 w-3.5" />
+            캡처
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground">새로고침</span>
+
           <Select
             value={refreshRequest.refreshType}
             onValueChange={(value) => {
@@ -119,17 +236,16 @@ export function TrainingCenterPanel({
               });
             }}
           >
-            <SelectTrigger className="h-8 w-[120px] text-xs">
+            <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs">
               <SelectValue />
             </SelectTrigger>
 
             <SelectContent>
               <SelectItem value="RANDOM">전체 랜덤</SelectItem>
-              <SelectItem value="TRAINING_SECTOR">훈련 섹터</SelectItem>
+              <SelectItem value="TRAINING_SECTOR">섹터 선택</SelectItem>
             </SelectContent>
           </Select>
 
-          {/* 옵션 선택 */}
           <Select
             value={refreshRequest.optionValue ?? "SEMICONDUCTOR"}
             onValueChange={(value) =>
@@ -140,7 +256,7 @@ export function TrainingCenterPanel({
             }
             disabled={refreshRequest.refreshType === "RANDOM"}
           >
-            <SelectTrigger className="h-8 w-[120px] text-xs bg-background/50 border-border/50">
+            <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs disabled:opacity-40">
               <SelectValue />
             </SelectTrigger>
 
@@ -163,7 +279,7 @@ export function TrainingCenterPanel({
         </div>
       )}
 
-      <div className="h-[calc(100%-64px)]">
+      <div className="h-[calc(100%-92px)]">
         {viewMode === "grid" ? (
           <TrainingChartGrid
             charts={charts}
@@ -199,8 +315,8 @@ export function TrainingCenterPanel({
         onScopeChange={setIndicatorScope}
         activeChartLabel={
           activeChart
-            ? `Chart ${activeChart.chartIndex + 1} · ${activeChart.symbolName}`
-            : "현재 차트"
+            ? `Chart ${activeChart.chartIndex + 1} · 블라인드 차트`
+            : "차트를 선택하세요."
         }
         hasChartOverride={!!(activeChartId && chartIndicators[activeChartId])}
         settings={

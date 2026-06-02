@@ -92,7 +92,7 @@ export function TrainingLeftPanel({
 
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 px-4 py-3">
-      <div className="thin-scrollbar h-full overflow-y-auto pr-1">
+      <div className="thin-scrollbar flex h-full flex-col overflow-y-auto pr-1">
         <div className="sticky top-0 z-10 border-b border-border/40 bg-background/95 py-3 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
@@ -135,48 +135,7 @@ export function TrainingLeftPanel({
         </section>
 
         {hasSession && (
-          <section className="border-b border-border/40 py-4">
-            <div className="mb-2 text-xs font-semibold text-muted-foreground">
-              보기
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm ${
-                  viewMode === "grid"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background/30 hover:bg-background/50"
-                }`}
-              >
-                Grid
-              </button>
-
-              <button
-                onClick={() => setViewMode("single")}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm ${
-                  viewMode === "single"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background/30 hover:bg-background/50"
-                }`}
-              >
-                Single
-              </button>
-            </div>
-
-            <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={syncNext}
-                onChange={(e) => setSyncNext(e.target.checked)}
-              />
-              Grid에서 NEXT 동기 진행
-            </label>
-          </section>
-        )}
-
-        {hasSession && (
-          <section className="border-b border-border/40 py-4">
+          <section className="py-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-xs font-semibold text-muted-foreground">
                 차트
@@ -247,7 +206,7 @@ export function TrainingLeftPanel({
         )}
 
         {hasSession && (
-          <section className="space-y-2 py-4">
+          <section className="mt-auto space-y-2 border-t border-border/40 py-4">
             <button
               onClick={onAnalyzeSessionAi}
               disabled={loading || sessionAiLoading}
