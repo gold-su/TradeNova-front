@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
@@ -26,7 +26,6 @@ import {
   Newspaper,
   Camera,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -149,11 +148,10 @@ export function TrainingCenterPanel({
           <button
             type="button"
             onClick={() => setViewMode("grid")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-              viewMode === "grid"
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "grid"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             Grid
           </button>
@@ -161,11 +159,10 @@ export function TrainingCenterPanel({
           <button
             type="button"
             onClick={() => setViewMode("single")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-              viewMode === "single"
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "single"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             Single
           </button>
