@@ -30,7 +30,8 @@ type Props = {
 
   loadAccounts: (selectAccountId?: number) => Promise<void>;
 
-  progressByChart: ProgressMap;
+  onCreateSession: () => void;
+  progressByChart?: ProgressMap;
 };
 
 function sectorLabel(sector?: string) {
@@ -148,7 +149,7 @@ export function TrainingLeftPanel({
             <div className="space-y-2">
               {charts.map((c) => {
                 const progress =
-                  progressByChart[c.chartId]?.progressIndex ??
+                  progressByChart?.[c.chartId]?.progressIndex ??
                   c.progressIndex ??
                   0;
                 const total = Math.max(c.bars - 1, 1);

@@ -14,6 +14,7 @@ import { DraftEditor } from "@/components/training/report/DraftEditor";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
 import { QuickPhrasePanel } from "@/components/training/report/QuickPhrasePanel";
 import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
+import { TrainingTradeJournalPanel } from "@/components/training/common/TrainingTradeJournalPanel";
 
 type Props = {
   activeChart: TrainingChartDto | null;
@@ -40,6 +41,22 @@ type Props = {
   chartAiPayload: ChartAiPayload | null;
   chartAiLoading: boolean;
   onAnalyzeChartAi: () => void;
+  syncNext: boolean;
+  setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
+  tradeForm: {
+    qty: number;
+    entryReason: string;
+    riskNote: string;
+  };
+  setTradeForm: React.Dispatch<
+    React.SetStateAction<{
+      qty: number;
+      entryReason: string;
+      riskNote: string;
+    }>
+  >;
+  executeBuy: () => void;
+  executeSell: () => void;
 };
 
 function AnalysisTypeBadge({ type }: { type: "FAST" | "DEEP" }) {
@@ -77,6 +94,12 @@ export function TrainingRightPanel({
   chartAiPayload,
   chartAiLoading,
   onAnalyzeChartAi,
+  syncNext,
+  setSyncNext,
+  tradeForm,
+  setTradeForm,
+  executeBuy,
+  executeSell,
 }: Props) {
   return (
     <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
@@ -192,24 +215,19 @@ export function TrainingRightPanel({
           </div>
         )}
 
-        <TrainingActionBar
+        <TrainingTradeJournalPanel
+          tradeForm={tradeForm}
+          setTradeForm={setTradeForm}
+          quickPhrases={quickPhrases}
           disabled={disabled}
           loading={loading}
-          onNext={onNext}
+          syncNext={syncNext}
+          setSyncNext={setSyncNext}
+          lastSavedMessage={null}
+          onBuy={executeBuy}
+          onSell={executeSell}
           onSellAll={onSellAll}
-          onBuy={openBuyModal}
-          onSell={openSellModal}
-        />
-
-        <QuickPhrasePanel items={quickPhrases} onAppend={appendQuickPhrase} />
-
-        <DraftEditor
-          value={draft}
-          onChange={setDraft}
-          onSave={onSaveDraft}
-          onCreateSnapshot={onCreateSnapshot}
-          onCreateNoteEvent={onCreateNoteEvent}
-          saving={draftSaving}
+          onNext={onNext}
         />
 
         <EventLogPanel items={events} loading={eventLoading} />

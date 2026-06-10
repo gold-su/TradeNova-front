@@ -139,6 +139,55 @@ export function useTrainingTrade({
     }
   };
 
+  const executeTrade = async (side: "BUY" | "SELL") => {
+    if (!activeChartId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const tradeRes =
+        side === "BUY"
+          ? await trainingApi.buy(activeChartId, { qty: tradeForm.qty })
+          : await trainingApi.sell(activeChartId, { qty: tradeForm.qty });
+
+      applyTrade(tradeRes);
+
+      onTradeExecuted?.({
+        side,
+        res: tradeRes,
+        qty: tradeForm.qty,
+      });
+
+      await reportApi.createEvent(activeChartId, {
+        type: "TRADE",
+        title: `${side} 실행`,
+        payloadJson: {
+          side,
+          qty: tradeForm.qty,
+          entryReason: tradeForm.entryReason,
+          riskNote: tradeForm.riskNote,
+          price: tradeRes.executedPrice,
+          tradeId: tradeRes.tradeId,
+          candleTime: tradeRes.candleTime,
+          savedForAiReview: true,
+        },
+      });
+
+      setTradeForm((prev) => ({
+        ...prev,
+        entryReason: "",
+        riskNote: "",
+      }));
+
+      await loadEvents(activeChartId);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? `${side} 실패`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openBuyModal = () => {
     setTradeType("BUY");
     setTradeModalOpen(true);
@@ -161,5 +210,8 @@ export function useTrainingTrade({
     onSellAll,
     openBuyModal,
     openSellModal,
+
+    executeBuy: () => executeTrade("BUY"),
+    executeSell: () => executeTrade("SELL"),
   };
 }

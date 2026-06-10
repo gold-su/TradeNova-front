@@ -118,165 +118,166 @@ export function TrainingCenterPanel({
   }, [error]);
 
   return (
-    <main className="flex-1 overflow-hidden px-3 py-2">
-      <div className="mb-2 flex items-center justify-between border-b border-border/40 pb-3">
-        <div>
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">
+      {/* 상단 헤더 */}
+      <div className="shrink-0 border-b border-border/40 pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/70">
+              ACTIVE CHART
+            </div>
+
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-md border border-border/50 bg-background/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                Chart {activeChart ? activeChart.chartIndex + 1 : "-"}
+              </span>
+
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                {activeChart
+                  ? sectorLabel(activeChart.trainingSector)
+                  : "차트를 선택하세요"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex rounded-xl bg-background/40 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "grid"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              Grid
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode("single")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "single"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              Single
+            </button>
+          </div>
+        </div>
+
+        {/* 툴바 */}
+        <div className="mt-2 flex h-9 items-center justify-between">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
+            >
+              <PencilLine className="h-3.5 w-3.5" />
+              그리기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIndicatorScope("GLOBAL");
+                setIndicatorOpen(true);
+              }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
+            >
+              <Activity className="h-3.5 w-3.5" />
+              보조지표
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              재무
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
+            >
+              <Newspaper className="h-3.5 w-3.5" />
+              뉴스
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
+            >
+              <Camera className="h-3.5 w-3.5" />
+              캡처
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Active Chart
-            </span>
+            <span className="text-[11px] text-muted-foreground">새로고침</span>
 
-            <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-              Blind training
-            </span>
+            <Select
+              value={refreshRequest.refreshType}
+              onValueChange={(value) => {
+                const type = value as ChartRefreshRequest["refreshType"];
+
+                setRefreshRequest({
+                  refreshType: type,
+                  optionValue:
+                    type === "RANDOM"
+                      ? null
+                      : (refreshRequest.optionValue ?? "SEMICONDUCTOR"),
+                });
+              }}
+            >
+              <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="RANDOM">전체 랜덤</SelectItem>
+                <SelectItem value="TRAINING_SECTOR">섹터 선택</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={refreshRequest.optionValue ?? "SEMICONDUCTOR"}
+              onValueChange={(value) =>
+                setRefreshRequest((prev) => ({
+                  ...prev,
+                  optionValue: value,
+                }))
+              }
+              disabled={refreshRequest.refreshType === "RANDOM"}
+            >
+              <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs disabled:opacity-40">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="SEMICONDUCTOR">반도체</SelectItem>
+                <SelectItem value="SECONDARY_BATTERY">2차전지</SelectItem>
+                <SelectItem value="PLATFORM">플랫폼</SelectItem>
+                <SelectItem value="BIO">바이오</SelectItem>
+                <SelectItem value="FINANCE">금융</SelectItem>
+                <SelectItem value="DEFENSE">방산</SelectItem>
+                <SelectItem value="SHIPBUILDING">조선</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          <div className="mt-1.5 flex items-baseline gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Chart {activeChart ? activeChart.chartIndex + 1 : "-"} -
-            </span>
-
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              {activeChart
-                ? sectorLabel(activeChart.trainingSector)
-                : "차트를 선택하세요"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex rounded-xl bg-background/40 p-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "grid"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            Grid
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setViewMode("single")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${viewMode === "single"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            Single
-          </button>
         </div>
       </div>
 
-      <div className="mb-2 flex items-center justify-between gap-2 border-b border-border/40 pb-2">
-        <div className="mb-2 flex h-10 items-center justify-between border-b border-border/40">
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <PencilLine className="h-3.5 w-3.5" />
-            그리기
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setIndicatorScope("GLOBAL");
-              setIndicatorOpen(true);
-            }}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <Activity className="h-3.5 w-3.5" />
-            보조지표
-          </button>
-
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <Building2 className="h-3.5 w-3.5" />
-            재무
-          </button>
-
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <Newspaper className="h-3.5 w-3.5" />
-            뉴스
-          </button>
-
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <Camera className="h-3.5 w-3.5" />
-            캡처
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">새로고침</span>
-
-          <Select
-            value={refreshRequest.refreshType}
-            onValueChange={(value) => {
-              const type = value as ChartRefreshRequest["refreshType"];
-
-              setRefreshRequest({
-                refreshType: type,
-                optionValue:
-                  type === "RANDOM"
-                    ? null
-                    : (refreshRequest.optionValue ?? "SEMICONDUCTOR"),
-              });
-            }}
-          >
-            <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="RANDOM">전체 랜덤</SelectItem>
-              <SelectItem value="TRAINING_SECTOR">섹터 선택</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={refreshRequest.optionValue ?? "SEMICONDUCTOR"}
-            onValueChange={(value) =>
-              setRefreshRequest((prev) => ({
-                ...prev,
-                optionValue: value,
-              }))
-            }
-            disabled={refreshRequest.refreshType === "RANDOM"}
-          >
-            <SelectTrigger className="h-8 w-[110px] border-border/40 bg-background/30 text-xs disabled:opacity-40">
-              <SelectValue />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="SEMICONDUCTOR">반도체</SelectItem>
-              <SelectItem value="SECONDARY_BATTERY">2차전지</SelectItem>
-              <SelectItem value="PLATFORM">플랫폼</SelectItem>
-              <SelectItem value="BIO">바이오</SelectItem>
-              <SelectItem value="FINANCE">금융</SelectItem>
-              <SelectItem value="DEFENSE">방산</SelectItem>
-              <SelectItem value="SHIPBUILDING">조선</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
+      {visibleError && (
+        <div className="pointer-events-none absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-red-400" />
+            <span>{visibleError}</span>
+          </div>
         </div>
       )}
 
-      <div className="h-[calc(100%-92px)]">
+      <div className="min-h-0 flex-1 pt-3">
         {viewMode === "grid" ? (
           <TrainingChartGrid
             charts={charts}

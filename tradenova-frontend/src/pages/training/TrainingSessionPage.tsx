@@ -140,17 +140,15 @@ export default function TrainingSessionPage() {
         chartAiPayload={page.chartAiPayload}
         chartAiLoading={page.chartAiLoading}
         onAnalyzeChartAi={page.onAnalyzeChartAi}
-      />
-
-      <TradeReasonModal
-        open={page.tradeModalOpen}
-        tradeType={page.tradeType}
+        syncNext={page.syncNext}
+        setSyncNext={page.setSyncNext}
         tradeForm={page.tradeForm}
         setTradeForm={page.setTradeForm}
-        loading={page.loading}
-        onClose={() => page.setTradeModalOpen(false)}
-        onConfirm={page.handleConfirmTrade}
+        executeBuy={page.executeBuy}
+        executeSell={page.executeSell}
       />
+
+
     </div>
   );
 }

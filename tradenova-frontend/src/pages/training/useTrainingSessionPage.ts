@@ -33,7 +33,7 @@ export function useTrainingSessionPage() {
   const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
     useTrainingTradeMarkers();
 
- 
+
 
   /**
    * 거래 응답을 progress map에 반영하는 함수
@@ -153,6 +153,8 @@ export function useTrainingSessionPage() {
     tradeType: trade.tradeType,
     tradeForm: trade.tradeForm,
     setTradeForm: trade.setTradeForm,
+    executeBuy: trade.executeBuy,
+    executeSell: trade.executeSell,
 
     // ===== 액션 =====
     onCreateSession: core.onCreateSession,

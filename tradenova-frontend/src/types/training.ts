@@ -207,24 +207,6 @@ export type ActiveTrainingSessionResponse = {
   charts: TrainingChartDto[];
 };
 
-export type SessionAiPayload = {
-  analysisScope: "SESSION";
-  sessionId: number;
-  score: number;
-  summary: string;
-  generatedAt: string;
-  analysisVersion: number;
-  hasSnapshots: boolean;
-  tradedChartCount: number;
-  totalChartCount: number;
-  completedChartCount: number;
-  totalTradeCount: number;
-  totalEventCount: number;
-  snapshotCount: number;
-  warnings: string[];
-  strengths: string[];
-};
-
 export type ChartAiPayload = {
   analysisScope: "CHART";
   analysisType: "FAST" | "DEEP";
