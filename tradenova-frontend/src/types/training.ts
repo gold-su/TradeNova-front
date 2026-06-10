@@ -226,10 +226,10 @@ export type ChartAiPayload = {
 
 export type SessionFinishResponse = {
   sessionId: number;
-  status: TrainingStatus | string;
+  sessionStatus: TrainingStatus;
   totalChartCount: number;
   completedChartCount: number;
-  forceCompletedCount: number;
+  forceCompletedChartCount: number;
 };
 
 export type SessionAiPayload = {
@@ -250,7 +250,13 @@ export type SessionAiPayload = {
   strengths: string[];
 };
 
-export type ChartRefreshType = "RANDOM" | "TRAINING_SECTOR" | "EXCHANGE_SECTOR";
+export type ChartRefreshType =
+  | "RANDOM"
+  | "TRAINING_SECTOR"
+  | "EXCHANGE_SECTOR"
+  | "TOP_VOLUME"
+  | "ORDER_FLOW"
+  | "THEME";
 
 export type TrainingSector =
   | "SEMICONDUCTOR"
