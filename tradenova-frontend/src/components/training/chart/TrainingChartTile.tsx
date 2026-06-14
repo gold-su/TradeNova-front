@@ -82,7 +82,7 @@ export function TrainingChartTile({
       className={[
         "group relative flex min-h-0 cursor-pointer flex-col rounded-xl border bg-background/10 p-2.5 text-left shadow-sm transition-all duration-150",
         active
-          ? "border-primary/45 bg-primary/[0.035] shadow-[0_0_0_1px_rgba(52,211,153,0.12),0_12px_30px_rgba(0,0,0,0.22)]"
+          ? "border-primary/60 bg-background/10 shadow-[0_0_0_1px_rgba(52,211,153,0.18),0_10px_24px_rgba(0,0,0,0.2)]"
           : "border-border/40 hover:border-border/80 hover:bg-background/20 hover:shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
       ].join(" ")}
     >

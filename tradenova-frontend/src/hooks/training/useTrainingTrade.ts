@@ -53,6 +53,19 @@ export function useTrainingTrade({
 
   const [loading, setLoading] = useState(false);
 
+  const [lastSavedMessage, setLastSavedMessage] = useState<{
+    text: string;
+    side: "BUY" | "SELL";
+  } | null>(null);
+
+  const showSavedMessage = (text: string, side: "BUY" | "SELL") => {
+    setLastSavedMessage({ text, side });
+
+    window.setTimeout(() => {
+      setLastSavedMessage(null);
+    }, 3000);
+  };
+
   /**
    * BUY / SELL 실행 후
    * - trade 응답 반영
@@ -125,13 +138,41 @@ export function useTrainingTrade({
       const res = await trainingApi.sellAll(activeChartId);
       applyTrade(res);
 
+      await reportApi.createEvent(activeChartId, {
+        type: "TRADE",
+        title: "SELL ALL 실행",
+        payloadJson: {
+          side: "SELL",
+          qty: sellQty,
+          entryReason: tradeForm.entryReason,
+          riskNote: tradeForm.riskNote,
+          price: res.executedPrice,
+          tradeId: res.tradeId,
+          candleTime: res.candleTime,
+          savedForAiReview: true,
+          sellAll: true,
+        },
+      });
+
       onTradeExecuted?.({
         side: "SELL",
         res,
         qty: sellQty,
       });
 
+      showSavedMessage(
+        `SELL ALL 저장됨 · ${new Intl.NumberFormat("ko-KR").format(
+          Number(res.executedPrice),
+        )}원 · AI 리뷰 반영`,
+        "SELL",
+      );
       await loadEvents(activeChartId);
+
+      setTradeForm((prev) => ({
+        ...prev,
+        entryReason: "",
+        riskNote: "",
+      }));
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL ALL 실패");
     } finally {
@@ -180,6 +221,13 @@ export function useTrainingTrade({
         riskNote: "",
       }));
 
+      showSavedMessage(
+        `${side} 저장됨 · ${tradeForm.qty}주 · ${new Intl.NumberFormat("ko-KR").format(
+          Number(tradeRes.executedPrice),
+        )}원 · AI 리뷰 반영`,
+        side,
+      );
+
       await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? `${side} 실패`);
@@ -213,5 +261,6 @@ export function useTrainingTrade({
 
     executeBuy: () => executeTrade("BUY"),
     executeSell: () => executeTrade("SELL"),
+    lastSavedMessage,
   };
 }

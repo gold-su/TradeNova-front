@@ -14,7 +14,10 @@ type Props = {
     loading: boolean;
     syncNext: boolean;
     setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
-    lastSavedMessage?: string | null;
+    lastSavedMessage?: {
+        text: string;
+        side: "BUY" | "SELL";
+    } | null;
     onBuy: () => void;
     onSell: () => void;
     onSellAll: () => void;
@@ -53,15 +56,29 @@ export function TrainingTradeJournalPanel({
                 </div>
 
                 {lastSavedMessage && (
-                    <span className="rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-[11px] text-primary">
+                    <span
+                        className={[
+                            "rounded-md px-2 py-1 text-[11px]",
+                            lastSavedMessage.side === "BUY"
+                                ? "border border-primary/25 bg-primary/10 text-primary"
+                                : "border border-red-500/25 bg-red-500/10 text-red-300",
+                        ].join(" ")}
+                    >
                         저장됨
                     </span>
                 )}
             </div>
 
             {lastSavedMessage && (
-                <div className="mb-3 rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs text-primary">
-                    {lastSavedMessage}
+                <div
+                    className={[
+                        "mb-3 rounded-lg px-3 py-2 text-xs",
+                        lastSavedMessage.side === "BUY"
+                            ? "border border-primary/20 bg-primary/[0.06] text-primary"
+                            : "border border-red-500/20 bg-red-500/10 text-red-300",
+                    ].join(" ")}
+                >
+                    {lastSavedMessage.text}
                 </div>
             )}
 

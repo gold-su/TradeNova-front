@@ -1,7 +1,6 @@
 import { TrainingCenterPanel } from "@/components/training/layout/TrainingCenterPanel";
 import { TrainingLeftPanel } from "@/components/training/layout/TrainingLeftPanel";
 import { TrainingRightPanel } from "@/components/training/layout/TrainingRightPanel";
-import { TradeReasonModal } from "@/components/training/modal/TradeReasonModal";
 import { useTrainingSessionPage } from "@/pages/training/useTrainingSessionPage";
 
 export default function TrainingSessionPage() {
@@ -140,15 +139,15 @@ export default function TrainingSessionPage() {
         chartAiPayload={page.chartAiPayload}
         chartAiLoading={page.chartAiLoading}
         onAnalyzeChartAi={page.onAnalyzeChartAi}
+        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
         syncNext={page.syncNext}
         setSyncNext={page.setSyncNext}
         tradeForm={page.tradeForm}
         setTradeForm={page.setTradeForm}
         executeBuy={page.executeBuy}
         executeSell={page.executeSell}
+        lastSavedMessage={page.lastSavedMessage}
       />
-
-
     </div>
   );
 }

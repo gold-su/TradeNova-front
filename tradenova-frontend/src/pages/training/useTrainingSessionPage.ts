@@ -197,6 +197,8 @@ export function useTrainingSessionPage() {
     setChartIndicators: core.setChartIndicators,
     getIndicatorSettings: core.getIndicatorSettings,
 
+    lastSavedMessage: trade.lastSavedMessage,
+
     tradeMarkersByChart,
     currentPositionQty: core.activeProgress?.positionQty,
     onTradeExecuted: (input) =>
