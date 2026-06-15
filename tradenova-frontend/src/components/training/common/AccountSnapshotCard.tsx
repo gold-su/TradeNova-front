@@ -1,4 +1,5 @@
 import type { ProgressResponse, TrainingChartDto } from "@/types/training";
+import { Wallet } from "lucide-react";
 
 function n(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
@@ -12,38 +13,90 @@ function n2(v: number | null | undefined) {
   }).format(v);
 }
 
+function sectorLabel(sector?: string) {
+  switch (sector) {
+    case "SEMICONDUCTOR":
+      return "반도체";
+    case "SECONDARY_BATTERY":
+      return "2차전지";
+    case "PLATFORM":
+      return "플랫폼";
+    case "BIO":
+      return "바이오";
+    case "FINANCE":
+      return "금융";
+    case "DEFENSE":
+      return "방산";
+    case "SHIPBUILDING":
+      return "조선";
+    default:
+      return "블라인드";
+  }
+}
+
 type Props = {
   chart: TrainingChartDto | null;
   progress: ProgressResponse | null;
 };
 
 export function AccountSnapshotCard({ chart, progress }: Props) {
-  return (
-    <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-      <div className="mb-3 text-sm font-semibold">Account Snapshot</div>
+  const cash = progress?.cashBalance ?? null;
+  const qty = progress?.positionQty ?? null;
+  const avg = progress?.avgPrice ?? null;
+  const current = progress?.currentPrice ?? null;
 
-      <div className="mb-3 text-xs text-muted-foreground">
-        {chart
-          ? `${chart.symbolTicker} · ${chart.symbolName}`
-          : "선택된 차트 없음"}
+  const hasPosition = !!qty && qty > 0;
+
+  return (
+    <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="text-sm font-semibold">계좌/포지션</div>
+        </div>
+
+        <div className="text-[11px] text-muted-foreground">
+          {chart
+            ? `Chart ${chart.chartIndex + 1} · ${sectorLabel(chart.trainingSector)}`
+            : "차트 없음"}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Current Price</div>
-          <div className="font-semibold">{n2(progress?.currentPrice)}</div>
+      <div className="rounded-lg border border-border/35 bg-background/25 px-3 py-2">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-[10px] text-muted-foreground">현재가</div>
+            <div className="mt-0.5 text-lg font-bold leading-none text-primary">
+              {n2(current)}
+            </div>
+          </div>
+
+          <div className="text-right text-[11px] text-muted-foreground">
+            {hasPosition ? "보유 중" : "미보유"}
+          </div>
         </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Cash</div>
-          <div className="font-semibold">{n(progress?.cashBalance)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Position Qty</div>
-          <div className="font-semibold">{n2(progress?.positionQty)}</div>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/20 p-3">
-          <div className="text-muted-foreground">Avg Price</div>
-          <div className="font-semibold">{n2(progress?.avgPrice)}</div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div>
+            <div className="text-[10px] text-muted-foreground">현금</div>
+            <div className="mt-0.5 truncate text-xs font-semibold">
+              {n(cash)}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] text-muted-foreground">보유</div>
+            <div className="mt-0.5 text-xs font-semibold">
+              {n2(qty)}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] text-muted-foreground">평단</div>
+            <div className="mt-0.5 truncate text-xs font-semibold">
+              {n2(avg)}
+            </div>
+          </div>
         </div>
       </div>
     </div>
