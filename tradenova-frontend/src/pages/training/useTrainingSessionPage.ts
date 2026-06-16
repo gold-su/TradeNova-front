@@ -158,7 +158,9 @@ export function useTrainingSessionPage() {
 
     // ===== 액션 =====
     onCreateSession: core.onCreateSession,
-    onNext: () => core.onNext(report.loadEvents),
+    onNext: () => core.onNext(core.advanceSteps, report.loadEvents),
+    advanceSteps: core.advanceSteps,
+    setAdvanceSteps: core.setAdvanceSteps,
     onSellAll: trade.onSellAll,
     onSaveDraft: report.onSaveDraft,
     onCreateSnapshot: report.onCreateSnapshot,

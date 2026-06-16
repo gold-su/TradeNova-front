@@ -47,6 +47,8 @@ export function useTrainingSessionCore() {
   });
   const [syncNext, setSyncNext] = useState(true);
 
+  const [advanceSteps, setAdvanceSteps] = useState(1);
+
   // ===== 세션 기본 상태 =====
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [status, setStatus] = useState<TrainingStatus>("IN_PROGRESS");
@@ -309,17 +311,26 @@ export function useTrainingSessionCore() {
    * - grid + syncNext: 모든 차트를 동시에 진행
    * - grid + !syncNext: active chart만 진행
    */
+  const runProgress = (chartId: number, steps: number) => {
+    return steps <= 1
+      ? trainingApi.next(chartId)
+      : trainingApi.advance(chartId, { steps });
+  };
+
   const onNext = async (
+    steps = advanceSteps,
     afterProgress?: (chartId: number) => Promise<void> | void,
   ) => {
     if (!activeChartId) return;
+
+    const safeSteps = Math.max(1, Math.min(Number(steps) || 1, 500));
 
     setLoading(true);
     setError(null);
 
     try {
       if (viewMode === "single") {
-        const res = await trainingApi.next(activeChartId);
+        const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
         await afterProgress?.(activeChartId);
         return;
@@ -328,16 +339,14 @@ export function useTrainingSessionCore() {
       if (syncNext) {
         const ids = sortedCharts.map((c) => c.chartId);
         const results = await Promise.all(
-          ids.map((id) => trainingApi.next(id)),
+          ids.map((id) => runProgress(id, safeSteps)),
         );
 
         results.forEach(applyProgress);
 
-        if (activeChartId) {
-          await afterProgress?.(activeChartId);
-        }
+        await afterProgress?.(activeChartId);
       } else {
-        const res = await trainingApi.next(activeChartId);
+        const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
         await afterProgress?.(activeChartId);
       }
@@ -468,8 +477,8 @@ export function useTrainingSessionCore() {
 
       setError(
         e?.response?.data?.message ??
-          e?.message ??
-          "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
+        e?.message ??
+        "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
       );
     } finally {
       setLoading(false);
@@ -523,7 +532,7 @@ export function useTrainingSessionCore() {
     accountId,
     setAccountId,
     loadAccounts,
-    
+
     charts: sortedCharts,
     setCharts,
 
@@ -545,6 +554,9 @@ export function useTrainingSessionCore() {
     activeSessionLoading,
     error,
     setError,
+
+    advanceSteps,
+    setAdvanceSteps,
 
     // 로직
     hydrateSession,

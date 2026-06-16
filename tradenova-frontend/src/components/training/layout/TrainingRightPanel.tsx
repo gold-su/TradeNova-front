@@ -60,6 +60,8 @@ type Props = {
     text: string;
     side: "BUY" | "SELL";
   } | null;
+  advanceSteps: number;
+  setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export function TrainingRightPanel({
@@ -95,6 +97,8 @@ export function TrainingRightPanel({
   executeBuy,
   executeSell,
   lastSavedMessage,
+  advanceSteps,
+  setAdvanceSteps,
 }: Props) {
   return (
     <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
@@ -127,6 +131,8 @@ export function TrainingRightPanel({
           onSell={executeSell}
           onSellAll={onSellAll}
           onNext={onNext}
+          advanceSteps={advanceSteps}
+          setAdvanceSteps={setAdvanceSteps}
         />
 
         <EventLogPanel items={events} loading={eventLoading} />

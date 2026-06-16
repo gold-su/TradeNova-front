@@ -127,6 +127,8 @@ export default function TrainingSessionPage() {
         eventLoading={page.eventLoading}
         disabled={page.disabled}
         onNext={page.onNext}
+        advanceSteps={page.advanceSteps}
+        setAdvanceSteps={page.setAdvanceSteps}
         onSellAll={page.onSellAll}
         onSaveDraft={page.onSaveDraft}
         onCreateSnapshot={page.onCreateSnapshot}
