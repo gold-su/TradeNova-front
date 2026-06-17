@@ -1,5 +1,11 @@
 import { AccountSelectorCard } from "@/components/training/account/AccountSelectorCard";
 import type { ProgressMap } from "@/hooks/training/training.types";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import type {
+  TrainingChartDto,
+  TrainingStatus,
+} from "@/types/training";
+import type { PaperAccountDto, ViewMode } from "@/hooks/training/training.types";
 
 type Props = {
   sessionId: number | null;
@@ -32,6 +38,16 @@ type Props = {
 
   onCreateSession: () => void;
   progressByChart?: ProgressMap;
+  onCreateScenarioSnapshot: (
+    chartId: number,
+    content: {
+      thesis: string;
+      entryReason: string;
+      exitPlan: string;
+      riskNote: string;
+      freeNote: string;
+    },
+  ) => Promise<unknown>;
 };
 
 function sectorLabel(sector?: string) {
@@ -62,6 +78,195 @@ function sectorLabel(sector?: string) {
   }
 }
 
+function ScenarioCard({
+  charts,
+  activeChartId,
+  onCreateScenarioSnapshot,
+}: {
+  charts: TrainingChartDto[];
+  activeChartId: number | null;
+  onCreateScenarioSnapshot: (
+    chartId: number,
+    content: {
+      thesis: string;
+      entryReason: string;
+      exitPlan: string;
+      riskNote: string;
+      freeNote: string;
+    },
+  ) => Promise<unknown>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const [targetChartId, setTargetChartId] = useState<number | null>(
+    activeChartId ?? charts[0]?.chartId ?? null,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    thesis: "",
+    entryReason: "",
+    exitPlan: "",
+    riskNote: "",
+    freeNote: "",
+  });
+
+  useEffect(() => {
+    if (activeChartId) {
+      setTargetChartId(activeChartId);
+      return;
+    }
+
+    if (!targetChartId && charts[0]?.chartId) {
+      setTargetChartId(charts[0].chartId);
+    }
+  }, [activeChartId, charts, targetChartId]);
+
+  const targetChart = charts.find((c) => c.chartId === targetChartId);
+
+  const save = async () => {
+    if (!targetChartId) return;
+
+    setSaving(true);
+    const saved = await onCreateScenarioSnapshot(targetChartId, form);
+    setSaving(false);
+
+    if (!saved) return;
+
+    setOpen(false);
+    setForm({
+      thesis: "",
+      entryReason: "",
+      exitPlan: "",
+      riskNote: "",
+      freeNote: "",
+    });
+  };
+
+  return (
+    <>
+      <section className="border-t border-border/35 py-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-xs font-semibold text-muted-foreground">
+            시나리오
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            AI 분석용 기록
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={charts.length === 0}
+          className="w-full rounded-xl border border-border/35 bg-background/25 px-3 py-3 text-left transition hover:border-primary/35 hover:bg-primary/[0.04] disabled:opacity-40"
+        >
+          <div className="text-sm font-semibold text-foreground">시나리오 작성</div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            진입 조건, 무효화 기준, 대응 계획 저장
+          </div>
+        </button>
+      </section>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-background p-5 shadow-2xl">
+            <div className="mb-4">
+              <div className="text-base font-semibold">시나리오 작성</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {targetChart
+                  ? `Chart ${targetChart.chartIndex + 1} · ${sectorLabel(targetChart.trainingSector)}`
+                  : "대상 차트 없음"}
+              </div>
+              <select
+                value={targetChartId ?? ""}
+                onChange={(e) => setTargetChartId(Number(e.target.value))}
+                className="mt-3 h-9 w-full rounded-lg border border-border/40 bg-background/60 px-3 text-xs outline-none focus:border-primary/40"
+              >
+                {charts.map((chart) => (
+                  <option key={chart.chartId} value={chart.chartId}>
+                    Chart {chart.chartIndex + 1} · {sectorLabel(chart.trainingSector)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                value={form.thesis}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, thesis: e.target.value }))
+                }
+                placeholder="관점 요약"
+                className="h-9 w-full rounded-lg border border-border/40 bg-background/60 px-3 text-sm outline-none focus:border-primary/40"
+              />
+
+              <textarea
+                rows={3}
+                value={form.entryReason}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, entryReason: e.target.value }))
+                }
+                placeholder="진입 조건"
+                className="w-full resize-none rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary/40"
+              />
+
+              <textarea
+                rows={3}
+                value={form.exitPlan}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, exitPlan: e.target.value }))
+                }
+                placeholder="익절/청산 계획"
+                className="w-full resize-none rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary/40"
+              />
+
+              <textarea
+                rows={2}
+                value={form.riskNote}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, riskNote: e.target.value }))
+                }
+                placeholder="무효화 기준 / 손절 기준"
+                className="w-full resize-none rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary/40"
+              />
+
+              <textarea
+                rows={3}
+                value={form.freeNote}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, freeNote: e.target.value }))
+                }
+                placeholder="추가 메모"
+                className="w-full resize-none rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary/40"
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-background/60"
+              >
+                취소
+              </button>
+
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving || !form.thesis.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function TrainingLeftPanel({
   sessionId,
   status,
@@ -82,6 +287,7 @@ export function TrainingLeftPanel({
   sessionAiExists,
   loadAccounts,
   progressByChart,
+  onCreateScenarioSnapshot,
 }: Props) {
   const hasSession = !!sessionId;
 
@@ -204,6 +410,14 @@ export function TrainingLeftPanel({
               })}
             </div>
           </section>
+        )}
+
+        {hasSession && (
+          <ScenarioCard
+            charts={charts}
+            activeChartId={activeChartId}
+            onCreateScenarioSnapshot={onCreateScenarioSnapshot}
+          />
         )}
 
         {hasSession && (

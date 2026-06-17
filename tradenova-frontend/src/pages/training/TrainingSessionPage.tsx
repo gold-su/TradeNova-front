@@ -88,6 +88,7 @@ export default function TrainingSessionPage() {
         sessionAiLoading={page.sessionAiLoading}
         sessionAiExists={!!page.sessionAi}
         progressByChart={page.progressByChart}
+        onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
       />
 
       <TrainingCenterPanel

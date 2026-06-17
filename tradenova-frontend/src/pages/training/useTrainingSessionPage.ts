@@ -139,6 +139,7 @@ export function useTrainingSessionPage() {
     snapshots: report.snapshots,
     draft: report.draft,
     setDraft: report.setDraft,
+    onCreateScenarioSnapshot: report.onCreateScenarioSnapshot,
 
     // ===== 로딩 / 에러 =====
     loading: core.loading || trade.loading,

@@ -135,6 +135,55 @@ export function useTrainingReport(activeChartId: number | null) {
     }
   };
 
+  const onCreateScenarioSnapshot = async (
+    targetChartId: number,
+    content: {
+      thesis: string;
+      entryReason: string;
+      exitPlan: string;
+      riskNote: string;
+      freeNote: string;
+    },
+  ) => {
+    try {
+      setError(null);
+
+      const scenarioContent: ReportDraftContent = {
+        thesis: content.thesis,
+        entryReason: content.entryReason,
+        exitPlan: content.exitPlan,
+        riskNote: content.riskNote,
+        freeNote: content.freeNote,
+        tags: ["SCENARIO"],
+      };
+
+      const saved = await reportApi.createSnapshot(targetChartId, {
+        linkedEventId: null,
+        contentJson: scenarioContent,
+      });
+
+      await reportApi.createEvent(targetChartId, {
+        type: "SNAPSHOT",
+        title: content.thesis?.trim() || "시나리오 저장",
+        payloadJson: {
+          scenario: true,
+          snapshotId: saved.id,
+          ...scenarioContent,
+        },
+      });
+
+      if (targetChartId === activeChartId) {
+        setSnapshots((prev) => [saved, ...prev]);
+        await loadEvents(targetChartId);
+      }
+
+      return saved;
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "시나리오 저장 실패");
+      return null;
+    }
+  };
+
   /**
    * 현재 draft 내용을 NOTE 이벤트로 저장
    */
@@ -210,5 +259,6 @@ export function useTrainingReport(activeChartId: number | null) {
     appendQuickPhrase,
 
     setSnapshots,
+    onCreateScenarioSnapshot,
   };
 }
