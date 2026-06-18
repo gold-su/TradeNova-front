@@ -5,6 +5,10 @@ import {
   ChevronsRight,
   FileText,
   X,
+  ShieldAlert,
+  Target,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 
 type TradeForm = {
@@ -33,6 +37,10 @@ type Props = {
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
 };
 
+function clampStep(value: number) {
+  return Math.max(1, Math.min(value || 1, 500));
+}
+
 export function TrainingTradeJournalPanel({
   tradeForm,
   setTradeForm,
@@ -59,6 +67,14 @@ export function TrainingTradeJournalPanel({
     setTradeForm((prev) => ({
       ...prev,
       entryReason: [prev.entryReason, content].filter(Boolean).join("\n"),
+    }));
+  };
+
+  const clearReason = () => {
+    setTradeForm((prev) => ({
+      ...prev,
+      entryReason: "",
+      riskNote: "",
     }));
   };
 
@@ -120,23 +136,40 @@ export function TrainingTradeJournalPanel({
                   qty: Number(e.target.value),
                 }))
               }
-              className="h-8 flex-1 rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none transition focus:border-primary/45 focus:bg-background/70"
+              className="h-8 w-20 rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none transition focus:border-primary/45 focus:bg-background/70"
             />
-
+            <div className="flex-1" />
             <button
               type="button"
               onClick={() => setReasonOpen(true)}
               className={[
                 "flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition",
                 hasReason
-                  ? "bg-primary/10 text-primary hover:bg-primary/15"
-                  : "bg-background/55 text-muted-foreground hover:bg-background/75 hover:text-foreground",
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                  : "bg-amber-500/15 text-amber-300 border border-amber-500/25 animate-pulse",
               ].join(" ")}
             >
               <FileText className="h-3.5 w-3.5" />
-              {hasReason ? "근거 입력됨" : "근거 작성"}
+              {hasReason ? "근거 작성 완료" : "⚠ 매매 근거 작성"}
             </button>
           </div>
+
+          {hasReason && (
+            <button
+              type="button"
+              onClick={() => setReasonOpen(true)}
+              className="w-full rounded-lg bg-background/35 px-3 py-2 text-left transition hover:bg-primary/[0.04]"
+            >
+              <div className="line-clamp-1 text-xs font-medium text-foreground">
+                {tradeForm.entryReason || "리스크 메모만 입력됨"}
+              </div>
+              {tradeForm.riskNote && (
+                <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+                  리스크: {tradeForm.riskNote}
+                </div>
+              )}
+            </button>
+          )}
 
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -175,11 +208,7 @@ export function TrainingTradeJournalPanel({
                   min={1}
                   max={500}
                   value={advanceSteps}
-                  onChange={(e) =>
-                    setAdvanceSteps(
-                      Math.max(1, Math.min(Number(e.target.value) || 1, 500)),
-                    )
-                  }
+                  onChange={(e) => setAdvanceSteps(clampStep(Number(e.target.value)))}
                   className="h-7 w-12 bg-transparent text-center text-sm font-bold outline-none"
                 />
                 <span className="text-xs text-muted-foreground">봉</span>
@@ -223,7 +252,7 @@ export function TrainingTradeJournalPanel({
       </div>
 
       {reasonOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <button
             type="button"
             aria-label="닫기"
@@ -231,28 +260,31 @@ export function TrainingTradeJournalPanel({
             onClick={() => setReasonOpen(false)}
           />
 
-          <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl bg-background shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4">
+          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-border/45 bg-background shadow-2xl">
+            <div className="flex items-start justify-between border-b border-border/35 px-5 py-4">
               <div>
-                <div className="text-base font-semibold">매매 근거 작성</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  입력한 내용은 다음 BUY/SELL 실행 시 함께 저장됩니다.
+                <div className="flex items-center gap-2 text-lg font-bold">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  매매 근거 작성
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  다음 BUY / SELL / ALL 실행 시 이 근거가 거래 로그와 AI 리뷰에 저장됩니다.
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setReasonOpen(false)}
-                className="rounded-lg p-2 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
+                className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4 px-5 pb-5">
+            <div className="thin-scrollbar max-h-[72vh] space-y-4 overflow-y-auto px-5 py-4">
               {quickPhrases.length > 0 && (
-                <div>
-                  <div className="mb-2 text-[11px] font-medium text-muted-foreground">
+                <section className="rounded-2xl bg-background/35 p-3">
+                  <div className="mb-2 text-xs font-semibold text-muted-foreground">
                     빠른 입력
                   </div>
 
@@ -262,22 +294,23 @@ export function TrainingTradeJournalPanel({
                         key={item.id}
                         type="button"
                         onClick={() => appendReason(item.content)}
-                        className="rounded-full bg-background/55 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-primary/[0.06] hover:text-primary"
+                        className="rounded-full bg-background/55 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-primary/[0.08] hover:text-primary"
                       >
                         {item.title || item.content.slice(0, 12)}
                       </button>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
-              <div>
-                <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+              <section className="rounded-2xl bg-background/35 p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                  <Target className="h-3.5 w-3.5 text-primary" />
                   매매 근거
-                </label>
+                </div>
 
                 <textarea
-                  rows={6}
+                  rows={7}
                   value={tradeForm.entryReason}
                   onChange={(e) =>
                     setTradeForm((prev) => ({
@@ -285,18 +318,22 @@ export function TrainingTradeJournalPanel({
                       entryReason: e.target.value,
                     }))
                   }
-                  placeholder="예: 전고점 돌파, 거래량 증가, 눌림 지지 확인"
-                  className="w-full resize-none rounded-lg border border-border/40 bg-background/55 px-3 py-2 text-sm leading-5 outline-none transition placeholder:text-muted-foreground/55 focus:border-primary/45 focus:bg-background/70"
+                  placeholder={`예:
+- 전고점 돌파 후 거래량 증가
+- 눌림 구간에서 지지 확인
+- 추세선 이탈 전까지 보유`}
+                  className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
                 />
-              </div>
+              </section>
 
-              <div>
-                <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+              <section className="rounded-2xl bg-background/35 p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                  <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
                   리스크 메모
-                </label>
+                </div>
 
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={tradeForm.riskNote}
                   onChange={(e) =>
                     setTradeForm((prev) => ({
@@ -304,34 +341,32 @@ export function TrainingTradeJournalPanel({
                       riskNote: e.target.value,
                     }))
                   }
-                  placeholder="예: 손절 기준 이탈 시 정리, 비중 과다 주의"
-                  className="w-full resize-none rounded-lg border border-border/40 bg-background/55 px-3 py-2 text-sm leading-5 outline-none transition placeholder:text-muted-foreground/55 focus:border-primary/45 focus:bg-background/70"
+                  placeholder={`예:
+- 직전 저점 이탈 시 정리
+- 비중 과다 주의
+- 추격 매수 금지`}
+                  className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
                 />
-              </div>
+              </section>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setTradeForm((prev) => ({
-                      ...prev,
-                      entryReason: "",
-                      riskNote: "",
-                    }))
-                  }
-                  className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
-                >
-                  비우기
-                </button>
+            <div className="flex items-center justify-between border-t border-border/35 px-5 py-4">
+              <button
+                type="button"
+                onClick={clearReason}
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+                비우기
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setReasonOpen(false)}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
-                >
-                  저장
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setReasonOpen(false)}
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
+              >
+                근거 저장
+              </button>
             </div>
           </div>
         </div>

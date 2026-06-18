@@ -4,19 +4,6 @@ import { trainingApi } from "@/api/trainingApi";
 import type { ReportDocumentResponse, TradeResponse } from "@/types/training";
 import type { TradeForm } from "./training.types";
 
-/**
- * 훈련 화면의 "거래/거래모달" 로직을 담당하는 훅
- *
- * 담당 책임:
- * - BUY / SELL 모달 상태
- * - 거래 실행
- * - 거래 이벤트 저장
- * - SELL ALL 실행
- *
- * 주의:
- * - snapshot은 자동 생성하지 않음
- * - snapshot은 사용자가 직접 "Snapshot 저장" 버튼을 눌렀을 때만 생성
- */
 type UseTrainingTradeParams = {
   activeChartId: number | null;
   status: string;
@@ -32,19 +19,18 @@ type UseTrainingTradeParams = {
   }) => void;
 };
 
+function formatPrice(value: number) {
+  return new Intl.NumberFormat("ko-KR").format(Number(value));
+}
+
 export function useTrainingTrade({
   activeChartId,
-  status,
   loadEvents,
-  setSnapshots,
   setError,
   applyTrade,
   onTradeExecuted,
   currentPositionQty,
 }: UseTrainingTradeParams) {
-  const [tradeModalOpen, setTradeModalOpen] = useState(false);
-  const [tradeType, setTradeType] = useState<"BUY" | "SELL" | null>(null);
-
   const [tradeForm, setTradeForm] = useState<TradeForm>({
     qty: 1,
     entryReason: "",
@@ -66,66 +52,103 @@ export function useTrainingTrade({
     }, 3000);
   };
 
-  /**
-   * BUY / SELL 실행 후
-   * - trade 응답 반영
-   * - TRADE 이벤트 저장
-   * - 이벤트 로그 다시 로드
-   *
-   * snapshot은 여기서 자동 저장하지 않는다.
-   */
-  const handleConfirmTrade = async () => {
-    if (!activeChartId || !tradeType) return;
+  const createTradeLog = async ({
+    chartId,
+    side,
+    qty,
+    res,
+    sellAll = false,
+  }: {
+    chartId: number;
+    side: "BUY" | "SELL";
+    qty?: number;
+    res: TradeResponse;
+    sellAll?: boolean;
+  }) => {
+    const entryReason = tradeForm.entryReason.trim();
+    const riskNote = tradeForm.riskNote.trim();
+
+    await reportApi.createEvent(chartId, {
+      type: "TRADE",
+      title: sellAll ? "SELL ALL 실행" : `${side} 실행`,
+      payloadJson: {
+        side,
+        qty,
+        price: res.executedPrice,
+        tradeId: res.tradeId,
+        candleTime: res.candleTime,
+
+        entryReason,
+        riskNote,
+
+        hasReason: entryReason.length > 0,
+        hasRiskNote: riskNote.length > 0,
+        savedForAiReview: true,
+        sellAll,
+
+        reasonVersion: 1,
+      },
+    });
+  };
+
+  const resetReasonOnly = () => {
+    setTradeForm((prev) => ({
+      ...prev,
+      entryReason: "",
+      riskNote: "",
+    }));
+  };
+
+  const executeTrade = async (side: "BUY" | "SELL") => {
+    if (!activeChartId) return;
+
+    const qty = Number(tradeForm.qty);
+
+    if (!qty || qty <= 0) {
+      setError("수량을 올바르게 입력해주세요.");
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
 
       const tradeRes =
-        tradeType === "BUY"
-          ? await trainingApi.buy(activeChartId, { qty: tradeForm.qty })
-          : await trainingApi.sell(activeChartId, { qty: tradeForm.qty });
+        side === "BUY"
+          ? await trainingApi.buy(activeChartId, { qty })
+          : await trainingApi.sell(activeChartId, { qty });
 
-      // 거래 결과를 상위 진행 상태에 반영
       applyTrade(tradeRes);
 
       onTradeExecuted?.({
-        side: tradeType,
+        side,
         res: tradeRes,
-        qty: tradeForm.qty,
+        qty,
       });
 
-      // 거래 이벤트 저장
-      await reportApi.createEvent(activeChartId, {
-        type: "TRADE",
-        title: `${tradeType} 실행`,
-        payloadJson: {
-          qty: tradeForm.qty,
-          entryReason: tradeForm.entryReason,
-          riskNote: tradeForm.riskNote,
-          price: tradeRes.executedPrice,
-        },
+      await createTradeLog({
+        chartId: activeChartId,
+        side,
+        qty,
+        res: tradeRes,
       });
 
-      // 모달 초기화
-      setTradeModalOpen(false);
-      setTradeForm({
-        qty: 1,
-        entryReason: "",
-        riskNote: "",
-      });
+      showSavedMessage(
+        `${side} 저장됨 · ${qty}주 · ${formatPrice(
+          tradeRes.executedPrice,
+        )}원 · AI 리뷰 반영`,
+        side,
+      );
 
+      resetReasonOnly();
       await loadEvents(activeChartId);
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "거래 실패");
+      setError(e?.response?.data?.message ?? `${side} 실패`);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * 현재 활성 차트 전량 매도
-   */
   const onSellAll = async () => {
     if (!activeChartId) return;
 
@@ -138,41 +161,27 @@ export function useTrainingTrade({
       const res = await trainingApi.sellAll(activeChartId);
       applyTrade(res);
 
-      await reportApi.createEvent(activeChartId, {
-        type: "TRADE",
-        title: "SELL ALL 실행",
-        payloadJson: {
-          side: "SELL",
-          qty: sellQty,
-          entryReason: tradeForm.entryReason,
-          riskNote: tradeForm.riskNote,
-          price: res.executedPrice,
-          tradeId: res.tradeId,
-          candleTime: res.candleTime,
-          savedForAiReview: true,
-          sellAll: true,
-        },
-      });
-
       onTradeExecuted?.({
         side: "SELL",
         res,
         qty: sellQty,
       });
 
+      await createTradeLog({
+        chartId: activeChartId,
+        side: "SELL",
+        qty: sellQty,
+        res,
+        sellAll: true,
+      });
+
       showSavedMessage(
-        `SELL ALL 저장됨 · ${new Intl.NumberFormat("ko-KR").format(
-          Number(res.executedPrice),
-        )}원 · AI 리뷰 반영`,
+        `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`,
         "SELL",
       );
-      await loadEvents(activeChartId);
 
-      setTradeForm((prev) => ({
-        ...prev,
-        entryReason: "",
-        riskNote: "",
-      }));
+      resetReasonOnly();
+      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL ALL 실패");
     } finally {
@@ -180,87 +189,23 @@ export function useTrainingTrade({
     }
   };
 
-  const executeTrade = async (side: "BUY" | "SELL") => {
-    if (!activeChartId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const tradeRes =
-        side === "BUY"
-          ? await trainingApi.buy(activeChartId, { qty: tradeForm.qty })
-          : await trainingApi.sell(activeChartId, { qty: tradeForm.qty });
-
-      applyTrade(tradeRes);
-
-      onTradeExecuted?.({
-        side,
-        res: tradeRes,
-        qty: tradeForm.qty,
-      });
-
-      await reportApi.createEvent(activeChartId, {
-        type: "TRADE",
-        title: `${side} 실행`,
-        payloadJson: {
-          side,
-          qty: tradeForm.qty,
-          entryReason: tradeForm.entryReason,
-          riskNote: tradeForm.riskNote,
-          price: tradeRes.executedPrice,
-          tradeId: tradeRes.tradeId,
-          candleTime: tradeRes.candleTime,
-          savedForAiReview: true,
-        },
-      });
-
-      setTradeForm((prev) => ({
-        ...prev,
-        entryReason: "",
-        riskNote: "",
-      }));
-
-      showSavedMessage(
-        `${side} 저장됨 · ${tradeForm.qty}주 · ${new Intl.NumberFormat("ko-KR").format(
-          Number(tradeRes.executedPrice),
-        )}원 · AI 리뷰 반영`,
-        side,
-      );
-
-      await loadEvents(activeChartId);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? `${side} 실패`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openBuyModal = () => {
-    setTradeType("BUY");
-    setTradeModalOpen(true);
-  };
-
-  const openSellModal = () => {
-    setTradeType("SELL");
-    setTradeModalOpen(true);
-  };
-
   return {
-    tradeModalOpen,
-    setTradeModalOpen,
-    tradeType,
     tradeForm,
     setTradeForm,
     loading,
 
-    handleConfirmTrade,
     onSellAll,
-    openBuyModal,
-    openSellModal,
-
     executeBuy: () => executeTrade("BUY"),
     executeSell: () => executeTrade("SELL"),
+
     lastSavedMessage,
+
+    // 기존 코드 호환용
+    tradeModalOpen: false,
+    setTradeModalOpen: () => { },
+    tradeType: null,
+    handleConfirmTrade: () => { },
+    openBuyModal: () => { },
+    openSellModal: () => { },
   };
 }
