@@ -16,14 +16,25 @@ type Props = {
   loading: boolean;
 };
 
+type TradeReasonPayload = {
+  id?: string;
+  title?: string;
+  entryReason?: string;
+  riskNote?: string;
+  createdAt?: string;
+};
+
 type TradePayload = {
   side?: "BUY" | "SELL";
   qty?: number;
   price?: number;
+  executedPrice?: number;
   entryReason?: string;
   riskNote?: string;
   sellAll?: boolean;
-  executedPrice?: number;
+  reasons?: TradeReasonPayload[];
+  reasonCount?: number;
+  reasonVersion?: number;
 };
 
 function eventLabel(type: string) {
@@ -163,6 +174,12 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
   if (item.type === "TRADE") {
     const side = getTradeSide(item);
 
+    const reasons = payload.reasons ?? [];
+    const reasonPreview =
+      reasons[0]?.title ||
+      reasons[0]?.entryReason ||
+      payload.entryReason;
+
     return (
       <div className="min-w-0 flex-1">
         <div className="flex h-6 items-center gap-2">
@@ -183,9 +200,10 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
           </span>
         </div>
 
-        {payload.entryReason && (
+        {reasonPreview && (
           <div className="mt-1 truncate text-[11px] text-muted-foreground">
-            {payload.entryReason}
+            근거 {reasons.length > 0 ? `${reasons.length}개 · ` : ""}
+            {reasonPreview}
           </div>
         )}
       </div>
@@ -204,14 +222,23 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
   );
 }
 
-function EventRow({ item, compact = false }: { item: TrainingEventResponse; compact?: boolean }) {
+function EventRow({
+  item,
+  compact = false,
+}: {
+  item: TrainingEventResponse;
+  compact?: boolean;
+}) {
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const tradePayload = getTradePayload(item);
+  const reasons = tradePayload.reasons ?? [];
+
   return (
     <div
       className={[
         "rounded-lg border bg-background/30",
         compact ? "px-3 py-2" : "p-3",
       ].join(" ")}
-      title={JSON.stringify(item.payloadJson ?? {}, null, 2)}
     >
       <div className="flex items-center gap-2">
         <div
@@ -230,7 +257,68 @@ function EventRow({ item, compact = false }: { item: TrainingEventResponse; comp
         </div>
       </div>
 
-      {!compact && item.payloadJson && (
+      {!compact && item.type === "TRADE" && reasons.length > 0 && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setReasonOpen((prev) => !prev)}
+            className="flex h-9 w-full items-center justify-between rounded-xl bg-background/45 px-3 text-xs transition hover:bg-primary/[0.04]"
+          >
+            <span className="font-semibold text-foreground">
+              매매 근거 {reasons.length}개
+            </span>
+            <span className="text-muted-foreground">
+              {reasonOpen ? "접기" : "보기"}
+            </span>
+          </button>
+
+          {reasonOpen && (
+            <div className="mt-2 space-y-2">
+              {reasons.map((reason, idx) => (
+                <div
+                  key={reason.id ?? idx}
+                  className="rounded-xl border border-border/30 bg-background/35 p-3"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-primary">
+                      근거 {idx + 1}
+                    </div>
+                    {reason.title && (
+                      <div className="max-w-[260px] truncate text-[11px] text-muted-foreground">
+                        {reason.title}
+                      </div>
+                    )}
+                  </div>
+
+                  {reason.entryReason && (
+                    <div className="rounded-lg bg-background/45 px-3 py-2">
+                      <div className="mb-1 text-[10px] font-semibold text-muted-foreground">
+                        매매 판단
+                      </div>
+                      <div className="whitespace-pre-wrap text-xs leading-5 text-foreground/90">
+                        {reason.entryReason}
+                      </div>
+                    </div>
+                  )}
+
+                  {reason.riskNote && (
+                    <div className="mt-2 rounded-lg bg-red-500/10 px-3 py-2">
+                      <div className="mb-1 text-[10px] font-semibold text-red-300">
+                        리스크 기준
+                      </div>
+                      <div className="whitespace-pre-wrap text-xs leading-5 text-red-100/90">
+                        {reason.riskNote}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!compact && item.payloadJson && item.type !== "TRADE" && (
         <pre className="mt-3 max-h-40 overflow-auto rounded-lg bg-black/30 p-3 text-[11px] leading-5 text-muted-foreground">
           {JSON.stringify(item.payloadJson, null, 2)}
         </pre>

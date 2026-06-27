@@ -31,10 +31,12 @@ export function useTrainingTrade({
   onTradeExecuted,
   currentPositionQty,
 }: UseTrainingTradeParams) {
+
   const [tradeForm, setTradeForm] = useState<TradeForm>({
     qty: 1,
     entryReason: "",
     riskNote: "",
+    reasons: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,8 +67,8 @@ export function useTrainingTrade({
     res: TradeResponse;
     sellAll?: boolean;
   }) => {
-    const entryReason = tradeForm.entryReason.trim();
-    const riskNote = tradeForm.riskNote.trim();
+
+    const reasons = tradeForm.reasons ?? [];
 
     await reportApi.createEvent(chartId, {
       type: "TRADE",
@@ -78,15 +80,12 @@ export function useTrainingTrade({
         tradeId: res.tradeId,
         candleTime: res.candleTime,
 
-        entryReason,
-        riskNote,
+        reasons,
+        reasonCount: reasons.length,
 
-        hasReason: entryReason.length > 0,
-        hasRiskNote: riskNote.length > 0,
         savedForAiReview: true,
         sellAll,
-
-        reasonVersion: 1,
+        reasonVersion: 2,
       },
     });
   };
@@ -96,6 +95,7 @@ export function useTrainingTrade({
       ...prev,
       entryReason: "",
       riskNote: "",
+      reasons: [],
     }));
   };
 

@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { QuickPhraseResponse } from "@/types/training";
+import type {
+  TradeForm,
+  TradeReasonItem,
+} from "@/hooks/training/training.types";
 import {
   CheckCircle2,
   ChevronsRight,
@@ -9,13 +13,8 @@ import {
   Target,
   Sparkles,
   Trash2,
+  Plus,
 } from "lucide-react";
-
-type TradeForm = {
-  qty: number;
-  entryReason: string;
-  riskNote: string;
-};
 
 type Props = {
   tradeForm: TradeForm;
@@ -37,8 +36,28 @@ type Props = {
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
 };
 
+type ReasonView = "ADD" | string;
+
 function clampStep(value: number) {
   return Math.max(1, Math.min(value || 1, 500));
+}
+
+function makeReasonTitle(entryReason: string, riskNote: string, index: number) {
+  const firstLine =
+    entryReason
+      .split("\n")
+      .map((v) => v.trim())
+      .find(Boolean) ||
+    riskNote
+      .split("\n")
+      .map((v) => v.trim())
+      .find(Boolean);
+
+  return firstLine ? firstLine.slice(0, 18) : `근거 ${index + 1}`;
+}
+
+function createReasonId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function TrainingTradeJournalPanel({
@@ -58,24 +77,74 @@ export function TrainingTradeJournalPanel({
   setAdvanceSteps,
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
+  const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
 
-  const hasReason =
-    tradeForm.entryReason.trim().length > 0 ||
-    tradeForm.riskNote.trim().length > 0;
+  const [draftReason, setDraftReason] = useState({
+    entryReason: "",
+    riskNote: "",
+  });
 
-  const appendReason = (content: string) => {
-    setTradeForm((prev) => ({
+  const reasons = tradeForm.reasons ?? [];
+  const selectedReason = useMemo(
+    () => reasons.find((item) => item.id === selectedView) ?? null,
+    [reasons, selectedView],
+  );
+
+  const hasReasons = reasons.length > 0;
+
+  const appendQuickPhrase = (content: string) => {
+    setDraftReason((prev) => ({
       ...prev,
       entryReason: [prev.entryReason, content].filter(Boolean).join("\n"),
     }));
   };
 
-  const clearReason = () => {
+  const resetDraft = () => {
+    setDraftReason({
+      entryReason: "",
+      riskNote: "",
+    });
+  };
+
+  const addReason = () => {
+    const entryReason = draftReason.entryReason.trim();
+    const riskNote = draftReason.riskNote.trim();
+
+    if (!entryReason && !riskNote) return;
+
+    const nextReason: TradeReasonItem = {
+      id: createReasonId(),
+      title: makeReasonTitle(entryReason, riskNote, reasons.length),
+      entryReason,
+      riskNote,
+      createdAt: new Date().toISOString(),
+    };
+
     setTradeForm((prev) => ({
       ...prev,
+      reasons: [...(prev.reasons ?? []), nextReason],
       entryReason: "",
       riskNote: "",
     }));
+
+    resetDraft();
+    setSelectedView(nextReason.id);
+  };
+
+  const deleteReason = (id: string) => {
+    setTradeForm((prev) => ({
+      ...prev,
+      reasons: (prev.reasons ?? []).filter((item) => item.id !== id),
+    }));
+
+    if (selectedView === id) {
+      setSelectedView("ADD");
+    }
+  };
+
+  const openReasonModal = () => {
+    setReasonOpen(true);
+    setSelectedView(hasReasons ? reasons[0].id : "ADD");
   };
 
   const savedTone =
@@ -138,36 +207,36 @@ export function TrainingTradeJournalPanel({
               }
               className="h-8 w-20 rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none transition focus:border-primary/45 focus:bg-background/70"
             />
+
             <div className="flex-1" />
+
             <button
               type="button"
-              onClick={() => setReasonOpen(true)}
+              onClick={openReasonModal}
               className={[
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition",
-                hasReason
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
-                  : "bg-amber-500/15 text-amber-300 border border-amber-500/25 animate-pulse",
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition",
+                hasReasons
+                  ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                  : "border-amber-500/25 bg-amber-500/15 text-amber-300 hover:bg-amber-500/20",
               ].join(" ")}
             >
               <FileText className="h-3.5 w-3.5" />
-              {hasReason ? "근거 작성 완료" : "⚠ 매매 근거 작성"}
+              {hasReasons ? `근거 ${reasons.length}개` : "근거 작성"}
             </button>
           </div>
 
-          {hasReason && (
+          {hasReasons && (
             <button
               type="button"
-              onClick={() => setReasonOpen(true)}
+              onClick={openReasonModal}
               className="w-full rounded-lg bg-background/35 px-3 py-2 text-left transition hover:bg-primary/[0.04]"
             >
-              <div className="line-clamp-1 text-xs font-medium text-foreground">
-                {tradeForm.entryReason || "리스크 메모만 입력됨"}
+              <div className="text-xs font-semibold text-foreground">
+                매매 근거 {reasons.length}개 저장됨
               </div>
-              {tradeForm.riskNote && (
-                <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
-                  리스크: {tradeForm.riskNote}
-                </div>
-              )}
+              <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+                {reasons[reasons.length - 1]?.title}
+              </div>
             </button>
           )}
 
@@ -208,7 +277,9 @@ export function TrainingTradeJournalPanel({
                   min={1}
                   max={500}
                   value={advanceSteps}
-                  onChange={(e) => setAdvanceSteps(clampStep(Number(e.target.value)))}
+                  onChange={(e) =>
+                    setAdvanceSteps(clampStep(Number(e.target.value)))
+                  }
                   className="h-7 w-12 bg-transparent text-center text-sm font-bold outline-none"
                 />
                 <span className="text-xs text-muted-foreground">봉</span>
@@ -260,114 +331,206 @@ export function TrainingTradeJournalPanel({
             onClick={() => setReasonOpen(false)}
           />
 
-          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-border/45 bg-background shadow-2xl">
-            <div className="flex items-start justify-between border-b border-border/35 px-5 py-4">
-              <div>
-                <div className="flex items-center gap-2 text-lg font-bold">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  매매 근거 작성
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  다음 BUY / SELL / ALL 실행 시 이 근거가 거래 로그와 AI 리뷰에 저장됩니다.
-                </div>
-              </div>
-
+          <div className="relative z-10 flex w-full max-w-4xl overflow-hidden rounded-3xl border border-border/45 bg-background shadow-2xl">
+            <aside className="max-h-[560px] w-[190px] shrink-0 border-r border-border/35 bg-background/35 p-3">
               <button
                 type="button"
-                onClick={() => setReasonOpen(false)}
-                className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+                onClick={() => setSelectedView("ADD")}
+                className={[
+                  "mb-2 flex h-12 w-full items-center gap-2 rounded-2xl px-3 text-left text-sm font-semibold transition",
+                  selectedView === "ADD"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                ].join(" ")}
               >
-                <X className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
+                추가
               </button>
-            </div>
 
-            <div className="thin-scrollbar max-h-[72vh] space-y-4 overflow-y-auto px-5 py-4">
-              {quickPhrases.length > 0 && (
-                <section className="rounded-2xl bg-background/35 p-3">
-                  <div className="mb-2 text-xs font-semibold text-muted-foreground">
-                    빠른 입력
+              <div className="thin-scrollbar space-y-1 overflow-y-auto">
+                {reasons.map((reason, index) => (
+                  <button
+                    key={reason.id}
+                    type="button"
+                    onClick={() => setSelectedView(reason.id)}
+                    className={[
+                      "w-full rounded-2xl px-3 py-3 text-left transition",
+                      selectedView === reason.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    <div className="text-xs font-semibold">근거 {index + 1}</div>
+                    <div className="mt-1 line-clamp-1 text-[11px] opacity-80">
+                      {reason.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </aside>
+
+            <section className="flex min-w-0 flex-1 flex-col">
+              <div className="flex items-start justify-between border-b border-border/35 px-5 py-4">
+                <div>
+                  <div className="flex items-center gap-2 text-lg font-bold">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    매매 근거
                   </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {quickPhrases.slice(0, 8).map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => appendReason(item.content)}
-                        className="rounded-full bg-background/55 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-primary/[0.08] hover:text-primary"
-                      >
-                        {item.title || item.content.slice(0, 12)}
-                      </button>
-                    ))}
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    매매 근거를 작성하세요.
                   </div>
-                </section>
-              )}
-
-              <section className="rounded-2xl bg-background/35 p-3">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                  <Target className="h-3.5 w-3.5 text-primary" />
-                  매매 근거
                 </div>
 
-                <textarea
-                  rows={7}
-                  value={tradeForm.entryReason}
-                  onChange={(e) =>
-                    setTradeForm((prev) => ({
-                      ...prev,
-                      entryReason: e.target.value,
-                    }))
-                  }
-                  placeholder={`예:
+                <button
+                  type="button"
+                  onClick={() => setReasonOpen(false)}
+                  className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="thin-scrollbar max-h-[72vh] space-y-2 overflow-y-auto px-5 py-4">
+                {selectedView === "ADD" ? (
+                  <div className="space-y-4">
+                    {quickPhrases.length > 0 && (
+                      <section className="rounded-2xl bg-background/35 p-2">
+                        <div className="mb-2 text-xs font-semibold text-muted-foreground">
+                          빠른 입력
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {quickPhrases.slice(0, 8).map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => appendQuickPhrase(item.content)}
+                              className="rounded-full bg-background/55 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-primary/[0.08] hover:text-primary"
+                            >
+                              {item.title || item.content.slice(0, 12)}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    <section className="rounded-2xl bg-background/35 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                        <Target className="h-3.5 w-3.5 text-primary" />
+                        매매 근거
+                      </div>
+
+                      <textarea
+                        rows={9}
+                        value={draftReason.entryReason}
+                        onChange={(e) =>
+                          setDraftReason((prev) => ({
+                            ...prev,
+                            entryReason: e.target.value,
+                          }))
+                        }
+                        placeholder={`예:
 - 전고점 돌파 후 거래량 증가
 - 눌림 구간에서 지지 확인
 - 추세선 이탈 전까지 보유`}
-                  className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
-                />
-              </section>
+                        className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
+                      />
+                    </section>
 
-              <section className="rounded-2xl bg-background/35 p-3">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                  <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
-                  리스크 메모
-                </div>
+                    <section className="rounded-2xl bg-background/35 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                        <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
+                        리스크 메모
+                      </div>
 
-                <textarea
-                  rows={4}
-                  value={tradeForm.riskNote}
-                  onChange={(e) =>
-                    setTradeForm((prev) => ({
-                      ...prev,
-                      riskNote: e.target.value,
-                    }))
-                  }
-                  placeholder={`예:
+                      <textarea
+                        rows={5}
+                        value={draftReason.riskNote}
+                        onChange={(e) =>
+                          setDraftReason((prev) => ({
+                            ...prev,
+                            riskNote: e.target.value,
+                          }))
+                        }
+                        placeholder={`예:
 - 직전 저점 이탈 시 정리
 - 비중 과다 주의
 - 추격 매수 금지`}
-                  className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
-                />
-              </section>
-            </div>
+                        className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
+                      />
+                    </section>
+                  </div>
+                ) : selectedReason ? (
+                  <div className="space-y-4">
+                    <section className="rounded-2xl bg-background/35 p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                        <Target className="h-3.5 w-3.5 text-primary" />
+                        매매 근거
+                      </div>
+                      <div className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
+                        {selectedReason.entryReason || "-"}
+                      </div>
+                    </section>
 
-            <div className="flex items-center justify-between border-t border-border/35 px-5 py-4">
-              <button
-                type="button"
-                onClick={clearReason}
-                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
-              >
-                <Trash2 className="h-4 w-4" />
-                비우기
-              </button>
+                    <section className="rounded-2xl bg-background/35 p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                        <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
+                        리스크 메모
+                      </div>
+                      <div className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
+                        {selectedReason.riskNote || "-"}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setReasonOpen(false)}
-                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
-              >
-                근거 저장
-              </button>
-            </div>
+              <div className="flex items-center justify-between border-t border-border/35 px-5 py-4">
+                {selectedView === "ADD" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={resetDraft}
+                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      비우기
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={addReason}
+                      disabled={
+                        !draftReason.entryReason.trim() &&
+                        !draftReason.riskNote.trim()
+                      }
+                      className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+                    >
+                      근거 추가
+                    </button>
+                  </>
+                ) : selectedReason ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => deleteReason(selectedReason.id)}
+                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      삭제
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setReasonOpen(false)}
+                      className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
+                    >
+                      확인
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            </section>
           </div>
         </div>
       )}

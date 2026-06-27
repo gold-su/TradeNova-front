@@ -8,6 +8,10 @@ import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 import { paperAccountApi } from "@/api/paperAccountApi";
+import type {
+  RiskRuleResponse,
+  RiskRuleUpsertRequest,
+} from "@/types/training";
 
 /**
  * 훈련 페이지 전체 조립 훅
