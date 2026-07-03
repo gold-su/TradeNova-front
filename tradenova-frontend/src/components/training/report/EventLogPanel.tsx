@@ -169,16 +169,14 @@ function eventTone(item: TrainingEventResponse) {
 }
 
 function EventSummary({ item }: { item: TrainingEventResponse }) {
-  const payload = getTradePayload(item);
+  const tradePayload = getTradePayload(item);
 
   if (item.type === "TRADE") {
     const side = getTradeSide(item);
 
-    const reasons = payload.reasons ?? [];
+    const reasons = tradePayload.reasons ?? [];
     const reasonPreview =
-      reasons[0]?.title ||
-      reasons[0]?.entryReason ||
-      payload.entryReason;
+      reasons[0]?.title || reasons[0]?.entryReason || tradePayload.entryReason;
 
     return (
       <div className="min-w-0 flex-1">
@@ -191,12 +189,12 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
                 : "border-primary/30 bg-primary/10 text-primary",
             ].join(" ")}
           >
-            {payload.sellAll ? "SELL ALL" : side}
+            {tradePayload.sellAll ? "SELL ALL" : side}
           </span>
 
           <span className="truncate text-xs font-semibold leading-none text-foreground">
-            {formatNumber(payload.qty)}주 @{" "}
-            {formatNumber(payload.price ?? payload.executedPrice)}원
+            {formatNumber(tradePayload.qty)}주 @{" "}
+            {formatNumber(tradePayload.price ?? tradePayload.executedPrice)}원
           </span>
         </div>
 
@@ -210,13 +208,22 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
     );
   }
 
+  const normalPayload = item.payloadJson as any;
+
+  const subText =
+    item.type === "SNAPSHOT"
+      ? normalPayload?.thesis || "시나리오"
+      : item.type === "NOTE"
+        ? normalPayload?.thesis || "메모"
+        : eventLabel(item.type);
+
   return (
     <div className="min-w-0 flex-1">
       <div className="truncate text-xs font-semibold text-foreground">
         {item.title}
       </div>
-      <div className="mt-1 text-[11px] text-muted-foreground">
-        {eventLabel(item.type)}
+      <div className="mt-1 truncate text-[11px] text-muted-foreground">
+        {subText}
       </div>
     </div>
   );
@@ -318,11 +325,6 @@ function EventRow({
         </div>
       )}
 
-      {!compact && item.payloadJson && item.type !== "TRADE" && (
-        <pre className="mt-3 max-h-40 overflow-auto rounded-lg bg-black/30 p-3 text-[11px] leading-5 text-muted-foreground">
-          {JSON.stringify(item.payloadJson, null, 2)}
-        </pre>
-      )}
     </div>
   );
 }

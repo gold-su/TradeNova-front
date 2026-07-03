@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTrainingTradeMarkers } from "@/hooks/training/useTrainingTradeMarkers";
 import type { TradeResponse } from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
@@ -7,7 +7,8 @@ import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
 import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
-import { paperAccountApi } from "@/api/paperAccountApi";
+import { trainingApi } from "@/api/trainingApi";
+import { useState } from "react";
 import type {
   RiskRuleResponse,
   RiskRuleUpsertRequest,
@@ -32,6 +33,10 @@ export function useTrainingSessionPage() {
 
   // ===== AI 로직 =====
   const ai = useTrainingAi(core.sessionId, core.activeChartId);
+
+  const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
+
+  const [riskSaving, setRiskSaving] = useState(false);
 
   // ===== marker =====
   const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
@@ -105,6 +110,32 @@ export function useTrainingSessionPage() {
     const chartIds = core.charts.map((chart) => chart.chartId);
     loadTradeMarkers(chartIds);
   }, [core.charts, loadTradeMarkers]);
+
+  useEffect(() => {
+    if (!core.activeChartId) {
+      setRiskRule(null);
+      return;
+    }
+
+    trainingApi
+      .getRiskRule(core.activeChartId)
+      .then(setRiskRule)
+      .catch(() => setRiskRule(null));
+  }, [core.activeChartId]);
+
+  const saveRiskRule = async (body: RiskRuleUpsertRequest) => {
+    if (!core.activeChartId) return;
+
+    setRiskSaving(true);
+
+    try {
+      const saved = await trainingApi.upsertRiskRule(core.activeChartId, body);
+
+      setRiskRule(saved);
+    } finally {
+      setRiskSaving(false);
+    }
+  };
 
   return {
     // ===== 화면 모드 =====
@@ -205,6 +236,10 @@ export function useTrainingSessionPage() {
     getIndicatorSettings: core.getIndicatorSettings,
 
     lastSavedMessage: trade.lastSavedMessage,
+
+    riskRule,
+    riskSaving,
+    saveRiskRule,
 
     tradeMarkersByChart,
     currentPositionQty: core.activeProgress?.positionQty,

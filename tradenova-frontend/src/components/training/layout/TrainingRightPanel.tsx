@@ -7,6 +7,8 @@ import type {
   SessionAiPayload,
   TrainingChartDto,
   TrainingEventResponse,
+  RiskRuleResponse,
+  RiskRuleUpsertRequest,
 } from "@/types/training";
 import { AccountSnapshotCard } from "@/components/training/common/AccountSnapshotCard";
 import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
@@ -62,6 +64,9 @@ type Props = {
   } | null;
   advanceSteps: number;
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
+  riskRule: RiskRuleResponse | null;
+  riskSaving: boolean;
+  saveRiskRule: (body: RiskRuleUpsertRequest) => void;
 };
 
 export function TrainingRightPanel({
@@ -99,6 +104,9 @@ export function TrainingRightPanel({
   lastSavedMessage,
   advanceSteps,
   setAdvanceSteps,
+  riskRule,
+  riskSaving,
+  saveRiskRule,
 }: Props) {
   return (
     <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
@@ -107,7 +115,9 @@ export function TrainingRightPanel({
 
         <AiReviewPanel
           activeChartLabel={
-            activeChart ? `Chart ${activeChart.chartIndex + 1}` : "차트 선택 안 됨"
+            activeChart
+              ? `Chart ${activeChart.chartIndex + 1}`
+              : "차트 선택 안 됨"
           }
           sessionAiPayload={sessionAiPayload}
           sessionAiLoading={sessionAiLoading}
@@ -133,6 +143,9 @@ export function TrainingRightPanel({
           onNext={onNext}
           advanceSteps={advanceSteps}
           setAdvanceSteps={setAdvanceSteps}
+          riskRule={riskRule}
+          riskSaving={riskSaving}
+          saveRiskRule={saveRiskRule}
         />
 
         <EventLogPanel items={events} loading={eventLoading} />

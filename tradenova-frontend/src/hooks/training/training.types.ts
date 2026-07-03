@@ -41,6 +41,15 @@ export type PaperAccountDto = {
   isDefault?: boolean;
 };
 
+
+export type TradeReasonItem = {
+  id: string;
+  title: string;
+  entryReason: string;
+  riskNote: string;
+  createdAt: string;
+};
+
 /**
  * 매수/매도 모달 입력 폼 상태
  */
@@ -48,6 +57,7 @@ export type TradeForm = {
   qty: number;
   entryReason: string;
   riskNote: string;
+  reasons: TradeReasonItem[];
 };
 
 /**

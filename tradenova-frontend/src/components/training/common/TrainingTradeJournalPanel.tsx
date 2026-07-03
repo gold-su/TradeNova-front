@@ -4,6 +4,7 @@ import type {
   TradeForm,
   TradeReasonItem,
 } from "@/hooks/training/training.types";
+import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
 import {
   CheckCircle2,
   ChevronsRight,
@@ -34,6 +35,9 @@ type Props = {
   onNext: () => void;
   advanceSteps: number;
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
+  riskRule: RiskRuleResponse | null;
+  riskSaving: boolean;
+  saveRiskRule: (body: RiskRuleUpsertRequest) => void;
 };
 
 type ReasonView = "ADD" | string;
