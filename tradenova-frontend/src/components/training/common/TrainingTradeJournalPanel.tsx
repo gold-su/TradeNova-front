@@ -38,6 +38,9 @@ type Props = {
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
   saveRiskRule: (body: RiskRuleUpsertRequest) => void;
+  riskRule,
+  riskSaving,
+  saveRiskRule,
 };
 
 type ReasonView = "ADD" | string;

@@ -6,9 +6,7 @@ import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore"
 import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
 import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
-import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 import { trainingApi } from "@/api/trainingApi";
-import { useState } from "react";
 import type {
   RiskRuleResponse,
   RiskRuleUpsertRequest,
