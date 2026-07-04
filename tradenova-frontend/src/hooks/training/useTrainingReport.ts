@@ -22,6 +22,11 @@ export function useTrainingReport(activeChartId: number | null) {
   // ===== 리포트 관련 상태 =====
   const [quickPhrases, setQuickPhrases] = useState<QuickPhraseResponse[]>([]);
   const [events, setEvents] = useState<TrainingEventResponse[]>([]);
+
+  const appendEvent = (event: TrainingEventResponse) => {
+    setEvents((prev) => [event, ...prev]);
+  };
+
   const [snapshots, setSnapshots] = useState<ReportDocumentResponse[]>([]);
   const [draft, setDraft] = useState<ReportDraftContent>(emptyDraft);
 
@@ -162,7 +167,7 @@ export function useTrainingReport(activeChartId: number | null) {
         contentJson: scenarioContent,
       });
 
-      await reportApi.createEvent(targetChartId, {
+      const event = await reportApi.createEvent(targetChartId, {
         type: "SNAPSHOT",
         title: content.thesis?.trim() || "시나리오 저장",
         payloadJson: {
@@ -173,8 +178,11 @@ export function useTrainingReport(activeChartId: number | null) {
       });
 
       if (targetChartId === activeChartId) {
+        appendEvent(event);
+      }
+
+      if (targetChartId === activeChartId) {
         setSnapshots((prev) => [saved, ...prev]);
-        await loadEvents(targetChartId);
       }
 
       return saved;
@@ -193,7 +201,7 @@ export function useTrainingReport(activeChartId: number | null) {
     try {
       setError(null);
 
-      await reportApi.createEvent(activeChartId, {
+      const event = await reportApi.createEvent(activeChartId, {
         type: "NOTE",
         title: draft.thesis?.trim() || "수동 메모",
         payloadJson: {
@@ -206,7 +214,7 @@ export function useTrainingReport(activeChartId: number | null) {
         },
       });
 
-      await loadEvents(activeChartId);
+      appendEvent(event);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "메모 이벤트 저장 실패");
     }
@@ -260,5 +268,6 @@ export function useTrainingReport(activeChartId: number | null) {
 
     setSnapshots,
     onCreateScenarioSnapshot,
+    appendEvent,
   };
 }
