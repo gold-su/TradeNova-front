@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { reportApi } from "@/api/reportApi";
 import { trainingApi } from "@/api/trainingApi";
-import type { ReportDocumentResponse, TradeResponse } from "@/types/training";
+import type {
+  ReportDocumentResponse,
+  TradeResponse,
+  TrainingEventResponse,
+} from "@/types/training";
 import type { TradeForm } from "./training.types";
 
 type UseTrainingTradeParams = {
@@ -17,6 +21,7 @@ type UseTrainingTradeParams = {
     res: TradeResponse;
     qty?: number;
   }) => void;
+  appendEvent: (event: TrainingEventResponse) => void;
 };
 
 function formatPrice(value: number) {
@@ -30,6 +35,7 @@ export function useTrainingTrade({
   applyTrade,
   onTradeExecuted,
   currentPositionQty,
+  appendEvent,
 }: UseTrainingTradeParams) {
 
   const [tradeForm, setTradeForm] = useState<TradeForm>({
@@ -70,7 +76,7 @@ export function useTrainingTrade({
 
     const reasons = tradeForm.reasons ?? [];
 
-    await reportApi.createEvent(chartId, {
+    return await reportApi.createEvent(chartId, {
       type: "TRADE",
       title: sellAll ? "SELL ALL 실행" : `${side} 실행`,
       payloadJson: {
@@ -126,12 +132,14 @@ export function useTrainingTrade({
         qty,
       });
 
-      await createTradeLog({
+      const event = await createTradeLog({
         chartId: activeChartId,
         side,
         qty,
         res: tradeRes,
       });
+
+      appendEvent(event);
 
       showSavedMessage(
         `${side} 저장됨 · ${qty}주 · ${formatPrice(
@@ -141,7 +149,6 @@ export function useTrainingTrade({
       );
 
       resetReasonOnly();
-      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? `${side} 실패`);
     } finally {
@@ -167,7 +174,7 @@ export function useTrainingTrade({
         qty: sellQty,
       });
 
-      await createTradeLog({
+      const event = await createTradeLog({
         chartId: activeChartId,
         side: "SELL",
         qty: sellQty,
@@ -175,13 +182,14 @@ export function useTrainingTrade({
         sellAll: true,
       });
 
+      appendEvent(event);
+
       showSavedMessage(
         `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`,
         "SELL",
       );
 
       resetReasonOnly();
-      await loadEvents(activeChartId);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "SELL ALL 실패");
     } finally {

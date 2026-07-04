@@ -79,6 +79,7 @@ export function useTrainingSessionPage() {
     applyTrade,
     onTradeExecuted: addTradeMarker,
     currentPositionQty: core.activeProgress?.positionQty,
+    appendEvent: report.appendEvent,
   });
 
   /**
@@ -134,6 +135,8 @@ export function useTrainingSessionPage() {
       setRiskSaving(false);
     }
   };
+
+
 
   return {
     // ===== 화면 모드 =====
