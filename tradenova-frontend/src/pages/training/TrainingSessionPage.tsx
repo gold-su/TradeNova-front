@@ -150,6 +150,9 @@ export default function TrainingSessionPage() {
         executeBuy={page.executeBuy}
         executeSell={page.executeSell}
         lastSavedMessage={page.lastSavedMessage}
+        riskRule={page.riskRule}
+        riskSaving={page.riskSaving}
+        saveRiskRule={page.saveRiskRule}
       />
     </div>
   );

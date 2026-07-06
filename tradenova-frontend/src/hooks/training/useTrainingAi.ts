@@ -17,7 +17,8 @@ import type {
 export function useTrainingAi(
   sessionId: number | null,
   chartId: number | null,
-) {
+  appendEvent?: (event: TrainingEventResponse) => void,
+)
   // ===== 세션 AI 상태 =====
   const [sessionAi, setSessionAi] = useState<TrainingEventResponse | null>(
     null,
@@ -78,8 +79,10 @@ export function useTrainingAi(
       setSessionAiLoading(true);
       setSessionAiError(null);
 
-      await reportApi.analyzeSessionAi(sessionId);
-      await loadLatestSessionAi(sessionId);
+      const event = await reportApi.analyzeSessionAi(sessionId);
+
+setSessionAi(event);
+appendEvent?.(event);
     } catch (e: any) {
       const status = e?.response?.status;
       const code = e?.response?.data?.error;
@@ -149,8 +152,10 @@ export function useTrainingAi(
       setChartAiLoading(true);
       setChartAiError(null);
 
-      await reportApi.analyzeChartAi(chartId);
-      await loadLatestChartAi(chartId);
+      const event = await reportApi.analyzeChartAi(chartId);
+
+setChartAi(event);
+appendEvent?.(event);
     } catch (e: any) {
       const status = e?.response?.status;
       const code = e?.response?.data?.error;

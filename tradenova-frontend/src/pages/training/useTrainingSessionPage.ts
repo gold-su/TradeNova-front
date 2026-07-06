@@ -7,10 +7,7 @@ import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
 import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import { trainingApi } from "@/api/trainingApi";
-import type {
-  RiskRuleResponse,
-  RiskRuleUpsertRequest,
-} from "@/types/training";
+import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -30,7 +27,11 @@ export function useTrainingSessionPage() {
   const report = useTrainingReport(core.activeChartId);
 
   // ===== AI 로직 =====
-  const ai = useTrainingAi(core.sessionId, core.activeChartId);
+  const ai = useTrainingAi(
+    core.sessionId,
+    core.activeChartId,
+    report.appendEvent,
+  );
 
   const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
 
@@ -39,8 +40,6 @@ export function useTrainingSessionPage() {
   // ===== marker =====
   const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
     useTrainingTradeMarkers();
-
-
 
   /**
    * 거래 응답을 progress map에 반영하는 함수
@@ -135,8 +134,6 @@ export function useTrainingSessionPage() {
       setRiskSaving(false);
     }
   };
-
-
 
   return {
     // ===== 화면 모드 =====

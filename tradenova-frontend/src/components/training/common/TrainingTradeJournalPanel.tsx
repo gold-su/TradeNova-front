@@ -23,24 +23,26 @@ type Props = {
   quickPhrases: QuickPhraseResponse[];
   disabled: boolean;
   loading: boolean;
+
   syncNext: boolean;
   setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
+
   lastSavedMessage?: {
     text: string;
     side: "BUY" | "SELL";
   } | null;
+
   onBuy: () => void;
   onSell: () => void;
   onSellAll: () => void;
   onNext: () => void;
+
   advanceSteps: number;
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
+
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
   saveRiskRule: (body: RiskRuleUpsertRequest) => void;
-  riskRule,
-  riskSaving,
-  saveRiskRule,
 };
 
 type ReasonView = "ADD" | string;
@@ -82,6 +84,10 @@ export function TrainingTradeJournalPanel({
   onNext,
   advanceSteps,
   setAdvanceSteps,
+
+  riskRule,
+  riskSaving,
+  saveRiskRule,
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
