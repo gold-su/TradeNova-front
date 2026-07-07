@@ -97,6 +97,13 @@ export function TrainingTradeJournalPanel({
     riskNote: "",
   });
 
+  const [riskOpen, setRiskOpen] = useState(false);
+  const [riskDraft, setRiskDraft] = useState({
+    stopLossPrice: riskRule?.stopLossPrice?.toString() ?? "",
+    takeProfitPrice: riskRule?.takeProfitPrice?.toString() ?? "",
+    autoExitEnabled: riskRule?.autoExitEnabled ?? true,
+  });
+
   const reasons = tradeForm.reasons ?? [];
   const selectedReason = useMemo(
     () => reasons.find((item) => item.id === selectedView) ?? null,
@@ -162,10 +169,6 @@ export function TrainingTradeJournalPanel({
 
   const savedTone =
     lastSavedMessage?.side === "SELL" ? "text-red-300" : "text-primary";
-
-  void riskRule;
-  void riskSaving;
-  void saveRiskRule;
 
   return (
     <>
@@ -317,6 +320,27 @@ export function TrainingTradeJournalPanel({
                   </>
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRiskDraft({
+                    stopLossPrice: riskRule?.stopLossPrice?.toString() ?? "",
+                    takeProfitPrice:
+                      riskRule?.takeProfitPrice?.toString() ?? "",
+                    autoExitEnabled: riskRule?.autoExitEnabled ?? true,
+                  });
+                  setRiskOpen(true);
+                }}
+                className={[
+                  "h-9 shrink-0 rounded-lg border px-3 text-xs font-bold transition",
+                  riskRule?.autoExitEnabled
+                    ? "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/15"
+                    : "border-border/50 bg-background/55 text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                리스크
+              </button>
             </div>
 
             <button
@@ -377,7 +401,9 @@ export function TrainingTradeJournalPanel({
                         : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
                     ].join(" ")}
                   >
-                    <div className="text-xs font-semibold">근거 {index + 1}</div>
+                    <div className="text-xs font-semibold">
+                      근거 {index + 1}
+                    </div>
                     <div className="mt-1 line-clamp-1 text-[11px] opacity-80">
                       {reason.title}
                     </div>
@@ -548,6 +574,134 @@ export function TrainingTradeJournalPanel({
                 ) : null}
               </div>
             </section>
+          </div>
+        </div>
+      )}
+      {riskOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label="닫기"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setRiskOpen(false)}
+          />
+
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border/45 bg-background p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-lg font-bold">
+                  <ShieldAlert className="h-4 w-4 text-red-300" />
+                  리스크룰 설정
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  NEXT 진행 중 기준가 도달 시 자동 청산됩니다.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setRiskOpen(false)}
+                className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block">
+                <div className="mb-1 text-xs font-semibold text-muted-foreground">
+                  손절가
+                </div>
+                <input
+                  type="number"
+                  value={riskDraft.stopLossPrice}
+                  onChange={(e) =>
+                    setRiskDraft((prev) => ({
+                      ...prev,
+                      stopLossPrice: e.target.value,
+                    }))
+                  }
+                  placeholder="예: 58000"
+                  className="h-10 w-full rounded-xl border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
+                />
+              </label>
+
+              <label className="block">
+                <div className="mb-1 text-xs font-semibold text-muted-foreground">
+                  익절가
+                </div>
+                <input
+                  type="number"
+                  value={riskDraft.takeProfitPrice}
+                  onChange={(e) =>
+                    setRiskDraft((prev) => ({
+                      ...prev,
+                      takeProfitPrice: e.target.value,
+                    }))
+                  }
+                  placeholder="예: 72000"
+                  className="h-10 w-full rounded-xl border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setRiskDraft((prev) => ({
+                    ...prev,
+                    autoExitEnabled: !prev.autoExitEnabled,
+                  }))
+                }
+                className="flex h-10 w-full items-center justify-between rounded-xl bg-background/45 px-3 text-sm"
+              >
+                <span className="text-muted-foreground">자동 청산</span>
+                <span
+                  className={
+                    riskDraft.autoExitEnabled
+                      ? "font-bold text-primary"
+                      : "font-bold text-muted-foreground"
+                  }
+                >
+                  {riskDraft.autoExitEnabled ? "ON" : "OFF"}
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-5 flex justify-between">
+              <button
+                type="button"
+                onClick={() =>
+                  setRiskDraft({
+                    stopLossPrice: "",
+                    takeProfitPrice: "",
+                    autoExitEnabled: false,
+                  })
+                }
+                className="rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-background/60"
+              >
+                초기화
+              </button>
+
+              <button
+                type="button"
+                disabled={riskSaving}
+                onClick={async () => {
+                  await saveRiskRule({
+                    stopLossPrice: riskDraft.stopLossPrice
+                      ? Number(riskDraft.stopLossPrice)
+                      : null,
+                    takeProfitPrice: riskDraft.takeProfitPrice
+                      ? Number(riskDraft.takeProfitPrice)
+                      : null,
+                    autoExitEnabled: riskDraft.autoExitEnabled,
+                  });
+                  setRiskOpen(false);
+                }}
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                {riskSaving ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
         </div>
       )}
