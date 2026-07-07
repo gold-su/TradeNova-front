@@ -18,7 +18,7 @@ export function useTrainingAi(
   sessionId: number | null,
   chartId: number | null,
   appendEvent?: (event: TrainingEventResponse) => void,
-)
+) {
   // ===== 세션 AI 상태 =====
   const [sessionAi, setSessionAi] = useState<TrainingEventResponse | null>(
     null,
@@ -81,8 +81,8 @@ export function useTrainingAi(
 
       const event = await reportApi.analyzeSessionAi(sessionId);
 
-setSessionAi(event);
-appendEvent?.(event);
+      setSessionAi(event);
+      appendEvent?.(event);
     } catch (e: any) {
       const status = e?.response?.status;
       const code = e?.response?.data?.error;
@@ -154,8 +154,8 @@ appendEvent?.(event);
 
       const event = await reportApi.analyzeChartAi(chartId);
 
-setChartAi(event);
-appendEvent?.(event);
+      setChartAi(event);
+      appendEvent?.(event);
     } catch (e: any) {
       const status = e?.response?.status;
       const code = e?.response?.data?.error;

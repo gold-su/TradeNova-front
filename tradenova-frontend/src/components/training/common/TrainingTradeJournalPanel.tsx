@@ -163,6 +163,10 @@ export function TrainingTradeJournalPanel({
   const savedTone =
     lastSavedMessage?.side === "SELL" ? "text-red-300" : "text-primary";
 
+  void riskRule;
+  void riskSaving;
+  void saveRiskRule;
+
   return (
     <>
       <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
