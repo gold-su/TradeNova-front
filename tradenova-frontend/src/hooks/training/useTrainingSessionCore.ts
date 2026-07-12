@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import http from "@/api/http";
 import { trainingApi } from "@/api/trainingApi";
 import type {
   Candle,
@@ -264,11 +263,16 @@ export function useTrainingSessionCore() {
 
   /**
    * 현재 세션을 수동 종료한다.
-   * - 세션 상태를 COMPLETED로 반영
-   * - 모든 차트 상태도 COMPLETED로 반영
+   *
+   * 성공:
+   * - SessionFinishResponse 반환
+   * - 세션/차트 상태를 COMPLETED로 변경
+   *
+   * 실패:
+   * - null 반환
    */
   const onFinishSession = async () => {
-    if (!sessionId) return;
+    if (!sessionId) return null;
 
     try {
       setLoading(true);
@@ -290,6 +294,7 @@ export function useTrainingSessionCore() {
 
         for (const key of Object.keys(prev)) {
           const chartId = Number(key);
+
           next[chartId] = {
             ...prev[chartId],
             status: "COMPLETED",
@@ -298,8 +303,11 @@ export function useTrainingSessionCore() {
 
         return next;
       });
+
+      return finished;
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "세션 종료에 실패했습니다.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -477,8 +485,8 @@ export function useTrainingSessionCore() {
 
       setError(
         e?.response?.data?.message ??
-        e?.message ??
-        "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
+          e?.message ??
+          "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
       );
     } finally {
       setLoading(false);

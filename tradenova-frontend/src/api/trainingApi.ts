@@ -13,6 +13,7 @@ import type {
   SessionFinishResponse,
   ChartRefreshRequest,
   TrainingTradeItemResponse,
+  SessionSummaryResponse,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -65,6 +66,13 @@ export const trainingApi = {
       >(`/api/training/charts/${chartId}/trades`)
       .then((r) => r.data),
 
+  getSessionSummary: (sessionId: number) =>
+    http
+      .get<SessionSummaryResponse>(
+        `/api/training/sessions/${sessionId}/summary`,
+      )
+      .then((r) => r.data),
+
   // ===== Risk Rule =====
   getRiskRule: (chartId: number) =>
     http
@@ -87,6 +95,17 @@ export const trainingApi = {
     const res = await http.post<SessionFinishResponse>(
       `/api/training/sessions/${sessionId}/finish`,
     );
+    return res.data;
+  },
+
+  /**
+   * 종료된 세션의 완료 화면용 요약 조회
+   */
+  getSessionSummary: async (sessionId: number) => {
+    const res = await http.get<SessionSummaryResponse>(
+      `/api/training/sessions/${sessionId}/summary`,
+    );
+
     return res.data;
   },
 
