@@ -117,6 +117,25 @@ export type TrainingTradeItemResponse = {
   candleTime: number;
 };
 
+/**
+ * 세션 종료 후 완료 화면에 표시할 요약 응답
+ *
+ * GET /api/training/sessions/{sessionId}/summary
+ */
+export type SessionSummaryResponse = {
+  sessionId: number;
+  status: TrainingStatus;
+
+  totalChartCount: number;
+  completedChartCount: number;
+
+  tradeCount: number;
+  snapshotCount: number;
+
+  sessionAiExists: boolean;
+  sessionAiScore: number | null;
+};
+
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
@@ -258,6 +277,19 @@ export type SessionAiPayload = {
   warnings: string[];
   strengths: string[];
 };
+
+export type SessionSummaryResponse = {
+  sessionId: number;
+  status: TrainingStatus;
+  totalChartCount: number;
+  completedChartCount: number;
+  tradeCount: number;
+  snapshotCount: number;
+  sessionAiExists: boolean;
+  sessionAiScore: number | null;
+};
+
+
 
 export type ChartRefreshType =
   | "RANDOM"

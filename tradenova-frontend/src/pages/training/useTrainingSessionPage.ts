@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTrainingTradeMarkers } from "@/hooks/training/useTrainingTradeMarkers";
-import type { TradeResponse } from "@/types/training";
+import type { SessionSummaryResponse, TradeResponse } from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
 import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
 import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
@@ -36,6 +36,13 @@ export function useTrainingSessionPage() {
   const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
 
   const [riskSaving, setRiskSaving] = useState(false);
+
+  // ===== 세션 완료 화면 =====
+  const [sessionSummary, setSessionSummary] =
+    useState<SessionSummaryResponse | null>(null);
+
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   // ===== marker =====
   const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
@@ -135,6 +142,85 @@ export function useTrainingSessionPage() {
     }
   };
 
+  /**
+   * 세션 완료 화면용 Summary 조회
+   */
+  const loadSessionSummary = async (targetSessionId?: number | null) => {
+    const sid = targetSessionId ?? core.sessionId;
+
+    if (!sid) return null;
+
+    try {
+      setSummaryLoading(true);
+      setSummaryError(null);
+
+      const summary = await trainingApi.getSessionSummary(sid);
+
+      setSessionSummary(summary);
+      return summary;
+    } catch (e: any) {
+      setSummaryError(
+        e?.response?.data?.message ?? "세션 완료 정보를 불러오지 못했습니다.",
+      );
+
+      return null;
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  /**
+   * 세션 종료
+   * 1. 백엔드 세션 종료
+   * 2. Summary 조회
+   * 3. 완료 화면으로 전환
+   */
+  const onFinishSession = async () => {
+    const sid = core.sessionId;
+
+    if (!sid) return;
+
+    const finished = await core.onFinishSession();
+
+    // 종료 요청에 실패했다면 Summary 화면으로 넘어가지 않는다.
+    if (!finished) return;
+
+    await loadSessionSummary(sid);
+  };
+
+  const onCreateSession = async () => {
+    setSessionSummary(null);
+    setSummaryError(null);
+
+    await core.onCreateSession();
+  };
+
+  /**
+   * 완료 화면에서 새 훈련 시작
+   *
+   * 기존 Summary를 제거한 다음
+   * 현재 선택 계좌로 새 세션을 생성한다.
+   */
+  const onStartNewSession = async () => {
+    setSessionSummary(null);
+    setSummaryError(null);
+
+    await core.onCreateSession();
+  };
+
+  /**
+   * 세션 AI 생성 후 완료 화면 Summary도 다시 조회한다.
+   */
+  const onAnalyzeSessionAi = async () => {
+    await ai.onAnalyzeSessionAi();
+
+    if (core.sessionId) {
+      await loadSessionSummary(core.sessionId);
+    }
+  };
+
+  
+
   return {
     // ===== 화면 모드 =====
     viewMode: core.viewMode,
@@ -191,7 +277,7 @@ export function useTrainingSessionPage() {
     executeSell: trade.executeSell,
 
     // ===== 액션 =====
-    onCreateSession: core.onCreateSession,
+    onCreateSession,
     onNext: () => core.onNext(core.advanceSteps, report.loadEvents),
     advanceSteps: core.advanceSteps,
     setAdvanceSteps: core.setAdvanceSteps,
@@ -204,7 +290,7 @@ export function useTrainingSessionPage() {
     openBuyModal: trade.openBuyModal,
     openSellModal: trade.openSellModal,
 
-    onFinishSession: core.onFinishSession,
+    onFinishSession,
 
     // ===== AI =====
     sessionAi: ai.sessionAi,
@@ -212,7 +298,7 @@ export function useTrainingSessionPage() {
     sessionAiLoading: ai.sessionAiLoading,
     sessionAiError: ai.sessionAiError,
     loadLatestSessionAi: ai.loadLatestSessionAi,
-    onAnalyzeSessionAi: ai.onAnalyzeSessionAi,
+    onAnalyzeSessionAi,
 
     chartAi: ai.chartAi,
     chartAiPayload: ai.chartAiPayload,
@@ -247,5 +333,12 @@ export function useTrainingSessionPage() {
         fallbackTime:
           core.visibleActiveCandles[core.visibleActiveCandles.length - 1]?.t,
       }),
+
+    // ===== 세션 완료 화면 =====
+    sessionSummary,
+    summaryLoading,
+    summaryError,
+    loadSessionSummary,
+    onStartNewSession,
   };
 }

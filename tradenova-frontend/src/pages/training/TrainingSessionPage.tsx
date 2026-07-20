@@ -2,6 +2,7 @@ import { TrainingCenterPanel } from "@/components/training/layout/TrainingCenter
 import { TrainingLeftPanel } from "@/components/training/layout/TrainingLeftPanel";
 import { TrainingRightPanel } from "@/components/training/layout/TrainingRightPanel";
 import { useTrainingSessionPage } from "@/pages/training/useTrainingSessionPage";
+import { TrainingCompletionPage } from "@/components/training/completion/TrainingCompletionPage";
 
 export default function TrainingSessionPage() {
   const page = useTrainingSessionPage();
@@ -17,6 +18,23 @@ export default function TrainingSessionPage() {
       </div>
     );
   }
+
+  // 세션 종료 후 기존 좌/중/우 패널 대신 완료 화면 표시
+  if (page.status === "COMPLETED") {
+    return (
+      <TrainingCompletionPage
+        summary={page.sessionSummary}
+        summaryLoading={page.summaryLoading}
+        summaryError={page.summaryError}
+        sessionAiPayload={page.sessionAiPayload}
+        sessionAiLoading={page.sessionAiLoading}
+        onReloadSummary={() => page.loadSessionSummary(page.sessionId)}
+        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
+        onStartNewSession={page.onStartNewSession}
+      />
+    );
+  }
+
   if (!page.sessionId) {
     return (
       <div className="flex h-[calc(100vh-56px)] w-full bg-background">
