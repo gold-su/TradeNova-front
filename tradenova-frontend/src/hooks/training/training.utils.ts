@@ -10,7 +10,8 @@ import type {
  */
 export function emptyProgress(
   chartId: number,
-  status: TrainingStatus,
+  chartStatus: TrainingStatus,
+  sessionStatus: TrainingStatus,
   price = 0,
 ): ProgressResponse {
   return {
@@ -23,8 +24,8 @@ export function emptyProgress(
 
     currentPrice: price,
 
-    chartStatus: status,
-    sessionStatus: status,
+    chartStatus,
+    sessionStatus,
 
     cashBalance: 0,
     positionQty: 0,

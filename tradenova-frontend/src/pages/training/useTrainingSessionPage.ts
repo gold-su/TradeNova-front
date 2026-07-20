@@ -57,8 +57,13 @@ export function useTrainingSessionPage() {
     core.setProgressByChart((prev) => {
       const cur =
         prev[res.chartId] ??
-        emptyProgress(res.chartId, core.status, Number(res.executedPrice));
-
+        emptyProgress(
+          res.chartId,
+          core.activeChart?.status ?? "IN_PROGRESS",
+          core.status,
+          Number(res.executedPrice),
+        );
+        
       return {
         ...prev,
         [res.chartId]: {
