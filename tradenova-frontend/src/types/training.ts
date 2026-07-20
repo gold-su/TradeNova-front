@@ -72,11 +72,20 @@ export type AdvanceRequest = {
 export type ProgressResponse = {
   chartId: number;
   progressIndex: number;
+
+  maxIndex: number;
+  remainingBars: number;
+  atLastBar: boolean;
+
   currentPrice: number;
-  status: TrainingStatus;
+
+  chartStatus: "IN_PROGRESS" | "COMPLETED";
+  sessionStatus: "IN_PROGRESS" | "COMPLETED";
+
   cashBalance: number;
   positionQty: number;
   avgPrice: number;
+
   autoExited: boolean;
   reason: AutoExitReason | null;
 };

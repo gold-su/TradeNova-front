@@ -41,36 +41,45 @@ export type CreateSessionRequest = {
 // 혹은 charts[] 주는지에 따라 유연하게 받기 위해 두 케이스 모두 허용
 export type CreateSessionResponse =
   | {
-      sessionId: number;
-      chartId: number;
-      chartIndex: number;
-      accountId: number;
-      symbolId: number;
-      symbolTicker: string;
-      symbolName: string;
-      mode: TrainingMode;
-      bars: number;
-      progressIndex: number;
-      startDate: string;
-      endDate: string;
-      status: TrainingStatus;
-    }
+    sessionId: number;
+    chartId: number;
+    chartIndex: number;
+    accountId: number;
+    symbolId: number;
+    symbolTicker: string;
+    symbolName: string;
+    mode: TrainingMode;
+    bars: number;
+    progressIndex: number;
+    startDate: string;
+    endDate: string;
+    status: TrainingStatus;
+  }
   | {
-      sessionId: number;
-      status: TrainingStatus;
-      charts: TrainingChartDto[];
-    };
+    sessionId: number;
+    status: TrainingStatus;
+    charts: TrainingChartDto[];
+  };
 
 // ========== Progress / Trade / RiskRule ==========
 
 export type ProgressResponse = {
   chartId: number;
   progressIndex: number;
+
+  maxIndex: number;
+  remainingBars: number;
+  atLastBar: boolean;
+
   currentPrice: number;
-  status: TrainingStatus;
+
+  chartStatus: "IN_PROGRESS" | "COMPLETED";
+  sessionStatus: "IN_PROGRESS" | "COMPLETED";
+
   cashBalance: number;
   positionQty: number;
   avgPrice: number;
+
   autoExited: boolean;
   reason: AutoExitReason | null;
 };

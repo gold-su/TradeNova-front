@@ -32,6 +32,13 @@ export const trainingApi = {
       .then((r) => r.data),
 
   // ===== Progress =====
+  getProgress: (chartId: number) =>
+    http
+      .get<ProgressResponse>(
+        `/api/training/charts/${chartId}/progress`,
+      )
+      .then((r) => r.data),
+
   next: (chartId: number) =>
     http
       .post<ProgressResponse>(`/api/training/charts/${chartId}/next`)
