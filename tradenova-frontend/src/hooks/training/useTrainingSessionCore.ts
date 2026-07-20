@@ -167,21 +167,21 @@ export function useTrainingSessionCore() {
     });
     setCandlesByChart(candleMap);
 
-    // progress 응답이 따로 없으므로 차트 DTO의 progressIndex 기반으로 초기화
+    const progressPairs = await Promise.all(
+      sorted.map(async (chart) => {
+        const progress =
+          await trainingApi.getProgress(chart.chartId);
+
+        return [chart.chartId, progress] as const;
+      }),
+    );
+
     const progressMap: Record<number, ProgressResponse> = {};
-    sorted.forEach((chart) => {
-      progressMap[chart.chartId] = {
-        chartId: chart.chartId,
-        progressIndex: chart.progressIndex ?? 0,
-        currentPrice: 0,
-        status: chart.status,
-        cashBalance: 0,
-        positionQty: 0,
-        avgPrice: 0,
-        autoExited: false,
-        reason: null,
-      };
+
+    progressPairs.forEach(([chartId, progress]) => {
+      progressMap[chartId] = progress;
     });
+
     setProgressByChart(progressMap);
   };
 
@@ -193,7 +193,22 @@ export function useTrainingSessionCore() {
       ...prev,
       [res.chartId]: res,
     }));
-    setStatus(res.status);
+
+    // 세션 상태
+    setStatus(res.sessionStatus);
+
+    // 차트 상태
+    setCharts((prev) =>
+      prev.map((chart) =>
+        chart.chartId === res.chartId
+          ? {
+            ...chart,
+            progressIndex: res.progressIndex,
+            status: res.chartStatus,
+          }
+          : chart,
+      ),
+    );
   };
 
   /**
@@ -278,7 +293,7 @@ export function useTrainingSessionCore() {
       setLoading(true);
       setError(null);
 
-      const finished = await trainingApi.finishSession(sessionId);
+      await trainingApi.finishSession(sessionId);
 
       setStatus("COMPLETED");
 
@@ -297,7 +312,8 @@ export function useTrainingSessionCore() {
 
           next[chartId] = {
             ...prev[chartId],
-            status: "COMPLETED",
+            chartStatus: "COMPLETED",
+            sessionStatus: "COMPLETED",
           };
         }
 
@@ -345,7 +361,15 @@ export function useTrainingSessionCore() {
       }
 
       if (syncNext) {
-        const ids = sortedCharts.map((c) => c.chartId);
+        const ids = sortedCharts
+          .filter((chart) => chart.status !== "COMPLETED")
+          .map((chart) => chart.chartId);
+
+        if (ids.length === 0) {
+          setError("모든 차트가 마지막 봉에 도달했습니다.");
+          return;
+        }
+
         const results = await Promise.all(
           ids.map((id) => runProgress(id, safeSteps)),
         );
@@ -445,7 +469,10 @@ export function useTrainingSessionCore() {
         prev.map((c) => (c.chartIndex === res.chartIndex ? res : c)),
       );
       // 새 캔들 로드
-      const candles = await trainingApi.getChartCandles(res.chartId);
+      const [candles, progress] = await Promise.all([
+        trainingApi.getChartCandles(res.chartId),
+        trainingApi.getProgress(res.chartId),
+      ]);
 
       // 기존 chartId의 캔들 데이터는 제거하고,
       // 새 chartId의 캔들 데이터만 다시 넣는다.
@@ -464,17 +491,7 @@ export function useTrainingSessionCore() {
         const next = { ...prev };
         delete next[chartId];
 
-        next[res.chartId] = {
-          chartId: res.chartId,
-          progressIndex: res.progressIndex ?? 0,
-          currentPrice: 0,
-          status: res.status,
-          cashBalance: 0,
-          positionQty: 0,
-          avgPrice: 0,
-          autoExited: false,
-          reason: null,
-        };
+        next[res.chartId] = progress;
 
         return next;
       });
@@ -485,8 +502,8 @@ export function useTrainingSessionCore() {
 
       setError(
         e?.response?.data?.message ??
-          e?.message ??
-          "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
+        e?.message ??
+        "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
       );
     } finally {
       setLoading(false);

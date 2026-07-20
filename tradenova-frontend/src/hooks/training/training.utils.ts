@@ -15,12 +15,21 @@ export function emptyProgress(
 ): ProgressResponse {
   return {
     chartId,
+
     progressIndex: 0,
+    maxIndex: 0,
+    remainingBars: 0,
+    atLastBar: false,
+
     currentPrice: price,
-    status,
+
+    chartStatus: status,
+    sessionStatus: status,
+
     cashBalance: 0,
     positionQty: 0,
     avgPrice: 0,
+
     autoExited: false,
     reason: null,
   };
