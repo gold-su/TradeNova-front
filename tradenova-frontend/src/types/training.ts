@@ -278,19 +278,6 @@ export type SessionAiPayload = {
   strengths: string[];
 };
 
-export type SessionSummaryResponse = {
-  sessionId: number;
-  status: TrainingStatus;
-  totalChartCount: number;
-  completedChartCount: number;
-  tradeCount: number;
-  snapshotCount: number;
-  sessionAiExists: boolean;
-  sessionAiScore: number | null;
-};
-
-
-
 export type ChartRefreshType =
   | "RANDOM"
   | "TRAINING_SECTOR"

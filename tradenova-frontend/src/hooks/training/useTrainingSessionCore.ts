@@ -293,9 +293,9 @@ export function useTrainingSessionCore() {
       setLoading(true);
       setError(null);
 
-      await trainingApi.finishSession(sessionId);
+      const finished = await trainingApi.finishSession(sessionId);
 
-      setStatus("COMPLETED");
+      setStatus(finished.sessionStatus);
 
       setCharts((prev) =>
         prev.map((chart) => ({
@@ -305,15 +305,15 @@ export function useTrainingSessionCore() {
       );
 
       setProgressByChart((prev) => {
-        const next: typeof prev = {};
+        const next = { ...prev };
 
-        for (const key of Object.keys(prev)) {
+        for (const key of Object.keys(next)) {
           const chartId = Number(key);
 
           next[chartId] = {
-            ...prev[chartId],
+            ...next[chartId],
             chartStatus: "COMPLETED",
-            sessionStatus: "COMPLETED",
+            sessionStatus: finished.sessionStatus,
           };
         }
 
@@ -322,7 +322,11 @@ export function useTrainingSessionCore() {
 
       return finished;
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "세션 종료에 실패했습니다.");
+      setError(
+        e?.response?.data?.message ??
+        "세션 종료에 실패했습니다.",
+      );
+
       return null;
     } finally {
       setLoading(false);

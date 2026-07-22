@@ -55,15 +55,20 @@ export function useTrainingSessionPage() {
    */
   const applyTrade = (res: TradeResponse) => {
     core.setProgressByChart((prev) => {
+      const chartStatus =
+        core.charts.find(
+          (chart) => chart.chartId === res.chartId,
+        )?.status ?? "IN_PROGRESS";
+
       const cur =
         prev[res.chartId] ??
         emptyProgress(
           res.chartId,
-          core.activeChart?.status ?? "IN_PROGRESS",
+          chartStatus,
           core.status,
           Number(res.executedPrice),
         );
-        
+
       return {
         ...prev,
         [res.chartId]: {
@@ -224,7 +229,7 @@ export function useTrainingSessionPage() {
     }
   };
 
-  
+
 
   return {
     // ===== 화면 모드 =====
