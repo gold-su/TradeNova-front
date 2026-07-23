@@ -169,6 +169,8 @@ export function useTrainingSessionPage() {
       const summary = await trainingApi.getSessionSummary(sid);
 
       setSessionSummary(summary);
+      setShowCompletion(true);
+
       return summary;
     } catch (e: any) {
       setSummaryError(
@@ -214,6 +216,7 @@ export function useTrainingSessionPage() {
    * 현재 선택 계좌로 새 세션을 생성한다.
    */
   const onStartNewSession = async () => {
+    setShowCompletion(false);
     setSessionSummary(null);
     setSummaryError(null);
 
@@ -347,6 +350,7 @@ export function useTrainingSessionPage() {
       }),
 
     // ===== 세션 완료 화면 =====
+    showCompletion,
     sessionSummary,
     summaryLoading,
     summaryError,

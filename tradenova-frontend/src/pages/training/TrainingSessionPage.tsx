@@ -20,7 +20,7 @@ export default function TrainingSessionPage() {
   }
 
   // 세션 종료 후 기존 좌/중/우 패널 대신 완료 화면 표시
-  if (page.status === "COMPLETED") {
+  if (page.showCompletion) {
     return (
       <TrainingCompletionPage
         summary={page.sessionSummary}
