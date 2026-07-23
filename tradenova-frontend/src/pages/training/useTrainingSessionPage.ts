@@ -41,6 +41,8 @@ export function useTrainingSessionPage() {
   const [sessionSummary, setSessionSummary] =
     useState<SessionSummaryResponse | null>(null);
 
+  const [showCompletion, setShowCompletion] = useState(false);
+
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
