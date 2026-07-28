@@ -42,6 +42,7 @@ export function useTrainingSessionPage() {
     useState<SessionSummaryResponse | null>(null);
 
   const [showCompletion, setShowCompletion] = useState(false);
+  const [newSessionLoading, setNewSessionLoading] = useState(false);
 
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -202,27 +203,69 @@ export function useTrainingSessionPage() {
     await loadSessionSummary(sid);
   };
 
-  const onCreateSession = async () => {
-    setSessionSummary(null);
-    setSummaryError(null);
+  const onCreateSession = async (): Promise<boolean> => {
+    setError(null);
 
-    await core.onCreateSession();
+    if (!accountId) {
+      setError("먼저 계좌를 선택하거나 생성해주세요.");
+      return false;
+    }
+
+    setLoading(true);
+
+    try {
+      const created = await trainingApi.createSession({
+        accountId,
+        mode: "RANDOM",
+        bars: 100,
+        chartCount: 4,
+      });
+
+      await hydrateSession({
+        sessionId: created.sessionId,
+        accountId,
+        status: created.status,
+        charts: created.charts,
+      });
+
+      return true;
+    } catch (e: any) {
+      setError(
+        e?.response?.data?.message ??
+        "훈련 세션 생성에 실패했습니다.",
+      );
+
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
    * 완료 화면에서 새 훈련 시작
-   *
-   * 기존 Summary를 제거한 다음
-   * 현재 선택 계좌로 새 세션을 생성한다.
+   * 로딩 시작
+→ 완료 화면은 유지
+→ 새 세션 생성 및 차트 hydration 완료
+→ 완료 화면 닫기
+→ 이미 준비된 새 차트 표시
    */
   const onStartNewSession = async () => {
-    setShowCompletion(false);
-    setSessionSummary(null);
+    setNewSessionLoading(true);
     setSummaryError(null);
 
-    await core.onCreateSession();
-  };
+    try {
+      const success = await core.onCreateSession();
 
+      if (!success) {
+        return;
+      }
+
+      setSessionSummary(null);
+      setShowCompletion(false);
+    } finally {
+      setNewSessionLoading(false);
+    }
+  };
   /**
    * 세션 AI 생성 후 완료 화면 Summary도 다시 조회한다.
    */
@@ -351,6 +394,7 @@ export function useTrainingSessionPage() {
 
     // ===== 세션 완료 화면 =====
     showCompletion,
+    newSessionLoading,
     sessionSummary,
     summaryLoading,
     summaryError,

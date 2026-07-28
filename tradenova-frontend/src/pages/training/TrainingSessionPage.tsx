@@ -28,6 +28,7 @@ export default function TrainingSessionPage() {
         summaryError={page.summaryError}
         sessionAiPayload={page.sessionAiPayload}
         sessionAiLoading={page.sessionAiLoading}
+        newSessionLoading={page.newSessionLoading}
         onReloadSummary={() => page.loadSessionSummary(page.sessionId)}
         onAnalyzeSessionAi={page.onAnalyzeSessionAi}
         onStartNewSession={page.onStartNewSession}

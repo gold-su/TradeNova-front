@@ -269,8 +269,12 @@ export function useTrainingSessionCore() {
         status: created.status,
         charts: created.charts,
       });
+
+      return created;
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
+      setError(...);
+
+      return null;
     } finally {
       setLoading(false);
     }
@@ -607,5 +611,14 @@ export function useTrainingSessionCore() {
     chartIndicators,
     setChartIndicators,
     getIndicatorSettings,
+
+    // ===== 세션 완료 화면 =====
+    showCompletion,
+    newSessionLoading,
+    sessionSummary,
+    summaryLoading,
+    summaryError,
+    loadSessionSummary,
+    onStartNewSession,
   };
 }
