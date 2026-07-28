@@ -612,13 +612,5 @@ export function useTrainingSessionCore() {
     setChartIndicators,
     getIndicatorSettings,
 
-    // ===== 세션 완료 화면 =====
-    showCompletion,
-    newSessionLoading,
-    sessionSummary,
-    summaryLoading,
-    summaryError,
-    loadSessionSummary,
-    onStartNewSession,
   };
 }
