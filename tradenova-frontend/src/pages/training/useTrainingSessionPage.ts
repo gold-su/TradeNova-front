@@ -204,43 +204,20 @@ export function useTrainingSessionPage() {
   };
 
   const onCreateSession = async (): Promise<boolean> => {
-    setError(null);
+    setSummaryError(null);
 
-    if (!accountId) {
-      setError("먼저 계좌를 선택하거나 생성해주세요.");
+    const success = await core.onCreateSession();
+
+    if (!success) {
       return false;
     }
 
-    setLoading(true);
+    setSessionSummary(null);
+    setShowCompletion(false);
 
-    try {
-      const created = await trainingApi.createSession({
-        accountId,
-        mode: "RANDOM",
-        bars: 100,
-        chartCount: 4,
-      });
-
-      await hydrateSession({
-        sessionId: created.sessionId,
-        accountId,
-        status: created.status,
-        charts: created.charts,
-      });
-
-      return true;
-    } catch (e: any) {
-      setError(
-        e?.response?.data?.message ??
-        "훈련 세션 생성에 실패했습니다.",
-      );
-
-      return false;
-    } finally {
-      setLoading(false);
-    }
+    return true;
   };
-
+  
   /**
    * 완료 화면에서 새 훈련 시작
    * 로딩 시작

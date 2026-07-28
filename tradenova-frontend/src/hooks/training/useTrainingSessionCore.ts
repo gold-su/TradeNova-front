@@ -245,12 +245,12 @@ export function useTrainingSessionCore() {
    * 새 랜덤 훈련 세션을 생성하고,
    * 응답을 그대로 hydrateSession에 넣어 화면 상태를 초기화한다.
    */
-  const onCreateSession = async () => {
+  const onCreateSession = async (): Promise<boolean> => {
     setError(null);
 
     if (!accountId) {
       setError("먼저 계좌를 선택하거나 생성해주세요.");
-      return;
+      return false;
     }
 
     setLoading(true);
@@ -270,11 +270,11 @@ export function useTrainingSessionCore() {
         charts: created.charts,
       });
 
-      return created;
+      return true;
     } catch (e: any) {
-      setError(...);
+      setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
 
-      return null;
+      return false;
     } finally {
       setLoading(false);
     }
