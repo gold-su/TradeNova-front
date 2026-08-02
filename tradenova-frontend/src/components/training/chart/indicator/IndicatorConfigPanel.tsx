@@ -2,7 +2,6 @@ import type { IndicatorSettings, MaLineSetting } from "@/types/training";
 import type { IndicatorKey } from "./indicatorMeta";
 import { ConfigNumberInput } from "./ConfigNumberInput";
 import { DEFAULT_INDICATORS } from "./indicatorDefaults";
-import { IndicatorSectionHeader } from "./IndicatorSectionHeader";
 import { useState } from "react";
 import { IndicatorConfigTabs } from "./IndicatorConfigTabs";
 

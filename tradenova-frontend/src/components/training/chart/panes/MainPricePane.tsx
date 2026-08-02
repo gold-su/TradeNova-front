@@ -7,8 +7,8 @@ import {
 import type { MaLineSetting } from "@/types/training";
 
 export type MainPriceSeriesRefs = {
-  candleSeries: ISeriesApi<typeof CandlestickSeries>;
-  maSeriesMap: Record<number, ISeriesApi<typeof LineSeries>>;
+  candleSeries: ISeriesApi<"Candlestick">;
+  maSeriesMap: Record<number, ISeriesApi<"Line">>;
 };
 
 export function createMainPriceSeries(chart: IChartApi): MainPriceSeriesRefs {
@@ -33,7 +33,7 @@ export function syncMaSeries({
   lines,
 }: {
   chart: IChartApi;
-  maSeriesMap: Record<number, ISeriesApi<typeof LineSeries>>;
+  maSeriesMap: Record<number, ISeriesApi<"Line">>;
   lines: MaLineSetting[];
 }) {
   const currentPeriods = new Set(lines.map((line) => line.period));

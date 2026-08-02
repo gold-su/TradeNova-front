@@ -1,14 +1,13 @@
-// src/api/reportApi.ts
 import http from "./http";
 import type {
-    QuickPhraseCreateRequest,
-    QuickPhraseResponse,
-    QuickPhraseUpdateRequest,
-    ReportDocumentResponse,
-    ReportDraftUpsertRequest,
-    ReportSnapshotCreateRequest,
-    TrainingEventAppendRequest,
-    TrainingEventResponse,
+  QuickPhraseCreateRequest,
+  QuickPhraseResponse,
+  QuickPhraseUpdateRequest,
+  ReportDocumentResponse,
+  ReportDraftUpsertRequest,
+  ReportSnapshotCreateRequest,
+  TrainingEventAppendRequest,
+  TrainingEventResponse,
 } from "@/types/training";
 
 export const reportApi = {
@@ -20,16 +19,27 @@ export const reportApi = {
 
   createQuickPhrase: (body: QuickPhraseCreateRequest) =>
     http
-      .post<QuickPhraseResponse>("/api/reports/quick-phrases", body)
+      .post<QuickPhraseResponse>(
+        "/api/reports/quick-phrases",
+        body,
+      )
       .then((r) => r.data),
 
-  updateQuickPhrase: (id: number, body: QuickPhraseUpdateRequest) =>
+  updateQuickPhrase: (
+    id: number,
+    body: QuickPhraseUpdateRequest,
+  ) =>
     http
-      .patch<QuickPhraseResponse>(`/api/reports/quick-phrases/${id}`, body)
+      .patch<QuickPhraseResponse>(
+        `/api/reports/quick-phrases/${id}`,
+        body,
+      )
       .then((r) => r.data),
 
   deleteQuickPhrase: (id: number) =>
-    http.delete(`/api/reports/quick-phrases/${id}`).then((r) => r.data),
+    http
+      .delete(`/api/reports/quick-phrases/${id}`)
+      .then((r) => r.data),
 
   // ===== Draft =====
   getDraft: (chartId: number) =>
@@ -39,13 +49,22 @@ export const reportApi = {
       )
       .then((r) => r.data),
 
-  upsertDraft: (chartId: number, body: ReportDraftUpsertRequest) =>
+  upsertDraft: (
+    chartId: number,
+    body: ReportDraftUpsertRequest,
+  ) =>
     http
-      .put<ReportDocumentResponse>(`/api/reports/charts/${chartId}/draft`, body)
+      .put<ReportDocumentResponse>(
+        `/api/reports/charts/${chartId}/draft`,
+        body,
+      )
       .then((r) => r.data),
 
   // ===== Snapshot =====
-  createSnapshot: (chartId: number, body: ReportSnapshotCreateRequest) =>
+  createSnapshot: (
+    chartId: number,
+    body: ReportSnapshotCreateRequest,
+  ) =>
     http
       .post<ReportDocumentResponse>(
         `/api/reports/charts/${chartId}/snapshots`,
@@ -55,18 +74,26 @@ export const reportApi = {
 
   getSnapshots: (chartId: number) =>
     http
-      .get<ReportDocumentResponse[]>(`/api/reports/charts/${chartId}/snapshots`)
+      .get<ReportDocumentResponse[]>(
+        `/api/reports/charts/${chartId}/snapshots`,
+      )
       .then((r) => r.data),
 
   // ===== Events =====
   getEvents: (chartId: number, size = 50) =>
     http
-      .get<TrainingEventResponse[]>(`/api/reports/charts/${chartId}/events`, {
-        params: { size },
-      })
+      .get<TrainingEventResponse[]>(
+        `/api/reports/charts/${chartId}/events`,
+        {
+          params: { size },
+        },
+      )
       .then((r) => r.data),
 
-  createEvent: (chartId: number, body: TrainingEventAppendRequest) =>
+  createEvent: (
+    chartId: number,
+    body: TrainingEventAppendRequest,
+  ) =>
     http
       .post<TrainingEventResponse>(
         `/api/reports/charts/${chartId}/events`,
@@ -76,61 +103,38 @@ export const reportApi = {
 
   getEvent: (eventId: number) =>
     http
-      .get<TrainingEventResponse>(`/api/reports/events/${eventId}`)
+      .get<TrainingEventResponse>(
+        `/api/reports/events/${eventId}`,
+      )
       .then((r) => r.data),
 
-  analyzeChartAi: async (chartId: number) => {
-    const res = await http.post<TrainingEventResponse>(
-      `/api/reports/charts/${chartId}/analyze`,
-    );
-    return res.data;
-  },
+  // ===== Chart AI =====
+  analyzeChartAi: (chartId: number) =>
+    http
+      .post<TrainingEventResponse>(
+        `/api/reports/charts/${chartId}/analyze`,
+      )
+      .then((r) => r.data),
 
-  getLatestChartAi: async (chartId: number) => {
-    const res = await http.get<TrainingEventResponse | null>(
-      `/api/reports/charts/${chartId}/ai/latest`,
-    );
-    return res.data;
-  },
+  getLatestChartAi: (chartId: number) =>
+    http
+      .get<TrainingEventResponse | null>(
+        `/api/reports/charts/${chartId}/ai/latest`,
+      )
+      .then((r) => r.data),
 
-  analyzeSessionAi: async (sessionId: number) => {
-    const res = await http.post<TrainingEventResponse>(
-      `/api/reports/sessions/${sessionId}/analyze`,
-    );
-    return res.data;
-  },
+  // ===== Session AI =====
+  analyzeSessionAi: (sessionId: number) =>
+    http
+      .post<TrainingEventResponse>(
+        `/api/reports/sessions/${sessionId}/analyze`,
+      )
+      .then((r) => r.data),
 
-  getLatestSessionAi: async (sessionId: number) => {
-    const res = await http.get<TrainingEventResponse | null>(
-      `/api/reports/sessions/${sessionId}/ai/latest`,
-    );
-    return res.data;
-  },
-
-  analyzeSessionAi: async (sessionId: number) => {
-    const res = await http.post<TrainingEventResponse>(
-      `/api/reports/sessions/${sessionId}/analyze`,
-    );
-    return res.data;
-  },
-
-  getLatestSessionAi: async (sessionId: number) => {
-    const res = await http.get<TrainingEventResponse | null>(
-      `/api/reports/sessions/${sessionId}/ai/latest`,
-    );
-    return res.data;
-  },
-  analyzeSessionAi: async (sessionId: number) => {
-    const res = await http.post<TrainingEventResponse>(
-      `/api/reports/sessions/${sessionId}/analyze`,
-    );
-    return res.data;
-  },
-
-  getLatestSessionAi: async (sessionId: number) => {
-    const res = await http.get<TrainingEventResponse | null>(
-      `/api/reports/sessions/${sessionId}/ai/latest`,
-    );
-    return res.data;
-  },
+  getLatestSessionAi: (sessionId: number) =>
+    http
+      .get<TrainingEventResponse | null>(
+        `/api/reports/sessions/${sessionId}/ai/latest`,
+      )
+      .then((r) => r.data),
 };

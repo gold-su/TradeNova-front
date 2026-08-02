@@ -12,9 +12,9 @@ type Props = {
 };
 
 export type MacdSeriesRefs = {
-  histogramSeries: ISeriesApi<typeof HistogramSeries>;
-  macdSeries: ISeriesApi<typeof LineSeries>;
-  signalSeries: ISeriesApi<typeof LineSeries>;
+  histogramSeries: ISeriesApi<"Histogram">;
+  macdSeries: ISeriesApi<"Line">;
+  signalSeries: ISeriesApi<"Line">;
 };
 
 export function createMacdSeries({

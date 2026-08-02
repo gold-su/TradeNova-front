@@ -5,7 +5,7 @@ import {
 } from "lightweight-charts";
 
 export type VolumeSeriesRefs = {
-  volumeSeries: ISeriesApi<typeof HistogramSeries>;
+  volumeSeries: ISeriesApi<"Histogram">;
 };
 
 export function createVolumeSeries(chart: IChartApi): VolumeSeriesRefs {

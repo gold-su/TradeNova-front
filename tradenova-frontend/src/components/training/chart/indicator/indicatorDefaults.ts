@@ -6,7 +6,6 @@ export const DEFAULT_INDICATORS: IndicatorSettings = {
   },
   ma: {
     enabled: true,
-    disabled: false,
     type: "SMA",
     lines: [
       { period: 5, color: "#facc15", width: 1 },

@@ -96,9 +96,9 @@ export default function CandleChart({
   const rsiSeriesRef = useRef<RsiSeriesRefs | null>(null);
   const macdSeriesRef = useRef<MacdSeriesRefs | null>(null);
   const bollingerSeriesRef = useRef<{
-    upper: ISeriesApi<typeof LineSeries>;
-    middle: ISeriesApi<typeof LineSeries>;
-    lower: ISeriesApi<typeof LineSeries>;
+    upper: ISeriesApi<"Line">;
+    middle: ISeriesApi<"Line">;
+    lower: ISeriesApi<"Line">;
   } | null>(null);
 
   const prevCandleLengthRef = useRef(0);
@@ -620,17 +620,19 @@ export default function CandleChart({
         };
       }
 
-      bollingerSeriesRef.current.upper.applyOptions({
+      const bollingerSeries = bollingerSeriesRef.current;
+
+      bollingerSeries.upper.applyOptions({
         color: indicatorSettings.bollinger.upperColor,
         lineWidth: indicatorSettings.bollinger.upperWidth as 1 | 2 | 3 | 4,
       });
 
-      bollingerSeriesRef.current.middle.applyOptions({
+      bollingerSeries.middle.applyOptions({
         color: indicatorSettings.bollinger.middleColor,
         lineWidth: indicatorSettings.bollinger.middleWidth as 1 | 2 | 3 | 4,
       });
 
-      bollingerSeriesRef.current.lower.applyOptions({
+      bollingerSeries.lower.applyOptions({
         color: indicatorSettings.bollinger.lowerColor,
         lineWidth: indicatorSettings.bollinger.lowerWidth as 1 | 2 | 3 | 4,
       });
@@ -641,14 +643,19 @@ export default function CandleChart({
         indicatorSettings.bollinger.multiplier,
       );
 
-      bollingerSeriesRef.current.upper.setData(bollinger.upper);
-      bollingerSeriesRef.current.middle.setData(bollinger.middle);
-      bollingerSeriesRef.current.lower.setData(bollinger.lower);
-    } else if (bollingerSeriesRef.current) {
-      mainChart.removeSeries(bollingerSeriesRef.current.upper);
-      mainChart.removeSeries(bollingerSeriesRef.current.middle);
-      mainChart.removeSeries(bollingerSeriesRef.current.lower);
-      bollingerSeriesRef.current = null;
+      bollingerSeries.upper.setData(bollinger.upper);
+      bollingerSeries.middle.setData(bollinger.middle);
+      bollingerSeries.lower.setData(bollinger.lower);
+    } else {
+      const existingBollingerSeries = bollingerSeriesRef.current;
+
+      if (existingBollingerSeries) {
+        mainChart.removeSeries(existingBollingerSeries.upper);
+        mainChart.removeSeries(existingBollingerSeries.middle);
+        mainChart.removeSeries(existingBollingerSeries.lower);
+
+        bollingerSeriesRef.current = null;
+      }
     }
 
     if (showRsi && rsiChartRef.current && rsiSeriesRef.current) {

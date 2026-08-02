@@ -12,9 +12,9 @@ type Props = {
 };
 
 export type RsiSeriesRefs = {
-  rsiSeries: ISeriesApi<typeof LineSeries>;
-  upperLine: ISeriesApi<typeof LineSeries>;
-  lowerLine: ISeriesApi<typeof LineSeries>;
+  rsiSeries: ISeriesApi<"Line">;
+  upperLine: ISeriesApi<"Line">;
+  lowerLine: ISeriesApi<"Line">;
 };
 
 export function createRsiSeries({
