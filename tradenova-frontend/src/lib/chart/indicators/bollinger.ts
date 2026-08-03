@@ -1,4 +1,4 @@
-import type { LineData, UTCTimestamp } from "lightweight-charts";
+import type { LineData } from "lightweight-charts";
 import type { Candle } from "@/types/training";
 import { toChartTime } from "./seriesData";
 

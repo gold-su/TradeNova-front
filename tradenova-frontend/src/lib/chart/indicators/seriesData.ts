@@ -10,10 +10,12 @@ export function toChartTime(epochMillis: number): UTCTimestamp {
   return Math.floor(epochMillis / 1000) as UTCTimestamp;
 }
 
-export function toCandlestickData(candles: Candle[]): CandlestickData[] {
+export function toCandlestickData(
+  candles: Candle[],
+): CandlestickData<UTCTimestamp>[] {
   return candles
     .map((x) => ({
-      time: toChartTime(c.t)
+      time: toChartTime(x.t),
       open: x.o,
       high: x.h,
       low: x.l,
@@ -22,10 +24,12 @@ export function toCandlestickData(candles: Candle[]): CandlestickData[] {
     .sort((a, b) => Number(a.time) - Number(b.time));
 }
 
-export function toVolumeData(candles: Candle[]): HistogramData[] {
+export function toVolumeData(
+  candles: Candle[],
+): HistogramData<UTCTimestamp>[] {
   return candles
     .map((x) => ({
-      time: toChartTime(c.t)
+      time: toChartTime(x.t),
       value: x.v,
       color: x.c >= x.o ? "rgba(34,197,94,0.28)" : "rgba(239,68,68,0.28)",
     }))
@@ -36,9 +40,9 @@ export function toMovingAverageData(
   candles: Candle[],
   period: number,
   type: "SMA" | "EMA" | "WMA" = "SMA",
-): LineData[] {
+): LineData<UTCTimestamp>[] {
   const sorted = candles.slice().sort((a, b) => a.t - b.t);
-  const result: LineData[] = [];
+  const result: LineData<UTCTimestamp>[] = [];
 
   if (type === "EMA") {
     const k = 2 / (period + 1);
@@ -54,7 +58,10 @@ export function toMovingAverageData(
         ema = c.c * k + ema * (1 - k);
       }
 
-      result.push({ time: Math.floor(c.t / 1000), value: ema });
+      result.push({
+        time: toChartTime(c.t),
+        value: ema,
+      });
     });
 
     return result;
@@ -72,7 +79,7 @@ export function toMovingAverageData(
     if (!Number.isFinite(avg)) continue;
 
     result.push({
-      time: Math.floor(sorted[i].t / 1000),
+      time: toChartTime(sorted[i].t),
       value: avg,
     });
   }
@@ -96,7 +103,10 @@ export function normalizeMaLines(lines: MaLineSetting[]): MaLineSetting[] {
   return Array.from(map.values()).sort((a, b) => a.period - b.period);
 }
 
-export function levelData(candles: Candle[], value: number): LineData[] {
+export function levelData(
+  candles: Candle[],
+  value: number,
+): LineData<UTCTimestamp>[] {
   if (candles.length === 0) return [];
   if (!Number.isFinite(value)) return [];
 
@@ -104,7 +114,7 @@ export function levelData(candles: Candle[], value: number): LineData[] {
     .slice()
     .sort((a, b) => a.t - b.t)
     .map((c) => ({
-      time: toChartTime(c.t)
+      time: toChartTime(c.t),
       value,
     }));
 }

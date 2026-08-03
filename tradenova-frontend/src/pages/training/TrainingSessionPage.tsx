@@ -55,6 +55,8 @@ export default function TrainingSessionPage() {
           onAnalyzeSessionAi={page.onAnalyzeSessionAi}
           sessionAiLoading={page.sessionAiLoading}
           sessionAiExists={!!page.sessionAi}
+          progressByChart={page.progressByChart}
+          onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
         />
 
         <main className="flex flex-1 items-center justify-center p-6">

@@ -1,4 +1,4 @@
-import type { LineData, UTCTimestamp } from "lightweight-charts";
+import type { LineData } from "lightweight-charts";
 import type { Candle } from "@/types/training";
 import { toChartTime } from "./seriesData";
 // RSI 값을 계산해서 lightweight-charts가 받을 수 있는 LineData[]로 바꿔주는 계산 함수.
