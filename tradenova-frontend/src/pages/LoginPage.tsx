@@ -29,8 +29,8 @@ export default function LoginPage() {
 
             // 로그인 성공 → 토큰 저장
             localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("userEmail", data.email);
-            localStorage.setItem("userNickname", data.nickname);
+            localStorage.setItem("userEmail", data.user.email);
+            localStorage.setItem("userNickname", data.user.nickname);
             // 홈으로 이동
             nav("/");
         } catch (e: any) {

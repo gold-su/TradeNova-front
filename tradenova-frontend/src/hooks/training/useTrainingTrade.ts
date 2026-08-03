@@ -30,7 +30,7 @@ function formatPrice(value: number) {
 
 export function useTrainingTrade({
   activeChartId,
-  loadEvents,
+  loadEvents: _loadEvents,
   setError,
   applyTrade,
   onTradeExecuted,

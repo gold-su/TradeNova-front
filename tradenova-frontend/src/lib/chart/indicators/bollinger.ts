@@ -1,5 +1,6 @@
-import type { LineData } from "lightweight-charts";
+import type { LineData, UTCTimestamp } from "lightweight-charts";
 import type { Candle } from "@/types/training";
+import { toChartTime } from "./seriesData";
 
 export function calculateBollinger(
   candles: Candle[],
@@ -25,7 +26,7 @@ export function calculateBollinger(
       window.reduce((sum, c) => sum + (c.c - mean) ** 2, 0) / period;
 
     const std = Math.sqrt(variance);
-    const time = Math.floor(sorted[i].t / 1000);
+    const time = toChartTime(sorted[i].t);
 
     upper.push({
       time,

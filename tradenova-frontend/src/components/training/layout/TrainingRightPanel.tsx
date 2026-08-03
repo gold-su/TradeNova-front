@@ -15,6 +15,7 @@ import { SnapshotListPanel } from "@/components/training/report/SnapshotListPane
 import { TrainingTradeJournalPanel } from "@/components/training/common/TrainingTradeJournalPanel";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
 import { AiReviewPanel } from "@/components/training/ai/AiReviewPanel";
+import type { TradeForm } from "@/hooks/training/training.types";
 
 type Props = {
   activeChart: TrainingChartDto | null;
@@ -44,18 +45,8 @@ type Props = {
   onAnalyzeSessionAi: () => void;
   syncNext: boolean;
   setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
-  tradeForm: {
-    qty: number;
-    entryReason: string;
-    riskNote: string;
-  };
-  setTradeForm: React.Dispatch<
-    React.SetStateAction<{
-      qty: number;
-      entryReason: string;
-      riskNote: string;
-    }>
-  >;
+  tradeForm: TradeForm;
+  setTradeForm: React.Dispatch<React.SetStateAction<TradeForm>>;
   executeBuy: () => void;
   executeSell: () => void;
   lastSavedMessage: {
@@ -75,20 +66,11 @@ export function TrainingRightPanel({
   quickPhrases,
   events,
   snapshots,
-  draft,
-  setDraft,
   loading,
-  draftSaving,
   eventLoading,
   disabled,
   onNext,
   onSellAll,
-  onSaveDraft,
-  onCreateSnapshot,
-  onCreateNoteEvent,
-  appendQuickPhrase,
-  openBuyModal,
-  openSellModal,
   sessionAiPayload,
   sessionAiLoading,
   chartAiPayload,

@@ -20,7 +20,7 @@ import type {
   TrainingChartDto,
   TrainingStatus,
 } from "@/types/training";
-import type { PaperAccountDto, ViewMode } from "@/hooks/training/training.types";
+import type { PaperAccountDto } from "@/hooks/training/training.types";
 
 type Props = {
   sessionId: number | null;
@@ -29,12 +29,6 @@ type Props = {
   accounts: PaperAccountDto[];
   accountId: number | null;
   setAccountId: Dispatch<SetStateAction<number | null>>;
-
-  viewMode: ViewMode;
-  setViewMode: Dispatch<SetStateAction<ViewMode>>;
-
-  syncNext: boolean;
-  setSyncNext: Dispatch<SetStateAction<boolean>>;
 
   charts: TrainingChartDto[];
   activeChartId: number | null;
@@ -414,10 +408,6 @@ export function TrainingLeftPanel({
   accounts,
   accountId,
   setAccountId,
-  viewMode,
-  setViewMode,
-  syncNext,
-  setSyncNext,
   charts,
   activeChartId,
   setActiveChartId,

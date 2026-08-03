@@ -198,3 +198,5 @@ export const M = {
     },
   },
 } as const;
+
+export type Locale = keyof typeof M;

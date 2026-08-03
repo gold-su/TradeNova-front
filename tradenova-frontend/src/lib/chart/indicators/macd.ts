@@ -1,5 +1,6 @@
-import type { HistogramData, LineData } from "lightweight-charts";
+import type { HistogramData, LineData, UTCTimestamp } from "lightweight-charts";
 import type { Candle } from "@/types/training";
+import { toChartTime } from "./seriesData";
 
 function ema(values: number[], period: number): number[] {
   const k = 2 / (period + 1);
@@ -52,7 +53,7 @@ export function calculateMACD(
   const histogram: HistogramData[] = [];
 
   for (let i = slowPeriod - 1; i < sorted.length; i++) {
-    const time = Math.floor(sorted[i].t / 1000);
+    const time = toChartTime(sorted[i].t);
 
     macdLine.push({
       time,

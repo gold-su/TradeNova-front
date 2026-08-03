@@ -46,10 +46,6 @@ export default function TrainingSessionPage() {
           accountId={page.accountId}
           setAccountId={page.setAccountId}
           loadAccounts={page.loadAccounts}
-          viewMode={page.viewMode}
-          setViewMode={page.setViewMode}
-          syncNext={page.syncNext}
-          setSyncNext={page.setSyncNext}
           charts={page.charts}
           activeChartId={page.activeChartId}
           setActiveChartId={page.setActiveChartId}
@@ -93,10 +89,6 @@ export default function TrainingSessionPage() {
         accountId={page.accountId}
         setAccountId={page.setAccountId}
         loadAccounts={page.loadAccounts}
-        viewMode={page.viewMode}
-        setViewMode={page.setViewMode}
-        syncNext={page.syncNext}
-        setSyncNext={page.setSyncNext}
         charts={page.charts}
         activeChartId={page.activeChartId}
         setActiveChartId={page.setActiveChartId}

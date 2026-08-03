@@ -2,13 +2,18 @@ import type {
   CandlestickData,
   HistogramData,
   LineData,
+  UTCTimestamp
 } from "lightweight-charts";
 import type { Candle, MaLineSetting } from "@/types/training";
+
+export function toChartTime(epochMillis: number): UTCTimestamp {
+  return Math.floor(epochMillis / 1000) as UTCTimestamp;
+}
 
 export function toCandlestickData(candles: Candle[]): CandlestickData[] {
   return candles
     .map((x) => ({
-      time: Math.floor(x.t / 1000),
+      time: toChartTime(c.t)
       open: x.o,
       high: x.h,
       low: x.l,
@@ -20,7 +25,7 @@ export function toCandlestickData(candles: Candle[]): CandlestickData[] {
 export function toVolumeData(candles: Candle[]): HistogramData[] {
   return candles
     .map((x) => ({
-      time: Math.floor(x.t / 1000),
+      time: toChartTime(c.t)
       value: x.v,
       color: x.c >= x.o ? "rgba(34,197,94,0.28)" : "rgba(239,68,68,0.28)",
     }))
@@ -61,7 +66,7 @@ export function toMovingAverageData(
     const avg =
       type === "WMA"
         ? window.reduce((sum, c, idx) => sum + c.c * (idx + 1), 0) /
-          ((period * (period + 1)) / 2)
+        ((period * (period + 1)) / 2)
         : window.reduce((sum, c) => sum + c.c, 0) / period;
 
     if (!Number.isFinite(avg)) continue;
@@ -99,7 +104,7 @@ export function levelData(candles: Candle[], value: number): LineData[] {
     .slice()
     .sort((a, b) => a.t - b.t)
     .map((c) => ({
-      time: Math.floor(c.t / 1000),
+      time: toChartTime(c.t)
       value,
     }));
 }

@@ -217,7 +217,7 @@ export function useTrainingSessionPage() {
 
     return true;
   };
-  
+
   /**
    * 완료 화면에서 새 훈련 시작
    * 로딩 시작
@@ -362,7 +362,11 @@ export function useTrainingSessionPage() {
 
     tradeMarkersByChart,
     currentPositionQty: core.activeProgress?.positionQty,
-    onTradeExecuted: (input) =>
+    onTradeExecuted: (input: {
+      side: "BUY" | "SELL";
+      res: TradeResponse;
+      qty?: number;
+    }) =>
       addTradeMarker({
         ...input,
         fallbackTime:
