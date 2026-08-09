@@ -38,7 +38,7 @@ const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
  * 를 넣지 않는다.
  * 그건 다른 훅에서 담당한다.
  */
-export function useTrainingSessionCore() {
+export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
   // ===== 화면 제어 상태 =====
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
@@ -357,6 +357,9 @@ export function useTrainingSessionCore() {
 
     const safeSteps = Math.max(1, Math.min(Number(steps) || 1, 500));
 
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+
     setLoading(true);
     setError(null);
 
@@ -394,6 +397,7 @@ export function useTrainingSessionCore() {
       setError(e?.response?.data?.message ?? "NEXT 실패");
     } finally {
       setLoading(false);
+      mutationGuard.current = false;
     }
   };
 

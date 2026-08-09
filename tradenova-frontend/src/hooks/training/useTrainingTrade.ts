@@ -9,6 +9,7 @@ import type {
 import type { TradeForm } from "./training.types";
 
 type UseTrainingTradeParams = {
+  mutationGuard: { current: boolean };
   activeChartId: number | null;
   status: string;
   loadEvents: (chartId: number) => Promise<void>;
@@ -29,6 +30,7 @@ function formatPrice(value: number) {
 }
 
 export function useTrainingTrade({
+  mutationGuard,
   activeChartId,
   loadEvents: _loadEvents,
   setError,
@@ -115,14 +117,24 @@ export function useTrainingTrade({
       return;
     }
 
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+
     try {
       setLoading(true);
       setError(null);
 
-      const tradeRes =
-        side === "BUY"
-          ? await trainingApi.buy(activeChartId, { qty })
-          : await trainingApi.sell(activeChartId, { qty });
+      let tradeRes: TradeResponse;
+
+      try {
+        tradeRes =
+          side === "BUY"
+            ? await trainingApi.buy(activeChartId, { qty })
+            : await trainingApi.sell(activeChartId, { qty });
+      } catch (e: any) {
+        setError(e?.response?.data?.message ?? `${side} 실패`);
+        return;
+      }
 
       applyTrade(tradeRes);
 
@@ -132,32 +144,45 @@ export function useTrainingTrade({
         qty,
       });
 
-      const event = await createTradeLog({
-        chartId: activeChartId,
-        side,
-        qty,
-        res: tradeRes,
-      });
+      let eventSaved = true;
 
-      appendEvent(event);
+      try {
+        const event = await createTradeLog({
+          chartId: activeChartId,
+          side,
+          qty,
+          res: tradeRes,
+        });
+
+        appendEvent(event);
+      } catch {
+        eventSaved = false;
+        setError("거래는 성공했지만 매매 로그 저장에 실패했습니다.");
+      }
 
       showSavedMessage(
-        `${side} 저장됨 · ${qty}주 · ${formatPrice(
-          tradeRes.executedPrice,
-        )}원 · AI 리뷰 반영`,
+        eventSaved
+          ? `${side} 저장됨 · ${qty}주 · ${formatPrice(
+            tradeRes.executedPrice,
+          )}원 · AI 리뷰 반영`
+          : `${side} 체결됨 · ${qty}주 · ${formatPrice(
+            tradeRes.executedPrice,
+          )}원 · 매매 로그 저장 실패`,
         side,
       );
 
       resetReasonOnly();
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? `${side} 실패`);
     } finally {
       setLoading(false);
+      mutationGuard.current = false;
     }
   };
 
   const onSellAll = async () => {
     if (!activeChartId) return;
+
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
 
     try {
       setLoading(true);
@@ -165,7 +190,15 @@ export function useTrainingTrade({
 
       const sellQty = currentPositionQty ?? undefined;
 
-      const res = await trainingApi.sellAll(activeChartId);
+      let res: TradeResponse;
+
+      try {
+        res = await trainingApi.sellAll(activeChartId);
+      } catch (e: any) {
+        setError(e?.response?.data?.message ?? "SELL ALL 실패");
+        return;
+      }
+
       applyTrade(res);
 
       onTradeExecuted?.({
@@ -174,26 +207,34 @@ export function useTrainingTrade({
         qty: sellQty,
       });
 
-      const event = await createTradeLog({
-        chartId: activeChartId,
-        side: "SELL",
-        qty: sellQty,
-        res,
-        sellAll: true,
-      });
+      let eventSaved = true;
 
-      appendEvent(event);
+      try {
+        const event = await createTradeLog({
+          chartId: activeChartId,
+          side: "SELL",
+          qty: sellQty,
+          res,
+          sellAll: true,
+        });
+
+        appendEvent(event);
+      } catch {
+        eventSaved = false;
+        setError("거래는 성공했지만 매매 로그 저장에 실패했습니다.");
+      }
 
       showSavedMessage(
-        `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`,
+        eventSaved
+          ? `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`
+          : `SELL ALL 체결됨 · ${formatPrice(res.executedPrice)}원 · 매매 로그 저장 실패`,
         "SELL",
       );
 
       resetReasonOnly();
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "SELL ALL 실패");
     } finally {
       setLoading(false);
+      mutationGuard.current = false;
     }
   };
 
