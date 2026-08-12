@@ -25,6 +25,7 @@ import {
   Building2,
   Newspaper,
   Camera,
+  X,
 } from "lucide-react";
 
 function sectorLabel(sector?: string) {
@@ -271,10 +272,18 @@ export function TrainingCenterPanel({
       </div>
 
       {visibleError && (
-        <div className="pointer-events-none absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
+        <div className="absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-400" />
-            <span>{visibleError}</span>
+            <span className="min-w-0 flex-1">{visibleError}</span>
+            <button
+              type="button"
+              aria-label="오류 메시지 닫기"
+              onClick={() => setVisibleError(null)}
+              className="rounded-lg p-1 text-red-100/70 transition hover:bg-red-500/20 hover:text-red-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}

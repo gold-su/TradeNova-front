@@ -201,6 +201,9 @@ export function useTrainingTrade({
 
       applyTrade(res);
 
+      // 포지션이 없으면 백엔드는 snapshot만 담고 실제 거래는 생성하지 않는다.
+      if (res.tradeId == null) return;
+
       onTradeExecuted?.({
         side: "SELL",
         res,

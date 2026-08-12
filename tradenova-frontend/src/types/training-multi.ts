@@ -90,7 +90,7 @@ export type TradeRequest = { qty: number };
 
 export type TradeResponse = {
   chartId: number;
-  tradeId: number;
+  tradeId: number | null;
   cashBalance: number;
   positionQty: number;
   avgPrice: number;

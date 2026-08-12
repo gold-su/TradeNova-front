@@ -42,6 +42,7 @@ export type TradeChartMarker = {
   time: number; // epoch millis
   price: number;
   qty?: number;
+  count?: number;
 };
 
 type Props = {
@@ -835,6 +836,9 @@ export default function CandleChart({
             }
           >
             {tradeTooltip.trade.side}
+            {(tradeTooltip.trade.count ?? 1) > 1
+              ? ` ×${tradeTooltip.trade.count}`
+              : ""}
           </div>
 
           <div className="mt-1 flex justify-between text-muted-foreground">
