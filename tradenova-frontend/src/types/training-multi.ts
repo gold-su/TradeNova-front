@@ -2,7 +2,7 @@
 
 export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
-export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
+export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT" | "END_OF_CHART";
 
 export type CandleDto = {
   idx?: number; // 백엔드가 주면 쓰고, 없으면 생략 가능

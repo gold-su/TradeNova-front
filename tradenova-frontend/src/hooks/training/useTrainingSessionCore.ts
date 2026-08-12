@@ -38,7 +38,13 @@ const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
  * 를 넣지 않는다.
  * 그건 다른 훅에서 담당한다.
  */
-export function useTrainingSessionCore() {
+export function useTrainingSessionCore(
+  mutationGuard: { current: boolean },
+  onAutoExit?: (
+    progress: ProgressResponse,
+    chartIndex: number | undefined,
+  ) => Promise<void> | void,
+) {
   // ===== 화면 제어 상태 =====
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
@@ -211,6 +217,15 @@ export function useTrainingSessionCore() {
     );
   };
 
+  const handleAutoExit = async (res: ProgressResponse) => {
+    if (!res.autoExited) return;
+
+    const chartIndex = sortedCharts.find(
+      (chart) => chart.chartId === res.chartId,
+    )?.chartIndex;
+    await onAutoExit?.(res, chartIndex);
+  };
+
   /**
    * 현재 진행 중(active) 세션이 있으면 복구한다.
    * 없으면 그대로 빈 상태 유지.
@@ -357,6 +372,9 @@ export function useTrainingSessionCore() {
 
     const safeSteps = Math.max(1, Math.min(Number(steps) || 1, 500));
 
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+
     setLoading(true);
     setError(null);
 
@@ -364,6 +382,7 @@ export function useTrainingSessionCore() {
       if (viewMode === "single") {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
         return;
       }
@@ -383,17 +402,20 @@ export function useTrainingSessionCore() {
         );
 
         results.forEach(applyProgress);
+        await Promise.all(results.map(handleAutoExit));
 
         await afterProgress?.(activeChartId);
       } else {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
       }
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "NEXT 실패");
     } finally {
       setLoading(false);
+      mutationGuard.current = false;
     }
   };
 
