@@ -116,6 +116,7 @@ export default function TrainingSessionPage() {
         activeProgress={page.activeProgress}
         visibleActiveCandles={page.visibleActiveCandles}
         error={page.error}
+        autoExitNotices={page.autoExitNotices}
         onRefreshChart={page.onRefreshChart}
         refreshing={page.loading}
         refreshRequest={page.refreshRequest}

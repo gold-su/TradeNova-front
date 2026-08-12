@@ -3,7 +3,7 @@
 // ===== Enums =====
 export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
-export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
+export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT" | "END_OF_CHART";
 
 export type EventType =
   | "PROGRESS"

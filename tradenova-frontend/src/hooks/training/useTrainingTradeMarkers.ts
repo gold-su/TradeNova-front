@@ -33,6 +33,26 @@ export function useTrainingTradeMarkers() {
     setTradeMarkersByChart(Object.fromEntries(pairs));
   }, []);
 
+  const syncTradeMarkers = useCallback(async (chartId: number) => {
+    try {
+      const trades = await trainingApi.getTrades(chartId);
+      const markers: TradeChartMarker[] = trades.map((trade) => ({
+        id: `${trade.chartId}-${trade.tradeId}-${trade.side}`,
+        side: trade.side,
+        time: trade.candleTime,
+        price: Number(trade.price),
+        qty: Number(trade.qty),
+      }));
+
+      setTradeMarkersByChart((prev) => ({
+        ...prev,
+        [chartId]: markers,
+      }));
+    } catch (error) {
+      console.error("trade marker sync failed", error);
+    }
+  }, []);
+
   const addTradeMarker = useCallback(
     ({
       side,
@@ -66,6 +86,7 @@ export function useTrainingTradeMarkers() {
   return {
     tradeMarkersByChart,
     loadTradeMarkers,
+    syncTradeMarkers,
     addTradeMarker,
   };
 }
