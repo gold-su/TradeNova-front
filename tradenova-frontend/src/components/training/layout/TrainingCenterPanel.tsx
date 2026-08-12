@@ -25,6 +25,7 @@ import {
   Building2,
   Newspaper,
   Camera,
+  X,
 } from "lucide-react";
 
 function sectorLabel(sector?: string) {
@@ -60,6 +61,7 @@ type Props = {
   activeProgress: ProgressResponse | null;
   visibleActiveCandles: Candle[];
   error: string | null;
+  autoExitNotices: Array<{ id: number; message: string }>;
   onRefreshChart: (chartId: number) => void;
   refreshing: boolean;
   refreshRequest: ChartRefreshRequest;
@@ -86,6 +88,7 @@ export function TrainingCenterPanel({
   visibleActiveCandles,
   onRefreshChart,
   error,
+  autoExitNotices,
   refreshing,
   refreshRequest,
   setRefreshRequest,
@@ -269,11 +272,40 @@ export function TrainingCenterPanel({
       </div>
 
       {visibleError && (
-        <div className="pointer-events-none absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
+        <div className="absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-400" />
-            <span>{visibleError}</span>
+            <span className="min-w-0 flex-1">{visibleError}</span>
+            <button
+              type="button"
+              aria-label="오류 메시지 닫기"
+              onClick={() => setVisibleError(null)}
+              className="rounded-lg p-1 text-red-100/70 transition hover:bg-red-500/20 hover:text-red-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+        </div>
+      )}
+
+      {autoExitNotices.length > 0 && (
+        <div
+          className={`pointer-events-none absolute left-6 right-6 z-30 space-y-2 ${
+            visibleError ? "top-[150px]" : "top-[92px]"
+          }`}
+        >
+          {autoExitNotices.map((notice) => (
+            <div
+              key={notice.id}
+              role="status"
+              className="rounded-2xl border border-amber-400/35 bg-amber-400/15 px-5 py-3 text-sm font-semibold text-amber-50 shadow-2xl backdrop-blur-md"
+            >
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-amber-300" />
+                <span>{notice.message}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

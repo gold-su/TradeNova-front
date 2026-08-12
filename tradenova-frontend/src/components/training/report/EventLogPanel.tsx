@@ -193,7 +193,7 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
           </span>
 
           <span className="truncate text-xs font-semibold leading-none text-foreground">
-            {formatNumber(tradePayload.qty)}주 @{" "}
+            {formatNumber(tradePayload.qty)}주 ·{" "}
             {formatNumber(tradePayload.price ?? tradePayload.executedPrice)}원
           </span>
         </div>
