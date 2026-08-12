@@ -42,6 +42,7 @@ export type TradeChartMarker = {
   time: number; // epoch millis
   price: number;
   qty?: number;
+  count?: number;
 };
 
 type Props = {
@@ -558,8 +559,17 @@ export default function CandleChart({
 
     if (!mainChart || !mainSeries) return;
 
-    const candleData = toCandlestickData(candles);
-    mainSeries.candleSeries.setData(candleData);
+    const previousLength = prevCandleLengthRef.current;
+    const isFirstDataLoad = !initializedRef.current;
+    const isAppendOnly = !isFirstDataLoad && candles.length > previousLength;
+
+    if (isAppendOnly) {
+      toCandlestickData(candles.slice(previousLength)).forEach((candle) => {
+        mainSeries.candleSeries.update(candle);
+      });
+    } else {
+      mainSeries.candleSeries.setData(toCandlestickData(candles));
+    }
 
     mainChart.applyOptions({
       rightPriceScale: {
@@ -573,9 +583,14 @@ export default function CandleChart({
     if (indicatorSettings.volume.enabled) {
       if (!volumeSeriesRef.current) {
         volumeSeriesRef.current = createVolumeSeries(mainChart);
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
+      } else if (isAppendOnly) {
+        toVolumeData(candles.slice(previousLength)).forEach((volume) => {
+          volumeSeriesRef.current?.volumeSeries.update(volume);
+        });
+      } else {
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
       }
-
-      volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
     } else if (volumeSeriesRef.current) {
       mainChart.removeSeries(volumeSeriesRef.current.volumeSeries);
       volumeSeriesRef.current = null;
@@ -704,8 +719,7 @@ export default function CandleChart({
       macdSeriesRef.current.signalSeries.setData(macd.signalLine);
     }
 
-    const isFirstDataLoad = !initializedRef.current;
-    const isNextCandle = candles.length > prevCandleLengthRef.current;
+    const isNextCandle = candles.length > previousLength;
 
     requestAnimationFrame(() => {
       if (isFirstDataLoad) {
@@ -835,6 +849,9 @@ export default function CandleChart({
             }
           >
             {tradeTooltip.trade.side}
+            {(tradeTooltip.trade.count ?? 1) > 1
+              ? ` ×${tradeTooltip.trade.count}`
+              : ""}
           </div>
 
           <div className="mt-1 flex justify-between text-muted-foreground">
