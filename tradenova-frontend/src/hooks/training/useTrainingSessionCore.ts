@@ -17,11 +17,20 @@ import type {
 } from "./training.types";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import { paperAccountApi } from "@/api/paperAccountApi";
+import axios from "axios";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
 const TRAINING_VIEW_MODE_KEY = "tradenova.training.viewMode";
 const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
+
+function progressErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message;
+  }
+
+  return undefined;
+}
 /**
  * 훈련 화면의 "세션/차트/캔들/진행도" 핵심 로직을 담당하는 훅
  *
@@ -397,12 +406,69 @@ export function useTrainingSessionCore(
           return;
         }
 
-        const results = await Promise.all(
-          ids.map((id) => runProgress(id, safeSteps)),
+        const settled = await Promise.allSettled(
+          ids.map((id) =>
+            runProgress(id, safeSteps).then((progress) => {
+              applyProgress(progress);
+              return progress;
+            }),
+          ),
         );
+        const succeeded: ProgressResponse[] = [];
+        const failedIds: number[] = [];
 
-        results.forEach(applyProgress);
-        await Promise.all(results.map(handleAutoExit));
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            succeeded.push(result.value);
+          } else {
+            failedIds.push(ids[index]);
+          }
+        });
+
+        await Promise.all(succeeded.map(handleAutoExit));
+
+        if (failedIds.length > 0) {
+          // 응답을 받지 못했더라도 서버 mutation은 성공했을 수 있으므로
+          // 실패한 chart만 authoritative progress로 다시 맞춘다.
+          const recovered = await Promise.allSettled(
+            failedIds.map((id) =>
+              trainingApi.getProgress(id).then((progress) => {
+                applyProgress(progress);
+                return progress;
+              }),
+            ),
+          );
+          const recoveredProgress: ProgressResponse[] = [];
+
+          recovered.forEach((result) => {
+            if (result.status === "fulfilled") {
+              recoveredProgress.push(result.value);
+            }
+          });
+
+          await Promise.all(recoveredProgress.map(handleAutoExit));
+
+          const recoveryFailed = recovered.some(
+            (result) => result.status === "rejected",
+          );
+
+          if (succeeded.length > 0) {
+            setError(
+              recoveryFailed
+                ? "일부 차트 진행에 실패했고 서버 상태를 다시 동기화하지 못했습니다."
+                : "일부 차트 진행에 실패해 서버 상태를 다시 동기화했습니다.",
+            );
+          } else {
+            const firstFailure = settled.find(
+              (result) => result.status === "rejected",
+            );
+            setError(
+              firstFailure?.status === "rejected"
+                ? (progressErrorMessage(firstFailure.reason) ?? "NEXT 실패")
+                : "NEXT 실패",
+            );
+          }
+        }
 
         await afterProgress?.(activeChartId);
       } else {
