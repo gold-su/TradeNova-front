@@ -17,11 +17,20 @@ import type {
 } from "./training.types";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import { paperAccountApi } from "@/api/paperAccountApi";
+import axios from "axios";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
 const TRAINING_VIEW_MODE_KEY = "tradenova.training.viewMode";
 const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
+
+function progressErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message;
+  }
+
+  return undefined;
+}
 /**
  * 훈련 화면의 "세션/차트/캔들/진행도" 핵심 로직을 담당하는 훅
  *
@@ -38,7 +47,13 @@ const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
  * 를 넣지 않는다.
  * 그건 다른 훅에서 담당한다.
  */
-export function useTrainingSessionCore() {
+export function useTrainingSessionCore(
+  mutationGuard: { current: boolean },
+  onAutoExit?: (
+    progress: ProgressResponse,
+    chartIndex: number | undefined,
+  ) => Promise<void> | void,
+) {
   // ===== 화면 제어 상태 =====
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
@@ -211,6 +226,15 @@ export function useTrainingSessionCore() {
     );
   };
 
+  const handleAutoExit = async (res: ProgressResponse) => {
+    if (!res.autoExited) return;
+
+    const chartIndex = sortedCharts.find(
+      (chart) => chart.chartId === res.chartId,
+    )?.chartIndex;
+    await onAutoExit?.(res, chartIndex);
+  };
+
   /**
    * 현재 진행 중(active) 세션이 있으면 복구한다.
    * 없으면 그대로 빈 상태 유지.
@@ -357,6 +381,9 @@ export function useTrainingSessionCore() {
 
     const safeSteps = Math.max(1, Math.min(Number(steps) || 1, 500));
 
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+
     setLoading(true);
     setError(null);
 
@@ -364,6 +391,7 @@ export function useTrainingSessionCore() {
       if (viewMode === "single") {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
         return;
       }
@@ -378,22 +406,82 @@ export function useTrainingSessionCore() {
           return;
         }
 
-        const results = await Promise.all(
-          ids.map((id) => runProgress(id, safeSteps)),
+        const settled = await Promise.allSettled(
+          ids.map((id) =>
+            runProgress(id, safeSteps).then((progress) => {
+              applyProgress(progress);
+              return progress;
+            }),
+          ),
         );
+        const succeeded: ProgressResponse[] = [];
+        const failedIds: number[] = [];
 
-        results.forEach(applyProgress);
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            succeeded.push(result.value);
+          } else {
+            failedIds.push(ids[index]);
+          }
+        });
+
+        await Promise.all(succeeded.map(handleAutoExit));
+
+        if (failedIds.length > 0) {
+          // 응답을 받지 못했더라도 서버 mutation은 성공했을 수 있으므로
+          // 실패한 chart만 authoritative progress로 다시 맞춘다.
+          const recovered = await Promise.allSettled(
+            failedIds.map((id) =>
+              trainingApi.getProgress(id).then((progress) => {
+                applyProgress(progress);
+                return progress;
+              }),
+            ),
+          );
+          const recoveredProgress: ProgressResponse[] = [];
+
+          recovered.forEach((result) => {
+            if (result.status === "fulfilled") {
+              recoveredProgress.push(result.value);
+            }
+          });
+
+          await Promise.all(recoveredProgress.map(handleAutoExit));
+
+          const recoveryFailed = recovered.some(
+            (result) => result.status === "rejected",
+          );
+
+          if (succeeded.length > 0) {
+            setError(
+              recoveryFailed
+                ? "일부 차트 진행에 실패했고 서버 상태를 다시 동기화하지 못했습니다."
+                : "일부 차트 진행에 실패해 서버 상태를 다시 동기화했습니다.",
+            );
+          } else {
+            const firstFailure = settled.find(
+              (result) => result.status === "rejected",
+            );
+            setError(
+              firstFailure?.status === "rejected"
+                ? (progressErrorMessage(firstFailure.reason) ?? "NEXT 실패")
+                : "NEXT 실패",
+            );
+          }
+        }
 
         await afterProgress?.(activeChartId);
       } else {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
       }
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "NEXT 실패");
     } finally {
       setLoading(false);
+      mutationGuard.current = false;
     }
   };
 
