@@ -135,6 +135,7 @@ export function TrainingChartTile({
       <div className="min-h-0 flex-1" style={{ height: chartHeight }}>
         {visible.length > 0 ? (
           <CandleChart
+            chartId={chart.chartId}
             candles={visible}
             height={chartHeight}
             indicatorSettings={indicatorSettings}
