@@ -105,6 +105,7 @@ export function TrainingChartSingle({
       <div className="min-h-0 flex-1">
         {candles.length > 0 ? (
           <CandleChart
+            key={chart.chartId}
             chartId={chart.chartId}
             candles={candles}
             height={520}
