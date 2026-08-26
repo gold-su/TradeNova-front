@@ -13,6 +13,11 @@ import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import { trainingApi } from "@/api/trainingApi";
 import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
+import {
+  analyzeSessionAi,
+  finishTrainingAndOpenCompletion,
+} from "./trainingSessionLifecycle";
+import axios from "axios";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -218,12 +223,14 @@ export function useTrainingSessionPage() {
       const summary = await trainingApi.getSessionSummary(sid);
 
       setSessionSummary(summary);
-      setShowCompletion(true);
 
       return summary;
-    } catch (e: any) {
+    } catch (error: unknown) {
       setSummaryError(
-        e?.response?.data?.message ?? "세션 완료 정보를 불러오지 못했습니다.",
+        axios.isAxiosError<{ message?: string }>(error)
+          ? (error.response?.data?.message ??
+            "세션 완료 정보를 불러오지 못했습니다.")
+          : "세션 완료 정보를 불러오지 못했습니다.",
       );
 
       return null;
@@ -243,12 +250,11 @@ export function useTrainingSessionPage() {
 
     if (!sid) return;
 
-    const finished = await core.onFinishSession();
-
-    // 종료 요청에 실패했다면 Summary 화면으로 넘어가지 않는다.
-    if (!finished) return;
-
-    await loadSessionSummary(sid);
+    await finishTrainingAndOpenCompletion({
+      finishSession: core.onFinishSession,
+      loadSummary: () => loadSessionSummary(sid),
+      openCompletion: () => setShowCompletion(true),
+    });
   };
 
   const onCreateSession = async (): Promise<boolean> => {
@@ -291,15 +297,8 @@ export function useTrainingSessionPage() {
       setNewSessionLoading(false);
     }
   };
-  /**
-   * 세션 AI 생성 후 완료 화면 Summary도 다시 조회한다.
-   */
   const onAnalyzeSessionAi = async () => {
-    await ai.onAnalyzeSessionAi();
-
-    if (core.sessionId) {
-      await loadSessionSummary(core.sessionId);
-    }
+    await analyzeSessionAi(ai.onAnalyzeSessionAi);
   };
 
 
