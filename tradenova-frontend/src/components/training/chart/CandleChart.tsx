@@ -42,9 +42,11 @@ export type TradeChartMarker = {
   time: number; // epoch millis
   price: number;
   qty?: number;
+  count?: number;
 };
 
 type Props = {
+  chartId: number;
   candles: Candle[];
   height?: number;
   indicatorSettings?: IndicatorSettings;
@@ -78,6 +80,7 @@ function formatAxisMonth(timestamp: number) {
 }
 
 export default function CandleChart({
+  chartId,
   candles,
   height = 520,
   indicatorSettings = DEFAULT_INDICATORS,
@@ -103,6 +106,7 @@ export default function CandleChart({
 
   const prevCandleLengthRef = useRef(0);
   const initializedRef = useRef(false);
+  const previousChartIdRef = useRef<number | null>(null);
 
   const tradeMarkersRef = useRef<any>(null);
 
@@ -542,6 +546,7 @@ export default function CandleChart({
       macdSeriesRef.current = null;
       bollingerSeriesRef.current = null;
       initializedRef.current = false;
+      previousChartIdRef.current = null;
       prevCandleLengthRef.current = 0;
       tradeMarkersRef.current = null;
     };
@@ -549,7 +554,8 @@ export default function CandleChart({
 
   /**
    * 데이터 업데이트 effect
-   * - candles 변경 시 chart를 재생성하지 않고 setData만 실행
+   * - chart 변경 시 전체 데이터를 교체하고 viewport를 초기화
+   * - 같은 chart의 NEXT/ADVANCE는 새 데이터만 append
    * - NEXT로 봉이 하나 늘어나면 오른쪽 끝으로 부드럽게 이동
    */
   useEffect(() => {
@@ -558,8 +564,19 @@ export default function CandleChart({
 
     if (!mainChart || !mainSeries) return;
 
-    const candleData = toCandlestickData(candles);
-    mainSeries.candleSeries.setData(candleData);
+    const previousLength = prevCandleLengthRef.current;
+    const isFirstDataLoad = !initializedRef.current;
+    const isChartChange = previousChartIdRef.current !== chartId;
+    const isAppendOnly =
+      !isFirstDataLoad && !isChartChange && candles.length > previousLength;
+
+    if (isAppendOnly) {
+      toCandlestickData(candles.slice(previousLength)).forEach((candle) => {
+        mainSeries.candleSeries.update(candle);
+      });
+    } else {
+      mainSeries.candleSeries.setData(toCandlestickData(candles));
+    }
 
     mainChart.applyOptions({
       rightPriceScale: {
@@ -573,9 +590,14 @@ export default function CandleChart({
     if (indicatorSettings.volume.enabled) {
       if (!volumeSeriesRef.current) {
         volumeSeriesRef.current = createVolumeSeries(mainChart);
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
+      } else if (isAppendOnly) {
+        toVolumeData(candles.slice(previousLength)).forEach((volume) => {
+          volumeSeriesRef.current?.volumeSeries.update(volume);
+        });
+      } else {
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
       }
-
-      volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
     } else if (volumeSeriesRef.current) {
       mainChart.removeSeries(volumeSeriesRef.current.volumeSeries);
       volumeSeriesRef.current = null;
@@ -704,11 +726,10 @@ export default function CandleChart({
       macdSeriesRef.current.signalSeries.setData(macd.signalLine);
     }
 
-    const isFirstDataLoad = !initializedRef.current;
-    const isNextCandle = candles.length > prevCandleLengthRef.current;
+    const isNextCandle = isAppendOnly;
 
     requestAnimationFrame(() => {
-      if (isFirstDataLoad) {
+      if (isFirstDataLoad || isChartChange) {
         mainChart.timeScale().fitContent();
         rsiChartRef.current?.timeScale().fitContent();
         macdChartRef.current?.timeScale().fitContent();
@@ -720,8 +741,9 @@ export default function CandleChart({
     });
 
     initializedRef.current = true;
+    previousChartIdRef.current = chartId;
     prevCandleLengthRef.current = candles.length;
-  }, [candles, indicatorSettings, maLines, showRsi, showMacd]);
+  }, [chartId, candles, indicatorSettings, maLines, showRsi, showMacd]);
 
   useEffect(() => {
     if (!tradeMarkersRef.current) return;
@@ -835,6 +857,9 @@ export default function CandleChart({
             }
           >
             {tradeTooltip.trade.side}
+            {(tradeTooltip.trade.count ?? 1) > 1
+              ? ` ×${tradeTooltip.trade.count}`
+              : ""}
           </div>
 
           <div className="mt-1 flex justify-between text-muted-foreground">
