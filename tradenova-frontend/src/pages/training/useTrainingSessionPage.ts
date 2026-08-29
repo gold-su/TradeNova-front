@@ -179,10 +179,16 @@ export function useTrainingSessionPage() {
   /**
    * 세션 차트 로드 후 자동 복원
    */
+  const tradeMarkerChartIdsKey = core.charts
+    .map((chart) => chart.chartId)
+    .join(",");
+
   useEffect(() => {
-    const chartIds = core.charts.map((chart) => chart.chartId);
+    const chartIds = tradeMarkerChartIdsKey
+      ? tradeMarkerChartIdsKey.split(",").map(Number)
+      : [];
     loadTradeMarkers(chartIds);
-  }, [core.charts, loadTradeMarkers]);
+  }, [tradeMarkerChartIdsKey, loadTradeMarkers]);
 
   useEffect(() => {
     if (!core.activeChartId) {
