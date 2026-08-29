@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trainingApi } from "@/api/trainingApi";
 import type {
   Candle,
@@ -18,6 +18,12 @@ import type {
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import { paperAccountApi } from "@/api/paperAccountApi";
 import axios from "axios";
+import {
+  findRefreshedChart,
+  moveChartKey,
+  replaceActiveChartId,
+  replaceChartKey,
+} from "./trainingChartRefresh";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
@@ -84,6 +90,11 @@ export function useTrainingSessionCore(
 
   // ===== 로딩 / 에러 =====
   const [loading, setLoading] = useState(false);
+  const [refreshingChartIds, setRefreshingChartIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const refreshingChartIdsRef = useRef(new Set<number>());
+  const retiredChartIdsRef = useRef(new Set<number>());
   const [activeSessionLoading, setActiveSessionLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -146,6 +157,7 @@ export function useTrainingSessionCore(
    * 화면 상태(session/charts/candles/progress)를 한 번에 복구한다.
    */
   const hydrateSession = async (session: HydrateSessionInput) => {
+    retiredChartIdsRef.current.clear();
     // active 세션 복구 시 계좌까지 같이 맞춰준다.
     if (session.accountId != null) {
       setAccountId(session.accountId);
@@ -204,6 +216,7 @@ export function useTrainingSessionCore(
    * 차트 진행 응답을 progress map에 반영한다.
    */
   const applyProgress = (res: ProgressResponse) => {
+    if (retiredChartIdsRef.current.has(res.chartId)) return;
     setProgressByChart((prev) => ({
       ...prev,
       [res.chartId]: res,
@@ -323,30 +336,30 @@ export function useTrainingSessionCore(
 
       const finished = await trainingApi.finishSession(sessionId);
 
-      setStatus(finished.sessionStatus);
-
-      setCharts((prev) =>
-        prev.map((chart) => ({
-          ...chart,
-          status: "COMPLETED",
-        })),
+      // finish 응답으로 잔고나 포지션을 추측하지 않는다. 서버가 만든
+      // END_OF_SESSION 거래까지 반영된 authoritative 상태를 다시 읽는다.
+      const finishedCharts = (await trainingApi.getSessionCharts(sessionId))
+        .slice()
+        .sort((a, b) => a.chartIndex - b.chartIndex);
+      const progressPairs = await Promise.all(
+        finishedCharts.map(async (chart) => [
+          chart.chartId,
+          await trainingApi.getProgress(chart.chartId),
+        ] as const),
       );
 
-      setProgressByChart((prev) => {
-        const next = { ...prev };
+      setCharts(finishedCharts);
+      setProgressByChart(Object.fromEntries(progressPairs));
+      setStatus(finished.sessionStatus);
 
-        for (const key of Object.keys(next)) {
-          const chartId = Number(key);
+      // shared account의 현금 잔액도 liquidation 이후 값으로 갱신한다.
+      await loadAccounts(accountId ?? undefined);
 
-          next[chartId] = {
-            ...next[chartId],
-            chartStatus: "COMPLETED",
-            sessionStatus: finished.sessionStatus,
-          };
-        }
-
-        return next;
-      });
+      // 서버가 실제 자동청산으로 판정한 차트만 canonical trade marker와
+      // 기존 자동청산 알림 흐름을 통해 동기화한다.
+      await Promise.all(progressPairs.map(([, progress]) =>
+        handleAutoExit(progress),
+      ));
 
       return finished;
     } catch (e: any) {
@@ -555,54 +568,77 @@ export function useTrainingSessionCore(
   };
 
   const onRefreshChart = async (chartId: number) => {
+    if (refreshingChartIdsRef.current.has(chartId)) return;
+
+    const oldChart = charts.find((chart) => chart.chartId === chartId);
+    if (!oldChart || !sessionId) return;
+
+    refreshingChartIdsRef.current.add(chartId);
+    setRefreshingChartIds((prev) => new Set(prev).add(chartId));
+
+    const applyReplacement = async (replacement: TrainingChartDto) => {
+      // Fetch all authoritative keyed data before changing any visible state.
+      const [candles, progress] = await Promise.all([
+        trainingApi.getChartCandles(replacement.chartId),
+        trainingApi.getProgress(replacement.chartId),
+      ]);
+
+      retiredChartIdsRef.current.add(chartId);
+      retiredChartIdsRef.current.delete(replacement.chartId);
+      setCharts((prev) =>
+        prev.map((chart) =>
+          chart.chartIndex === oldChart.chartIndex ? replacement : chart,
+        ),
+      );
+      setCandlesByChart((prev) =>
+        replaceChartKey(prev, chartId, replacement.chartId, candles),
+      );
+      setProgressByChart((prev) =>
+        replaceChartKey(prev, chartId, replacement.chartId, progress),
+      );
+      setChartIndicators((prev) =>
+        moveChartKey(prev, chartId, replacement.chartId),
+      );
+      setActiveChartId((prev) =>
+        replaceActiveChartId(prev, chartId, replacement.chartId),
+      );
+    };
+
     try {
-      setLoading(true);
       setError(null);
 
       const res = await trainingApi.refreshChart(chartId, refreshRequest);
-
-      setCharts((prev) =>
-        prev.map((c) => (c.chartIndex === res.chartIndex ? res : c)),
-      );
-      // 새 캔들 로드
-      const [candles, progress] = await Promise.all([
-        trainingApi.getChartCandles(res.chartId),
-        trainingApi.getProgress(res.chartId),
-      ]);
-
-      // 기존 chartId의 캔들 데이터는 제거하고,
-      // 새 chartId의 캔들 데이터만 다시 넣는다.
-      setCandlesByChart((prev) => {
-        const next = { ...prev };
-        delete next[chartId];
-
-        next[res.chartId] = candles;
-
-        return next;
-      });
-
-      // 기존 chartId의 progress 데이터는 제거하고,
-      // 새 chartId의 progress 상태를 초기값으로 넣는다.
-      setProgressByChart((prev) => {
-        const next = { ...prev };
-        delete next[chartId];
-
-        next[res.chartId] = progress;
-
-        return next;
-      });
-
-      setActiveChartId((prev) => (prev === chartId ? res.chartId : prev));
-    } catch (e: any) {
+      await applyReplacement(res);
+    } catch (e: unknown) {
       console.error("[refresh] failed:", e);
 
+      // A response-less mutation failure is ambiguous: read server state rather
+      // than retrying a mutation which may already have committed.
+      if (axios.isAxiosError(e) && !e.response) {
+        try {
+          const serverCharts = await trainingApi.getSessionCharts(sessionId);
+          const replacement = findRefreshedChart(serverCharts, oldChart);
+          if (replacement) {
+            await applyReplacement(replacement);
+            return;
+          }
+        } catch (reconcileError) {
+          console.error("[refresh] reconciliation failed:", reconcileError);
+        }
+      }
+
       setError(
-        e?.response?.data?.message ??
-        e?.message ??
+        progressErrorMessage(e) ??
+        (e instanceof Error ? e.message : undefined) ??
         "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
       );
     } finally {
-      setLoading(false);
+      refreshingChartIdsRef.current.delete(chartId);
+      setRefreshingChartIds((prev) => {
+        const next = new Set(prev);
+        next.delete(chartId);
+        return next;
+      });
     }
   };
 
@@ -672,6 +708,7 @@ export function useTrainingSessionCore(
     visibleActiveCandles,
 
     loading,
+    refreshingChartIds,
     activeSessionLoading,
     error,
     setError,

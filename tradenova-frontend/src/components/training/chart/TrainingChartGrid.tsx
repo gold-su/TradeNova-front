@@ -16,7 +16,7 @@ type Props = {
   progressByChart: Record<number, ProgressResponse>;
   onOpenSingle: () => void;
   onRefreshChart: (chartId: number) => void;
-  refreshing: boolean;
+  refreshingChartIds: Set<number>;
   globalIndicators: IndicatorSettings;
   chartIndicators: Record<number, IndicatorSettings>;
   tradeMarkersByChart: Record<number, TradeChartMarker[]>;
@@ -30,7 +30,7 @@ export function TrainingChartGrid({
   progressByChart,
   onOpenSingle,
   onRefreshChart,
-  refreshing,
+  refreshingChartIds,
   globalIndicators,
   chartIndicators,
   tradeMarkersByChart = {},
@@ -53,7 +53,7 @@ export function TrainingChartGrid({
               onOpenSingle();
             }}
             onRefresh={onRefreshChart}
-            refreshing={refreshing}
+            refreshing={refreshingChartIds.has(c.chartId)}
             indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
             hasIndicatorOverride={!!chartIndicators[c.chartId]}
             tradeMarkers={tradeMarkersByChart[c.chartId] ?? []}

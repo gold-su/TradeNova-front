@@ -63,7 +63,7 @@ type Props = {
   error: string | null;
   autoExitNotices: Array<{ id: number; message: string }>;
   onRefreshChart: (chartId: number) => void;
-  refreshing: boolean;
+  refreshingChartIds: Set<number>;
   refreshRequest: ChartRefreshRequest;
   setRefreshRequest: React.Dispatch<React.SetStateAction<ChartRefreshRequest>>;
   globalIndicators: IndicatorSettings;
@@ -89,7 +89,7 @@ export function TrainingCenterPanel({
   onRefreshChart,
   error,
   autoExitNotices,
-  refreshing,
+  refreshingChartIds,
   refreshRequest,
   setRefreshRequest,
   globalIndicators,
@@ -319,7 +319,7 @@ export function TrainingCenterPanel({
             progressByChart={progressByChart}
             onOpenSingle={() => setViewMode("single")}
             onRefreshChart={onRefreshChart}
-            refreshing={refreshing}
+            refreshingChartIds={refreshingChartIds}
             globalIndicators={globalIndicators}
             chartIndicators={chartIndicators}
             tradeMarkersByChart={tradeMarkersByChart ?? {}}
@@ -330,7 +330,9 @@ export function TrainingCenterPanel({
             progress={activeProgress}
             candles={visibleActiveCandles}
             onRefresh={onRefreshChart}
-            refreshing={refreshing}
+            refreshing={
+              activeChartId ? refreshingChartIds.has(activeChartId) : false
+            }
             indicatorSettings={getIndicatorSettings(activeChartId)}
             tradeMarkers={
               activeChartId ? (tradeMarkersByChart[activeChartId] ?? []) : []

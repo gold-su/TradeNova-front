@@ -118,7 +118,7 @@ export default function TrainingSessionPage() {
         error={page.error}
         autoExitNotices={page.autoExitNotices}
         onRefreshChart={page.onRefreshChart}
-        refreshing={page.loading}
+        refreshingChartIds={page.refreshingChartIds}
         refreshRequest={page.refreshRequest}
         setRefreshRequest={page.setRefreshRequest}
         globalIndicators={page.globalIndicators}

@@ -53,6 +53,8 @@ export function useTrainingSessionPage() {
         return "익절가 도달로 자동청산되었습니다.";
       case "END_OF_CHART":
         return "마지막 봉에 도달해 남은 포지션이 전량청산되었습니다.";
+      case "END_OF_SESSION":
+        return "훈련 종료로 전량 청산되었습니다.";
       default:
         return "포지션이 자동청산되었습니다.";
     }
@@ -165,8 +167,16 @@ export function useTrainingSessionPage() {
       !core.activeChartId ||
       core.status === "COMPLETED" ||
       core.loading ||
+      (core.activeChartId != null &&
+        core.refreshingChartIds.has(core.activeChartId)) ||
       trade.loading,
-    [core.activeChartId, core.status, core.loading, trade.loading],
+    [
+      core.activeChartId,
+      core.status,
+      core.loading,
+      core.refreshingChartIds,
+      trade.loading,
+    ],
   );
 
   /**
@@ -174,13 +184,27 @@ export function useTrainingSessionPage() {
    */
   const error = core.error ?? report.error;
 
+  const onRefreshChart = (chartId: number) => {
+    if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {
+      core.setError("이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.");
+      return;
+    }
+    void core.onRefreshChart(chartId);
+  };
+
   /**
    * 세션 차트 로드 후 자동 복원
    */
+  const tradeMarkerChartIdsKey = core.charts
+    .map((chart) => chart.chartId)
+    .join(",");
+
   useEffect(() => {
-    const chartIds = core.charts.map((chart) => chart.chartId);
+    const chartIds = tradeMarkerChartIdsKey
+      ? tradeMarkerChartIdsKey.split(",").map(Number)
+      : [];
     loadTradeMarkers(chartIds);
-  }, [core.charts, loadTradeMarkers]);
+  }, [tradeMarkerChartIdsKey, loadTradeMarkers]);
 
   useEffect(() => {
     if (!core.activeChartId) {
@@ -242,8 +266,9 @@ export function useTrainingSessionPage() {
   /**
    * 세션 종료
    * 1. 백엔드 세션 종료
-   * 2. Summary 조회
-   * 3. 완료 화면으로 전환
+   * 2. core에서 progress/account/trade marker 재동기화
+   * 3. 현재 차트의 서버 이벤트와 Summary 조회
+   * 4. 완료 화면으로 전환
    */
   const onFinishSession = async () => {
     const sid = core.sessionId;
@@ -252,6 +277,11 @@ export function useTrainingSessionPage() {
 
     await finishTrainingAndOpenCompletion({
       finishSession: core.onFinishSession,
+      synchronizeAfterFinish: async () => {
+        if (core.activeChartId) {
+          await report.loadEvents(core.activeChartId);
+        }
+      },
       loadSummary: () => loadSessionSummary(sid),
       openCompletion: () => setShowCompletion(true),
     });
@@ -391,7 +421,8 @@ export function useTrainingSessionPage() {
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
 
     // chart Refresh
-    onRefreshChart: core.onRefreshChart,
+    onRefreshChart,
+    refreshingChartIds: core.refreshingChartIds,
     refreshRequest: core.refreshRequest,
     setRefreshRequest: core.setRefreshRequest,
 
