@@ -167,14 +167,30 @@ export function useTrainingSessionPage() {
       !core.activeChartId ||
       core.status === "COMPLETED" ||
       core.loading ||
+      (core.activeChartId != null &&
+        core.refreshingChartIds.has(core.activeChartId)) ||
       trade.loading,
-    [core.activeChartId, core.status, core.loading, trade.loading],
+    [
+      core.activeChartId,
+      core.status,
+      core.loading,
+      core.refreshingChartIds,
+      trade.loading,
+    ],
   );
 
   /**
    * 에러는 core / report 중 먼저 있는 것을 보여준다.
    */
   const error = core.error ?? report.error;
+
+  const onRefreshChart = (chartId: number) => {
+    if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {
+      core.setError("이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.");
+      return;
+    }
+    void core.onRefreshChart(chartId);
+  };
 
   /**
    * 세션 차트 로드 후 자동 복원
@@ -405,7 +421,8 @@ export function useTrainingSessionPage() {
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
 
     // chart Refresh
-    onRefreshChart: core.onRefreshChart,
+    onRefreshChart,
+    refreshingChartIds: core.refreshingChartIds,
     refreshRequest: core.refreshRequest,
     setRefreshRequest: core.setRefreshRequest,
 
