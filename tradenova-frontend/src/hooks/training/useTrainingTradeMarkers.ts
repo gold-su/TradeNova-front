@@ -1,88 +1,47 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { trainingApi } from "@/api/trainingApi";
 import type { TradeResponse } from "@/types/training";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
-
-function groupTradeMarkers(markers: TradeChartMarker[]) {
-  const grouped = new Map<string, TradeChartMarker>();
-
-  markers.forEach((marker) => {
-    const key = `${marker.time}-${marker.side}`;
-    const existing = grouped.get(key);
-
-    if (!existing) {
-      grouped.set(key, { ...marker, count: marker.count ?? 1 });
-      return;
-    }
-
-    const existingQty = existing.qty ?? 0;
-    const markerQty = marker.qty ?? 0;
-    const totalQty = existingQty + markerQty;
-
-    grouped.set(key, {
-      ...existing,
-      id: `${existing.id}-${marker.id}`,
-      price:
-        totalQty > 0
-          ? (existing.price * existingQty + marker.price * markerQty) / totalQty
-          : marker.price,
-      qty: totalQty,
-      count: (existing.count ?? 1) + (marker.count ?? 1),
-    });
-  });
-
-  return Array.from(grouped.values());
-}
+import { groupTradeMarkers, tradesToMarkers } from "./trainingTradeMarkers";
 
 export function useTrainingTradeMarkers() {
   const [tradeMarkersByChart, setTradeMarkersByChart] = useState<
     Record<number, TradeChartMarker[]>
   >({});
-
-  const loadTradeMarkers = useCallback(async (chartIds: number[]) => {
-    if (chartIds.length === 0) {
-      setTradeMarkersByChart({});
-      return;
-    }
-
-    const pairs = await Promise.all(
-      chartIds.map(async (chartId) => {
-        const trades = await trainingApi.getTrades(chartId);
-
-        const markers = groupTradeMarkers(trades.map((trade) => ({
-          id: `${trade.chartId}-${trade.tradeId}-${trade.side}`,
-          side: trade.side,
-          time: trade.candleTime,
-          price: Number(trade.price),
-          qty: Number(trade.qty),
-        })));
-
-        return [chartId, markers] as const;
-      }),
-    );
-
-    setTradeMarkersByChart(Object.fromEntries(pairs));
-  }, []);
+  const requestVersionByChart = useRef<Record<number, number>>({});
+  const activeChartIds = useRef(new Set<number>());
 
   const syncTradeMarkers = useCallback(async (chartId: number) => {
+    const requestVersion = (requestVersionByChart.current[chartId] ?? 0) + 1;
+    requestVersionByChart.current[chartId] = requestVersion;
+
     try {
       const trades = await trainingApi.getTrades(chartId);
-      const markers = groupTradeMarkers(trades.map((trade) => ({
-        id: `${trade.chartId}-${trade.tradeId}-${trade.side}`,
-        side: trade.side,
-        time: trade.candleTime,
-        price: Number(trade.price),
-        qty: Number(trade.qty),
-      })));
+
+      if (
+        requestVersionByChart.current[chartId] !== requestVersion ||
+        !activeChartIds.current.has(chartId)
+      ) return;
 
       setTradeMarkersByChart((prev) => ({
         ...prev,
-        [chartId]: markers,
+        [chartId]: tradesToMarkers(trades),
       }));
     } catch (error) {
       console.error("trade marker sync failed", error);
     }
   }, []);
+
+  const loadTradeMarkers = useCallback(async (chartIds: number[]) => {
+    const nextChartIds = new Set(chartIds);
+    activeChartIds.current = nextChartIds;
+
+    setTradeMarkersByChart((prev) => Object.fromEntries(
+      Object.entries(prev).filter(([chartId]) => nextChartIds.has(Number(chartId))),
+    ));
+
+    await Promise.all(chartIds.map(syncTradeMarkers));
+  }, [syncTradeMarkers]);
 
   const addTradeMarker = useCallback(
     ({
@@ -98,6 +57,10 @@ export function useTrainingTradeMarkers() {
     }) => {
       if (!res.tradeId) return;
 
+      // 진행 중인 복원 요청이 방금 체결된 거래를 덮어쓰지 못하게 한다.
+      requestVersionByChart.current[res.chartId] =
+        (requestVersionByChart.current[res.chartId] ?? 0) + 1;
+
       const marker: TradeChartMarker = {
         id: `${res.chartId}-${res.tradeId}-${side}`,
         side,
@@ -105,16 +68,22 @@ export function useTrainingTradeMarkers() {
         price: Number(res.executedPrice),
         qty,
       };
+      const canonicalMarkerId = `${res.chartId}-${res.tradeId}-${side}`;
+      const containsTrade = (id: string) =>
+        new RegExp(`(^|-)${canonicalMarkerId}(-|$)`).test(id);
 
       setTradeMarkersByChart((prev) => ({
         ...prev,
-        [res.chartId]: groupTradeMarkers([
-          ...(prev[res.chartId] ?? []),
-          marker,
-        ]),
+        [res.chartId]: (prev[res.chartId] ?? []).some(({ id }) =>
+          containsTrade(id))
+          ? (prev[res.chartId] ?? [])
+          : groupTradeMarkers([...(prev[res.chartId] ?? []), marker]),
       }));
+
+      // 응답 marker는 즉시 표시하되 최종 상태는 canonical history로 교체한다.
+      void syncTradeMarkers(res.chartId);
     },
-    [],
+    [syncTradeMarkers],
   );
 
   return {

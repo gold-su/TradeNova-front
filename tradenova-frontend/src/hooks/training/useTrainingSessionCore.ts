@@ -323,30 +323,30 @@ export function useTrainingSessionCore(
 
       const finished = await trainingApi.finishSession(sessionId);
 
-      setStatus(finished.sessionStatus);
-
-      setCharts((prev) =>
-        prev.map((chart) => ({
-          ...chart,
-          status: "COMPLETED",
-        })),
+      // finish 응답으로 잔고나 포지션을 추측하지 않는다. 서버가 만든
+      // END_OF_SESSION 거래까지 반영된 authoritative 상태를 다시 읽는다.
+      const finishedCharts = (await trainingApi.getSessionCharts(sessionId))
+        .slice()
+        .sort((a, b) => a.chartIndex - b.chartIndex);
+      const progressPairs = await Promise.all(
+        finishedCharts.map(async (chart) => [
+          chart.chartId,
+          await trainingApi.getProgress(chart.chartId),
+        ] as const),
       );
 
-      setProgressByChart((prev) => {
-        const next = { ...prev };
+      setCharts(finishedCharts);
+      setProgressByChart(Object.fromEntries(progressPairs));
+      setStatus(finished.sessionStatus);
 
-        for (const key of Object.keys(next)) {
-          const chartId = Number(key);
+      // shared account의 현금 잔액도 liquidation 이후 값으로 갱신한다.
+      await loadAccounts(accountId ?? undefined);
 
-          next[chartId] = {
-            ...next[chartId],
-            chartStatus: "COMPLETED",
-            sessionStatus: finished.sessionStatus,
-          };
-        }
-
-        return next;
-      });
+      // 서버가 실제 자동청산으로 판정한 차트만 canonical trade marker와
+      // 기존 자동청산 알림 흐름을 통해 동기화한다.
+      await Promise.all(progressPairs.map(([, progress]) =>
+        handleAutoExit(progress),
+      ));
 
       return finished;
     } catch (e: any) {

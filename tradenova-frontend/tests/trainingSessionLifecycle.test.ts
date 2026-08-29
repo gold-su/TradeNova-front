@@ -27,7 +27,7 @@ test("session AI failure does not open completion", async () => {
   assert.equal(showCompletion, false);
 });
 
-test("successful finish loads summary and then opens completion", async () => {
+test("successful finish synchronizes, loads summary, and then opens completion", async () => {
   const calls: string[] = [];
   let showCompletion = false;
 
@@ -35,6 +35,9 @@ test("successful finish loads summary and then opens completion", async () => {
     finishSession: async () => {
       calls.push("finish");
       return { sessionStatus: "COMPLETED" };
+    },
+    synchronizeAfterFinish: async () => {
+      calls.push("sync");
     },
     loadSummary: async () => {
       calls.push("summary");
@@ -48,7 +51,7 @@ test("successful finish loads summary and then opens completion", async () => {
 
   assert.equal(opened, true);
   assert.equal(showCompletion, true);
-  assert.deepEqual(calls, ["finish", "summary", "open"]);
+  assert.deepEqual(calls, ["finish", "sync", "summary", "open"]);
 });
 
 test("failed finish or summary does not open completion", async () => {
@@ -57,6 +60,7 @@ test("failed finish or summary does not open completion", async () => {
 
   const finishFailed = await finishTrainingAndOpenCompletion({
     finishSession: async () => null,
+    synchronizeAfterFinish: async () => {},
     loadSummary: async () => {
       summaryCalls += 1;
       return {};
@@ -68,6 +72,7 @@ test("failed finish or summary does not open completion", async () => {
 
   const summaryFailed = await finishTrainingAndOpenCompletion({
     finishSession: async () => ({}),
+    synchronizeAfterFinish: async () => {},
     loadSummary: async () => null,
     openCompletion: () => {
       openCalls += 1;
