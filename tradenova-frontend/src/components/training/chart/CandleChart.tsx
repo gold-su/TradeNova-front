@@ -35,6 +35,10 @@ import {
 } from "@/lib/chart/indicators/seriesData";
 import { calculateRSI } from "@/lib/chart/indicators/rsi";
 import { calculateMACD } from "@/lib/chart/indicators/macd";
+import {
+  getChartDataUpdateMode,
+  shouldResetChartViewport,
+} from "@/components/training/chart/chartLifecycle";
 
 export type TradeChartMarker = {
   id: string;
@@ -105,6 +109,7 @@ export default function CandleChart({
   } | null>(null);
 
   const prevCandleLengthRef = useRef(0);
+  const previousLastCandleTimeRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
   const previousChartIdRef = useRef<number | null>(null);
 
@@ -213,7 +218,8 @@ export default function CandleChart({
    * 차트 생성 effect
    * - createChart는 여기서만 실행
    * - candles 변경으로는 재생성하지 않음
-   * - RSI/MACD 표시 여부처럼 pane 구조가 바뀔 때만 재생성
+   * - RSI/MACD 표시 여부 또는 chart identity가 바뀔 때 재생성
+   * - 서로 다른 chart는 series/time/price scale을 공유하지 않음
    */
   useEffect(() => {
     const mainEl = mainContainerRef.current;
@@ -548,9 +554,12 @@ export default function CandleChart({
       initializedRef.current = false;
       previousChartIdRef.current = null;
       prevCandleLengthRef.current = 0;
+      previousLastCandleTimeRef.current = null;
       tradeMarkersRef.current = null;
+      setTooltip(null);
+      setTradeTooltip(null);
     };
-  }, [height, mainHeight, showRsi, showMacd, subPaneHeight]);
+  }, [chartId, height, mainHeight, showRsi, showMacd, subPaneHeight]);
 
   /**
    * 데이터 업데이트 effect
@@ -565,10 +574,15 @@ export default function CandleChart({
     if (!mainChart || !mainSeries) return;
 
     const previousLength = prevCandleLengthRef.current;
-    const isFirstDataLoad = !initializedRef.current;
-    const isChartChange = previousChartIdRef.current !== chartId;
-    const isAppendOnly =
-      !isFirstDataLoad && !isChartChange && candles.length > previousLength;
+    const updateMode = getChartDataUpdateMode({
+      initialized: initializedRef.current,
+      previousChartId: previousChartIdRef.current,
+      chartId,
+      previousLength,
+      previousLastTime: previousLastCandleTimeRef.current,
+      candleTimes: candles.map((candle) => candle.t),
+    });
+    const isAppendOnly = updateMode === "APPEND";
 
     if (isAppendOnly) {
       toCandlestickData(candles.slice(previousLength)).forEach((candle) => {
@@ -726,14 +740,15 @@ export default function CandleChart({
       macdSeriesRef.current.signalSeries.setData(macd.signalLine);
     }
 
-    const isNextCandle = isAppendOnly;
+    const animationFrame = requestAnimationFrame(() => {
+      // The effect may have been cleaned up because the identity/pane changed.
+      if (mainChartRef.current !== mainChart) return;
 
-    requestAnimationFrame(() => {
-      if (isFirstDataLoad || isChartChange) {
+      if (shouldResetChartViewport(updateMode)) {
         mainChart.timeScale().fitContent();
         rsiChartRef.current?.timeScale().fitContent();
         macdChartRef.current?.timeScale().fitContent();
-      } else if (isNextCandle) {
+      } else if (isAppendOnly) {
         mainChart.timeScale().scrollToPosition(0, true);
         rsiChartRef.current?.timeScale().scrollToPosition(0, true);
         macdChartRef.current?.timeScale().scrollToPosition(0, true);
@@ -743,6 +758,9 @@ export default function CandleChart({
     initializedRef.current = true;
     previousChartIdRef.current = chartId;
     prevCandleLengthRef.current = candles.length;
+    previousLastCandleTimeRef.current = candles.at(-1)?.t ?? null;
+
+    return () => cancelAnimationFrame(animationFrame);
   }, [chartId, candles, indicatorSettings, maLines, showRsi, showMacd]);
 
   useEffect(() => {
@@ -757,7 +775,7 @@ export default function CandleChart({
         text: "",
       })),
     );
-  }, [tradeMarkers]);
+  }, [chartId, tradeMarkers]);
 
   return (
     <div className="relative h-full w-full">
