@@ -273,9 +273,9 @@ export function useTrainingSessionPage() {
   const onFinishSession = async () => {
     const sid = core.sessionId;
 
-    if (!sid) return;
+    if (!sid) return false;
 
-    await finishTrainingAndOpenCompletion({
+    return await finishTrainingAndOpenCompletion({
       finishSession: core.onFinishSession,
       synchronizeAfterFinish: async () => {
         if (core.activeChartId) {

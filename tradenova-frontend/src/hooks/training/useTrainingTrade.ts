@@ -112,7 +112,7 @@ export function useTrainingTrade({
 
     const qty = Number(tradeForm.qty);
 
-    if (!qty || qty <= 0) {
+    if (!Number.isInteger(qty) || qty <= 0) {
       setError("수량을 올바르게 입력해주세요.");
       return;
     }

@@ -128,6 +128,9 @@ export function TrainingRightPanel({
           riskRule={riskRule}
           riskSaving={riskSaving}
           saveRiskRule={saveRiskRule}
+          cashBalance={activeProgress?.cashBalance ?? 0}
+          positionQty={activeProgress?.positionQty ?? 0}
+          currentPrice={activeProgress?.currentPrice ?? 0}
         />
 
         <EventLogPanel items={events} loading={eventLoading} />

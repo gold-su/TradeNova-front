@@ -3,6 +3,7 @@ import type { ProgressMap } from "@/hooks/training/training.types";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -36,7 +37,7 @@ type Props = {
 
   loading: boolean;
 
-  onFinishSession: () => void;
+  onFinishSession: () => Promise<boolean>;
 
   onAnalyzeSessionAi: () => void;
 
@@ -420,7 +421,28 @@ export function TrainingLeftPanel({
   progressByChart,
   onCreateScenarioSnapshot,
 }: Props) {
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const [finishFailed, setFinishFailed] = useState(false);
+  const finishGuard = useRef(false);
   const hasSession = !!sessionId;
+
+  const confirmFinish = async () => {
+    if (finishGuard.current) return;
+    finishGuard.current = true;
+    setFinishFailed(false);
+    setFinishing(true);
+    try {
+      const completed = await onFinishSession();
+      if (completed) setFinishDialogOpen(false);
+      else setFinishFailed(true);
+    } catch {
+      setFinishFailed(true);
+    } finally {
+      finishGuard.current = false;
+      setFinishing(false);
+    }
+  };
 
   const statusLabel = !hasSession
     ? "대기 중"
@@ -566,7 +588,10 @@ export function TrainingLeftPanel({
             </button>
 
             <button
-              onClick={onFinishSession}
+              onClick={() => {
+                setFinishFailed(false);
+                setFinishDialogOpen(true);
+              }}
               disabled={loading || status === "COMPLETED"}
               className="w-full rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
             >
@@ -575,6 +600,54 @@ export function TrainingLeftPanel({
           </section>
         )}
       </div>
+      {finishDialogOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finish-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        >
+          <button
+            type="button"
+            aria-label="훈련 종료 확인 닫기"
+            disabled={finishing}
+            onClick={() => setFinishDialogOpen(false)}
+            className="absolute inset-0 cursor-default"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border/45 bg-background p-6 shadow-2xl">
+            <h2 id="finish-dialog-title" className="text-lg font-bold">
+              훈련을 종료하시겠습니까?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              훈련을 종료하면 다시 진행할 수 없습니다.<br />
+              현재 보유 중인 포지션이 있다면 종료 시 자동으로 청산됩니다.
+            </p>
+            {finishFailed && (
+              <p role="alert" className="mt-3 text-sm text-red-300">
+                훈련 종료에 실패했습니다. 잠시 후 다시 시도해주세요.
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={finishing}
+                onClick={() => setFinishDialogOpen(false)}
+                className="rounded-xl px-4 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={finishing}
+                onClick={confirmFinish}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-500/90 disabled:opacity-50"
+              >
+                {finishing ? "종료 중..." : "훈련 종료"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

@@ -16,6 +16,12 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import {
+  calculateBuyQuantityByPercent,
+  calculateEstimatedAmount,
+  calculateSellQuantityByPercent,
+  ORDER_PERCENTAGES,
+} from "./trainingOrderCalculations";
 
 type Props = {
   tradeForm: TradeForm;
@@ -43,6 +49,9 @@ type Props = {
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
   saveRiskRule: (body: RiskRuleUpsertRequest) => void;
+  cashBalance: number;
+  positionQty: number;
+  currentPrice: number;
 };
 
 type ReasonView = "ADD" | string;
@@ -88,6 +97,9 @@ export function TrainingTradeJournalPanel({
   riskRule,
   riskSaving,
   saveRiskRule,
+  cashBalance,
+  positionQty,
+  currentPrice,
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
@@ -169,6 +181,14 @@ export function TrainingTradeJournalPanel({
 
   const savedTone =
     lastSavedMessage?.side === "SELL" ? "text-red-300" : "text-primary";
+  const validQuantity =
+    Number.isInteger(Number(tradeForm.qty)) && Number(tradeForm.qty) > 0
+      ? Number(tradeForm.qty)
+      : 0;
+  const estimatedAmount = calculateEstimatedAmount(validQuantity, currentPrice);
+  const setQuantity = (qty: number) => {
+    setTradeForm((prev) => ({ ...prev, qty }));
+  };
 
   return (
     <>
@@ -216,8 +236,8 @@ export function TrainingTradeJournalPanel({
 
             <input
               type="number"
-              min={0.000001}
-              step="any"
+              min={1}
+              step={1}
               value={tradeForm.qty}
               onChange={(e) =>
                 setTradeForm((prev) => ({
@@ -243,6 +263,62 @@ export function TrainingTradeJournalPanel({
               <FileText className="h-3.5 w-3.5" />
               {hasReasons ? `근거 ${reasons.length}개` : "근거 작성"}
             </button>
+          </div>
+
+          <div className="space-y-2 rounded-lg bg-background/35 p-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-9 text-[10px] font-bold text-primary">BUY</span>
+              <div className="grid flex-1 grid-cols-4 gap-1.5">
+                {ORDER_PERCENTAGES.map((percent) => {
+                  const qty = calculateBuyQuantityByPercent(
+                    cashBalance,
+                    currentPrice,
+                    percent,
+                  );
+                  return (
+                    <button
+                      key={`buy-${percent}`}
+                      type="button"
+                      disabled={disabled || qty === 0}
+                      onClick={() => setQuantity(qty)}
+                      className="h-7 rounded-md bg-primary/[0.08] text-[11px] font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      {percent}%
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-9 text-[10px] font-bold text-red-300">SELL</span>
+              <div className="grid flex-1 grid-cols-4 gap-1.5">
+                {ORDER_PERCENTAGES.map((percent) => {
+                  const qty = calculateSellQuantityByPercent(positionQty, percent);
+                  return (
+                    <button
+                      key={`sell-${percent}`}
+                      type="button"
+                      disabled={disabled || qty === 0}
+                      onClick={() => setQuantity(qty)}
+                      className="h-7 rounded-md bg-red-500/[0.08] text-[11px] font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      {percent}%
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center justify-between border-t border-border/30 pt-2 text-[11px]">
+              <span className="text-muted-foreground">
+                주문수량 <strong className="text-foreground">{validQuantity}주</strong>
+              </span>
+              <span className="text-muted-foreground">
+                예상 주문금액{" "}
+                <strong className="text-foreground">
+                  {new Intl.NumberFormat("ko-KR").format(estimatedAmount)}원
+                </strong>
+              </span>
+            </div>
           </div>
 
           {hasReasons && (
