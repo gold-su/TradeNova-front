@@ -23,6 +23,17 @@ export type ReportKind = "DRAFT" | "SNAPSHOT";
 // 백엔드 candle: t는 epoch millis
 // 프론트 차트에서는 필요하면 /1000 해서 sec로 변환
 export type Candle = {
+  idx?: number;
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+};
+
+export type RevealedCandle = {
+  idx: number;
   t: number;
   o: number;
   h: number;
@@ -98,6 +109,11 @@ export type ProgressResponse = {
   remainingBars: number;
   atLastBar: boolean;
 
+  analysisBars?: number;
+  trainingBars?: number;
+  trainingProgress?: number;
+  remainingTrainingBars?: number;
+
   currentPrice: number;
 
   chartStatus: "IN_PROGRESS" | "COMPLETED";
@@ -109,6 +125,7 @@ export type ProgressResponse = {
 
   autoExited: boolean;
   reason: AutoExitReason | null;
+  revealedCandles: RevealedCandle[];
 };
 
 // ===== Trade =====

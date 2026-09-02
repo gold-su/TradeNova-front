@@ -22,6 +22,7 @@ import type {
   TrainingStatus,
 } from "@/types/training";
 import type { PaperAccountDto } from "@/hooks/training/training.types";
+import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 
 type Props = {
   sessionId: number | null;
@@ -507,11 +508,9 @@ export function TrainingLeftPanel({
 
             <div className="space-y-2">
               {charts.map((c) => {
-                const progress =
-                  progressByChart?.[c.chartId]?.progressIndex ??
-                  c.progressIndex ??
-                  0;
-                const total = Math.max(c.bars - 1, 1);
+                const chartProgress = progressByChart?.[c.chartId] ?? null;
+                const { current: progress, total } =
+                  getTrainingProgressDisplay(c, chartProgress);
                 const pct = Math.min(100, Math.round((progress / total) * 100));
 
                 const isActive = activeChartId === c.chartId;
