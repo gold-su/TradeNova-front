@@ -34,12 +34,25 @@ export type TrainingChartDto = {
   status: TrainingStatus;
 };
 
-export type CreateSessionRequest = {
+type CreateSessionRequestBase = {
   accountId: number;
   mode: TrainingMode;
-  bars: number; // >= 30
-  // (추후) chartCount/seed/charts[] 확장 가능
+  chartCount?: number;
 };
+
+export type CreateSessionRequest = CreateSessionRequestBase &
+  (
+    | {
+        analysisBars: number;
+        trainingBars: number;
+        bars?: never;
+      }
+    | {
+        bars: number; // legacy range
+        analysisBars?: never;
+        trainingBars?: never;
+      }
+  );
 
 // 백엔드 현재 응답: sessionId + chartId(단일)만 주는지,
 // 혹은 charts[] 주는지에 따라 유연하게 받기 위해 두 케이스 모두 허용

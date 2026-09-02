@@ -24,6 +24,7 @@ import {
   replaceActiveChartId,
   replaceChartKey,
 } from "./trainingChartRefresh";
+import { buildRandomTrainingSessionRequest } from "./trainingSessionRequest";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
@@ -293,12 +294,9 @@ export function useTrainingSessionCore(
     setLoading(true);
 
     try {
-      const created = await trainingApi.createSession({
-        accountId,
-        mode: "RANDOM",
-        bars: 100,
-        chartCount: 4,
-      });
+      const created = await trainingApi.createSession(
+        buildRandomTrainingSessionRequest(accountId),
+      );
 
       await hydrateSession({
         sessionId: created.sessionId,
