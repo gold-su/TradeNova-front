@@ -47,12 +47,29 @@ export type TrainingChartDto = {
 };
 
 
-export type CreateSessionRequest = {
+type CreateSessionRequestBase = {
   accountId: number;
   mode: TrainingMode;
-  bars: number;
   chartCount?: number;
 };
+
+/**
+ * New sessions should use explicit analysis/training ranges. `bars` remains
+ * available only for callers that still need the backend's legacy behavior.
+ */
+export type CreateSessionRequest = CreateSessionRequestBase &
+  (
+    | {
+        analysisBars: number;
+        trainingBars: number;
+        bars?: never;
+      }
+    | {
+        bars: number;
+        analysisBars?: never;
+        trainingBars?: never;
+      }
+  );
 
 export type CreateSessionResponse = {
   sessionId: number;
