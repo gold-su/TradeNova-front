@@ -18,6 +18,8 @@ export type CandleDto = {
   v: number;
 };
 
+export type RevealedCandle = Required<CandleDto>;
+
 // ========== Session / Chart DTO ==========
 
 export type TrainingChartDto = {
@@ -88,6 +90,11 @@ export type ProgressResponse = {
   remainingBars: number;
   atLastBar: boolean;
 
+  analysisBars?: number;
+  trainingBars?: number;
+  trainingProgress?: number;
+  remainingTrainingBars?: number;
+
   currentPrice: number;
 
   chartStatus: "IN_PROGRESS" | "COMPLETED";
@@ -99,6 +106,7 @@ export type ProgressResponse = {
 
   autoExited: boolean;
   reason: AutoExitReason | null;
+  revealedCandles: RevealedCandle[];
 };
 
 export type AdvanceRequest = { steps: number };

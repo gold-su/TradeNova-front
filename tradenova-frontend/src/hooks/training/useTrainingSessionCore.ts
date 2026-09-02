@@ -25,6 +25,7 @@ import {
   replaceChartKey,
 } from "./trainingChartRefresh";
 import { buildRandomTrainingSessionRequest } from "./trainingSessionRequest";
+import { appendRevealedCandlesForChart } from "./trainingCandleReveal";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
@@ -218,6 +219,7 @@ export function useTrainingSessionCore(
    */
   const applyProgress = (res: ProgressResponse) => {
     if (retiredChartIdsRef.current.has(res.chartId)) return;
+    setCandlesByChart((prev) => appendRevealedCandlesForChart(prev, res));
     setProgressByChart((prev) => ({
       ...prev,
       [res.chartId]: res,
@@ -442,12 +444,17 @@ export function useTrainingSessionCore(
           // 응답을 받지 못했더라도 서버 mutation은 성공했을 수 있으므로
           // 실패한 chart만 authoritative progress로 다시 맞춘다.
           const recovered = await Promise.allSettled(
-            failedIds.map((id) =>
-              trainingApi.getProgress(id).then((progress) => {
+            failedIds.map(async (id) => {
+              const [progress, candles] = await Promise.all([
+                trainingApi.getProgress(id),
+                trainingApi.getChartCandles(id),
+              ]);
+              if (!retiredChartIdsRef.current.has(id)) {
+                setCandlesByChart((prev) => ({ ...prev, [id]: candles }));
                 applyProgress(progress);
-                return progress;
-              }),
-            ),
+              }
+              return progress;
+            }),
           );
           const recoveredProgress: ProgressResponse[] = [];
 

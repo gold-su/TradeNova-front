@@ -8,6 +8,7 @@ import type {
 } from "@/types/training";
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
+import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -61,8 +62,7 @@ export function TrainingChartTile({
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
     : candles;
 
-  const current = progress?.progressIndex ?? chart.progressIndex ?? 0;
-  const total = Math.max(chart.bars - 1, 1);
+  const { current, total } = getTrainingProgressDisplay(chart, progress);
 
   const subPaneCount =
     Number(indicatorSettings.rsi.enabled) +

@@ -8,6 +8,7 @@ import type {
 } from "@/types/training";
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
+import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -57,8 +58,7 @@ export function TrainingChartSingle({
     );
   }
 
-  const current = progress?.progressIndex ?? chart.progressIndex ?? 0;
-  const total = Math.max(chart.bars - 1, 1);
+  const { current, total } = getTrainingProgressDisplay(chart, progress);
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-border/50 bg-background/15 p-3 shadow-[0_12px_32px_rgba(0,0,0,0.18)]">
