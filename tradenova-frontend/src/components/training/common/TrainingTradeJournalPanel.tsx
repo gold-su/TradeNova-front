@@ -22,6 +22,12 @@ import {
   calculateSellQuantityByPercent,
   ORDER_PERCENTAGES,
 } from "./trainingOrderCalculations";
+import {
+  EXIT_PERCENT_CHOICES,
+  isValidExitPercent,
+  riskRuleDraftToRequest,
+  riskRuleToDraft,
+} from "./riskRuleForm";
 
 type Props = {
   tradeForm: TradeForm;
@@ -110,11 +116,10 @@ export function TrainingTradeJournalPanel({
   });
 
   const [riskOpen, setRiskOpen] = useState(false);
-  const [riskDraft, setRiskDraft] = useState({
-    stopLossPrice: riskRule?.stopLossPrice?.toString() ?? "",
-    takeProfitPrice: riskRule?.takeProfitPrice?.toString() ?? "",
-    autoExitEnabled: riskRule?.autoExitEnabled ?? true,
-  });
+  const [riskDraft, setRiskDraft] = useState(() => riskRuleToDraft(riskRule));
+  const riskPercentValid =
+    isValidExitPercent(riskDraft.stopLossExitPercent) &&
+    isValidExitPercent(riskDraft.takeProfitExitPercent);
 
   const reasons = tradeForm.reasons ?? [];
   const selectedReason = useMemo(
@@ -400,12 +405,7 @@ export function TrainingTradeJournalPanel({
               <button
                 type="button"
                 onClick={() => {
-                  setRiskDraft({
-                    stopLossPrice: riskRule?.stopLossPrice?.toString() ?? "",
-                    takeProfitPrice:
-                      riskRule?.takeProfitPrice?.toString() ?? "",
-                    autoExitEnabled: riskRule?.autoExitEnabled ?? true,
-                  });
+                  setRiskDraft(riskRuleToDraft(riskRule));
                   setRiskOpen(true);
                 }}
                 className={[
@@ -684,6 +684,14 @@ export function TrainingTradeJournalPanel({
             </div>
 
             <div className="space-y-3">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+                <div className="text-[11px] text-muted-foreground">현재 시장가</div>
+                <div className="mt-0.5 text-base font-bold text-primary">
+                  {Number.isFinite(currentPrice)
+                    ? currentPrice.toLocaleString()
+                    : "-"}
+                </div>
+              </div>
               <label className="block">
                 <div className="mb-1 text-xs font-semibold text-muted-foreground">
                   손절가
@@ -702,6 +710,17 @@ export function TrainingTradeJournalPanel({
                 />
               </label>
 
+              <ExitPercentControl
+                label="손절 청산 비율"
+                value={riskDraft.stopLossExitPercent}
+                onChange={(value) =>
+                  setRiskDraft((prev) => ({
+                    ...prev,
+                    stopLossExitPercent: value,
+                  }))
+                }
+              />
+
               <label className="block">
                 <div className="mb-1 text-xs font-semibold text-muted-foreground">
                   익절가
@@ -719,6 +738,17 @@ export function TrainingTradeJournalPanel({
                   className="h-10 w-full rounded-xl border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
                 />
               </label>
+
+              <ExitPercentControl
+                label="익절 청산 비율"
+                value={riskDraft.takeProfitExitPercent}
+                onChange={(value) =>
+                  setRiskDraft((prev) => ({
+                    ...prev,
+                    takeProfitExitPercent: value,
+                  }))
+                }
+              />
 
               <button
                 type="button"
@@ -748,8 +778,7 @@ export function TrainingTradeJournalPanel({
                 type="button"
                 onClick={() =>
                   setRiskDraft({
-                    stopLossPrice: "",
-                    takeProfitPrice: "",
+                    ...riskRuleToDraft(null),
                     autoExitEnabled: false,
                   })
                 }
@@ -760,17 +789,11 @@ export function TrainingTradeJournalPanel({
 
               <button
                 type="button"
-                disabled={riskSaving}
+                disabled={riskSaving || !riskPercentValid}
                 onClick={async () => {
-                  await saveRiskRule({
-                    stopLossPrice: riskDraft.stopLossPrice
-                      ? Number(riskDraft.stopLossPrice)
-                      : null,
-                    takeProfitPrice: riskDraft.takeProfitPrice
-                      ? Number(riskDraft.takeProfitPrice)
-                      : null,
-                    autoExitEnabled: riskDraft.autoExitEnabled,
-                  });
+                  const request = riskRuleDraftToRequest(riskDraft);
+                  if (!request) return;
+                  await saveRiskRule(request);
                   setRiskOpen(false);
                 }}
                 className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
@@ -782,5 +805,57 @@ export function TrainingTradeJournalPanel({
         </div>
       )}
     </>
+  );
+}
+
+function ExitPercentControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const valid = isValidExitPercent(value);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+        <span>{label}</span>
+        {!valid && <span className="text-red-300">1~100 정수만 입력</span>}
+      </div>
+      <div className="flex gap-1.5">
+        {EXIT_PERCENT_CHOICES.map((percent) => (
+          <button
+            key={percent}
+            type="button"
+            onClick={() => onChange(percent.toString())}
+            className={`h-9 flex-1 rounded-lg border text-xs font-semibold transition ${
+              value === percent.toString()
+                ? "border-primary/50 bg-primary/15 text-primary"
+                : "border-border/40 bg-background/45 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {percent}%
+          </button>
+        ))}
+        <div className="relative w-20">
+          <input
+            aria-label={label}
+            type="number"
+            min={1}
+            max={100}
+            step={1}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className={`h-9 w-full rounded-lg border bg-background/55 pl-2 pr-5 text-right text-xs outline-none ${
+              valid ? "border-border/40" : "border-red-400/60"
+            }`}
+          />
+          <span className="pointer-events-none absolute right-1 top-2 text-xs text-muted-foreground">%</span>
+        </div>
+      </div>
+    </div>
   );
 }

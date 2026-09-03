@@ -177,7 +177,9 @@ export type SessionSummaryResponse = {
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
 };
 
@@ -186,7 +188,9 @@ export type RiskRuleResponse = {
   chartId: number;
   accountId: number;
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
   updatedAt: string;
 };
