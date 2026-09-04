@@ -35,6 +35,41 @@ export function isValidExitPercent(value: string): boolean {
   return Number.isInteger(percent) && percent >= 1 && percent <= 100;
 }
 
+export function calculateRiskRuleExitQuantity(
+  positionQty: number,
+  percent: number,
+): number {
+  if (!Number.isFinite(positionQty) || positionQty <= 0) return 0;
+  if (!Number.isFinite(percent) || percent <= 0) return 0;
+
+  const wholePosition = Math.floor(positionQty);
+  if (wholePosition <= 0) return 0;
+  if (percent >= 100) return wholePosition;
+
+  return Math.min(
+    wholePosition,
+    Math.max(1, Math.floor((wholePosition * percent) / 100)),
+  );
+}
+
+export function canConfigureRiskRule(positionQty: number): boolean {
+  return Number.isFinite(positionQty) && positionQty > 0;
+}
+
+export async function submitRiskRuleDraft(
+  positionQty: number,
+  draft: RiskRuleDraft,
+  saveRiskRule: (request: RiskRuleUpsertRequest) => void | Promise<void>,
+): Promise<boolean> {
+  if (!canConfigureRiskRule(positionQty)) return false;
+
+  const request = riskRuleDraftToRequest(draft);
+  if (!request) return false;
+
+  await saveRiskRule(request);
+  return true;
+}
+
 export function riskRuleDraftToRequest(
   draft: RiskRuleDraft,
 ): RiskRuleUpsertRequest | null {

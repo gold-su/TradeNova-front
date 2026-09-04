@@ -1,11 +1,50 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateRiskRuleExitQuantity,
+  canConfigureRiskRule,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
   riskRuleDraftToRequest,
   riskRuleToDraft,
+  submitRiskRuleDraft,
 } from "../src/components/training/common/riskRuleForm.ts";
+
+test("calculates expected partial exit quantities with backend rounding rules", () => {
+  assert.equal(calculateRiskRuleExitQuantity(100, 25), 25);
+  assert.equal(calculateRiskRuleExitQuantity(100, 50), 50);
+  assert.equal(calculateRiskRuleExitQuantity(3, 50), 1);
+  assert.equal(calculateRiskRuleExitQuantity(1, 25), 1);
+  assert.equal(calculateRiskRuleExitQuantity(7, 100), 7);
+  assert.equal(calculateRiskRuleExitQuantity(0, 50), 0);
+});
+
+test("risk rules can only be configured while a position remains", () => {
+  assert.equal(canConfigureRiskRule(0), false);
+  assert.equal(canConfigureRiskRule(1), true);
+  assert.equal(canConfigureRiskRule(3), true);
+});
+
+test("a zero position never submits a risk-rule PUT request", async () => {
+  let putCalls = 0;
+  const saved = await submitRiskRuleDraft(0, riskRuleToDraft(null), () => {
+    putCalls += 1;
+  });
+
+  assert.equal(saved, false);
+  assert.equal(putCalls, 0);
+});
+
+test("a positive or partially exited position can submit a risk rule", async () => {
+  let putCalls = 0;
+  const saveRiskRule = () => {
+    putCalls += 1;
+  };
+
+  assert.equal(await submitRiskRuleDraft(100, riskRuleToDraft(null), saveRiskRule), true);
+  assert.equal(await submitRiskRuleDraft(1, riskRuleToDraft(null), saveRiskRule), true);
+  assert.equal(putCalls, 2);
+});
 
 test("new and legacy risk rules default both exit percentages to 100", () => {
   assert.equal(riskRuleToDraft(null).stopLossExitPercent, "100");
