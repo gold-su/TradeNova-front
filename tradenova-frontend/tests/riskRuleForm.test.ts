@@ -1,11 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateRiskRuleExitQuantity,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
   riskRuleDraftToRequest,
   riskRuleToDraft,
 } from "../src/components/training/common/riskRuleForm.ts";
+
+test("calculates expected partial exit quantities with backend rounding rules", () => {
+  assert.equal(calculateRiskRuleExitQuantity(100, 25), 25);
+  assert.equal(calculateRiskRuleExitQuantity(100, 50), 50);
+  assert.equal(calculateRiskRuleExitQuantity(3, 50), 1);
+  assert.equal(calculateRiskRuleExitQuantity(1, 25), 1);
+  assert.equal(calculateRiskRuleExitQuantity(7, 100), 7);
+  assert.equal(calculateRiskRuleExitQuantity(0, 50), 0);
+});
 
 test("new and legacy risk rules default both exit percentages to 100", () => {
   assert.equal(riskRuleToDraft(null).stopLossExitPercent, "100");

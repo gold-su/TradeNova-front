@@ -23,6 +23,7 @@ import {
   ORDER_PERCENTAGES,
 } from "./trainingOrderCalculations";
 import {
+  calculateRiskRuleExitQuantity,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
   riskRuleDraftToRequest,
@@ -120,6 +121,14 @@ export function TrainingTradeJournalPanel({
   const riskPercentValid =
     isValidExitPercent(riskDraft.stopLossExitPercent) &&
     isValidExitPercent(riskDraft.takeProfitExitPercent);
+  const stopLossExitQuantity = calculateRiskRuleExitQuantity(
+    positionQty,
+    Number(riskDraft.stopLossExitPercent),
+  );
+  const takeProfitExitQuantity = calculateRiskRuleExitQuantity(
+    positionQty,
+    Number(riskDraft.takeProfitExitPercent),
+  );
 
   const reasons = tradeForm.reasons ?? [];
   const selectedReason = useMemo(
@@ -684,70 +693,59 @@ export function TrainingTradeJournalPanel({
             </div>
 
             <div className="space-y-3">
-              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
-                <div className="text-[11px] text-muted-foreground">현재 시장가</div>
-                <div className="mt-0.5 text-base font-bold text-primary">
-                  {Number.isFinite(currentPrice)
-                    ? currentPrice.toLocaleString()
-                    : "-"}
+              <div className="grid grid-cols-2 divide-x divide-border/40 rounded-xl border border-primary/20 bg-primary/5 py-2.5">
+                <div className="px-3">
+                  <div className="text-[11px] text-muted-foreground">현재가</div>
+                  <div className="mt-0.5 text-base font-bold text-primary">
+                    {Number.isFinite(currentPrice)
+                      ? currentPrice.toLocaleString()
+                      : "-"}
+                  </div>
+                </div>
+                <div className="px-3">
+                  <div className="text-[11px] text-muted-foreground">현재 보유</div>
+                  <div className="mt-0.5 text-base font-bold">
+                    {Math.max(0, Math.floor(positionQty)).toLocaleString()}주
+                  </div>
                 </div>
               </div>
-              <label className="block">
-                <div className="mb-1 text-xs font-semibold text-muted-foreground">
-                  손절가
-                </div>
-                <input
-                  type="number"
-                  value={riskDraft.stopLossPrice}
-                  onChange={(e) =>
-                    setRiskDraft((prev) => ({
-                      ...prev,
-                      stopLossPrice: e.target.value,
-                    }))
-                  }
-                  placeholder="예: 58000"
-                  className="h-10 w-full rounded-xl border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
-                />
-              </label>
 
-              <ExitPercentControl
-                label="손절 청산 비율"
-                value={riskDraft.stopLossExitPercent}
-                onChange={(value) =>
+              <RiskRuleSection
+                title="손절"
+                tone="loss"
+                price={riskDraft.stopLossPrice}
+                pricePlaceholder="예: 58000"
+                onPriceChange={(value) =>
+                  setRiskDraft((prev) => ({ ...prev, stopLossPrice: value }))
+                }
+                percent={riskDraft.stopLossExitPercent}
+                onPercentChange={(value) =>
                   setRiskDraft((prev) => ({
                     ...prev,
                     stopLossExitPercent: value,
                   }))
                 }
+                exitQuantity={stopLossExitQuantity}
+                hasPosition={positionQty > 0}
               />
 
-              <label className="block">
-                <div className="mb-1 text-xs font-semibold text-muted-foreground">
-                  익절가
-                </div>
-                <input
-                  type="number"
-                  value={riskDraft.takeProfitPrice}
-                  onChange={(e) =>
-                    setRiskDraft((prev) => ({
-                      ...prev,
-                      takeProfitPrice: e.target.value,
-                    }))
-                  }
-                  placeholder="예: 72000"
-                  className="h-10 w-full rounded-xl border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
-                />
-              </label>
-
-              <ExitPercentControl
-                label="익절 청산 비율"
-                value={riskDraft.takeProfitExitPercent}
-                onChange={(value) =>
+              <RiskRuleSection
+                title="익절"
+                tone="profit"
+                price={riskDraft.takeProfitPrice}
+                pricePlaceholder="예: 72000"
+                onPriceChange={(value) =>
+                  setRiskDraft((prev) => ({ ...prev, takeProfitPrice: value }))
+                }
+                percent={riskDraft.takeProfitExitPercent}
+                onPercentChange={(value) =>
                   setRiskDraft((prev) => ({
                     ...prev,
                     takeProfitExitPercent: value,
                   }))
                 }
+                exitQuantity={takeProfitExitQuantity}
+                hasPosition={positionQty > 0}
               />
 
               <button
@@ -808,6 +806,62 @@ export function TrainingTradeJournalPanel({
   );
 }
 
+function RiskRuleSection({
+  title,
+  tone,
+  price,
+  pricePlaceholder,
+  onPriceChange,
+  percent,
+  onPercentChange,
+  exitQuantity,
+  hasPosition,
+}: {
+  title: string;
+  tone: "loss" | "profit";
+  price: string;
+  pricePlaceholder: string;
+  onPriceChange: (value: string) => void;
+  percent: string;
+  onPercentChange: (value: string) => void;
+  exitQuantity: number;
+  hasPosition: boolean;
+}) {
+  return (
+    <section className="rounded-xl border border-border/40 bg-background/30 p-3">
+      <div
+        className={`mb-2 text-xs font-bold ${
+          tone === "loss" ? "text-red-300" : "text-emerald-300"
+        }`}
+      >
+        {title}
+      </div>
+      <label className="block">
+        <div className="mb-1 text-[11px] text-muted-foreground">{title} 가격</div>
+        <input
+          aria-label={`${title} 가격`}
+          type="number"
+          value={price}
+          onChange={(event) => onPriceChange(event.target.value)}
+          placeholder={pricePlaceholder}
+          className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
+        />
+      </label>
+      <div className="mt-2">
+        <ExitPercentControl
+          label="청산 비율"
+          value={percent}
+          onChange={onPercentChange}
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between rounded-lg bg-background/55 px-3 py-1.5 text-xs">
+        <span className="text-muted-foreground">예상 청산수량</span>
+        <strong>{hasPosition ? `${exitQuantity.toLocaleString()}주 청산` : "0주 (보유 포지션 없음)"}</strong>
+      </div>
+    </section>
+  );
+}
+
 function ExitPercentControl({
   label,
   value,
@@ -825,22 +879,24 @@ function ExitPercentControl({
         <span>{label}</span>
         {!valid && <span className="text-red-300">1~100 정수만 입력</span>}
       </div>
-      <div className="flex gap-1.5">
-        {EXIT_PERCENT_CHOICES.map((percent) => (
-          <button
-            key={percent}
-            type="button"
-            onClick={() => onChange(percent.toString())}
-            className={`h-9 flex-1 rounded-lg border text-xs font-semibold transition ${
-              value === percent.toString()
-                ? "border-primary/50 bg-primary/15 text-primary"
-                : "border-border/40 bg-background/45 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {percent}%
-          </button>
-        ))}
-        <div className="relative w-20">
+      <div className="flex items-center gap-2">
+        <div className="grid flex-1 grid-cols-4 overflow-hidden rounded-lg border border-border/40">
+          {EXIT_PERCENT_CHOICES.map((percent) => (
+            <button
+              key={percent}
+              type="button"
+              onClick={() => onChange(percent.toString())}
+              className={`h-8 border-r border-border/40 text-xs font-semibold transition last:border-r-0 ${
+                value === percent.toString()
+                  ? "bg-primary/15 text-primary"
+                  : "bg-background/45 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {percent}%
+            </button>
+          ))}
+        </div>
+        <div className="relative w-[72px] border-l border-border/40 pl-2">
           <input
             aria-label={label}
             type="number"
@@ -849,11 +905,11 @@ function ExitPercentControl({
             step={1}
             value={value}
             onChange={(event) => onChange(event.target.value)}
-            className={`h-9 w-full rounded-lg border bg-background/55 pl-2 pr-5 text-right text-xs outline-none ${
+            className={`h-8 w-full rounded-lg border bg-background/55 pl-1 pr-4 text-right text-xs outline-none ${
               valid ? "border-border/40" : "border-red-400/60"
             }`}
           />
-          <span className="pointer-events-none absolute right-1 top-2 text-xs text-muted-foreground">%</span>
+          <span className="pointer-events-none absolute right-1 top-1.5 text-xs text-muted-foreground">%</span>
         </div>
       </div>
     </div>
