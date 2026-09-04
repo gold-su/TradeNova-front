@@ -52,6 +52,24 @@ export function calculateRiskRuleExitQuantity(
   );
 }
 
+export function canConfigureRiskRule(positionQty: number): boolean {
+  return Number.isFinite(positionQty) && positionQty > 0;
+}
+
+export async function submitRiskRuleDraft(
+  positionQty: number,
+  draft: RiskRuleDraft,
+  saveRiskRule: (request: RiskRuleUpsertRequest) => void | Promise<void>,
+): Promise<boolean> {
+  if (!canConfigureRiskRule(positionQty)) return false;
+
+  const request = riskRuleDraftToRequest(draft);
+  if (!request) return false;
+
+  await saveRiskRule(request);
+  return true;
+}
+
 export function riskRuleDraftToRequest(
   draft: RiskRuleDraft,
 ): RiskRuleUpsertRequest | null {

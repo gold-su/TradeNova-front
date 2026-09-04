@@ -24,10 +24,11 @@ import {
 } from "./trainingOrderCalculations";
 import {
   calculateRiskRuleExitQuantity,
+  canConfigureRiskRule,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
-  riskRuleDraftToRequest,
   riskRuleToDraft,
+  submitRiskRuleDraft,
 } from "./riskRuleForm";
 
 type Props = {
@@ -118,6 +119,7 @@ export function TrainingTradeJournalPanel({
 
   const [riskOpen, setRiskOpen] = useState(false);
   const [riskDraft, setRiskDraft] = useState(() => riskRuleToDraft(riskRule));
+  const riskRuleAvailable = canConfigureRiskRule(positionQty);
   const riskPercentValid =
     isValidExitPercent(riskDraft.stopLossExitPercent) &&
     isValidExitPercent(riskDraft.takeProfitExitPercent);
@@ -417,8 +419,14 @@ export function TrainingTradeJournalPanel({
                   setRiskDraft(riskRuleToDraft(riskRule));
                   setRiskOpen(true);
                 }}
+                disabled={!riskRuleAvailable}
+                title={
+                  riskRuleAvailable
+                    ? "리스크룰 설정"
+                    : "포지션을 먼저 매수한 후 설정할 수 있습니다"
+                }
                 className={[
-                  "h-9 shrink-0 rounded-lg border px-3 text-xs font-bold transition",
+                  "h-9 shrink-0 rounded-lg border px-3 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45",
                   riskRule?.autoExitEnabled
                     ? "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/15"
                     : "border-border/50 bg-background/55 text-muted-foreground hover:text-foreground",
@@ -427,6 +435,12 @@ export function TrainingTradeJournalPanel({
                 리스크
               </button>
             </div>
+
+            {!riskRuleAvailable && (
+              <div className="mb-2 px-2 text-[11px] text-amber-200/80">
+                포지션을 먼저 매수한 후 리스크룰을 설정할 수 있습니다.
+              </div>
+            )}
 
             <button
               type="button"
@@ -787,12 +801,16 @@ export function TrainingTradeJournalPanel({
 
               <button
                 type="button"
-                disabled={riskSaving || !riskPercentValid}
+                disabled={
+                  riskSaving || !riskPercentValid || !riskRuleAvailable
+                }
                 onClick={async () => {
-                  const request = riskRuleDraftToRequest(riskDraft);
-                  if (!request) return;
-                  await saveRiskRule(request);
-                  setRiskOpen(false);
+                  const saved = await submitRiskRuleDraft(
+                    positionQty,
+                    riskDraft,
+                    saveRiskRule,
+                  );
+                  if (saved) setRiskOpen(false);
                 }}
                 className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
               >
