@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronsRight,
   FileText,
+  Info,
   X,
   ShieldAlert,
   Target,
@@ -199,8 +200,6 @@ export function TrainingTradeJournalPanel({
     setSelectedView(hasReasons ? reasons[0].id : "ADD");
   };
 
-  const savedTone =
-    lastSavedMessage?.side === "SELL" ? "text-red-300" : "text-primary";
   const validQuantity =
     Number.isInteger(Number(tradeForm.qty)) && Number(tradeForm.qty) > 0
       ? Number(tradeForm.qty)
@@ -220,33 +219,31 @@ export function TrainingTradeJournalPanel({
               수량, 근거, 진행 단위를 설정합니다.
             </div>
           </div>
-
-          {lastSavedMessage && (
-            <div
-              className={[
-                "flex shrink-0 items-center gap-1.5 rounded-md bg-background/45 px-2 py-1 text-[11px]",
-                savedTone,
-              ].join(" ")}
-              title={lastSavedMessage.text}
-            >
-              <CheckCircle2 className="h-3 w-3" />
-              저장됨
-            </div>
-          )}
         </div>
 
-        {lastSavedMessage && (
-          <div
-            className={[
-              "mb-3 truncate rounded-lg px-3 py-2 text-xs",
-              lastSavedMessage.side === "BUY"
-                ? "bg-primary/[0.06] text-primary"
-                : "bg-red-500/10 text-red-300",
-            ].join(" ")}
-          >
-            {lastSavedMessage.text}
-          </div>
-        )}
+        <div
+          className={[
+            "mb-3 flex h-9 items-center gap-2 overflow-hidden rounded-lg border px-3 text-xs",
+            lastSavedMessage
+              ? lastSavedMessage.side === "BUY"
+                ? "border-primary/20 bg-primary/[0.06] text-primary"
+                : "border-red-500/20 bg-red-500/10 text-red-300"
+              : "border-border/35 bg-background/35 text-muted-foreground",
+          ].join(" ")}
+          role="status"
+          aria-live="polite"
+          title={lastSavedMessage?.text}
+        >
+          {lastSavedMessage ? (
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <Info className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          )}
+          <span className="truncate">
+            {lastSavedMessage?.text ??
+              "주문 결과와 진행 상태가 여기에 표시됩니다."}
+          </span>
+        </div>
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
