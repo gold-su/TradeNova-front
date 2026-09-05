@@ -1,7 +1,11 @@
 export type UnrealizedPosition = {
-  unrealizedPnl: number | null;
+  unrealizedPnL: number | null;
   returnRate: number | null;
 };
+
+function isFiniteNumber(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
 
 /**
  * Calculates mark-to-market results for the remaining position.
@@ -13,22 +17,21 @@ export function calculateUnrealizedPosition(
   avgPrice: number | null | undefined,
   positionQty: number | null | undefined,
 ): UnrealizedPosition {
-  if (Number.isFinite(positionQty) && positionQty! <= 0) {
-    return { unrealizedPnl: 0, returnRate: 0 };
+  if (isFiniteNumber(positionQty) && positionQty <= 0) {
+    return { unrealizedPnL: 0, returnRate: 0 };
   }
 
   if (
-    !Number.isFinite(positionQty) ||
-    positionQty! <= 0 ||
-    !Number.isFinite(currentPrice) ||
-    !Number.isFinite(avgPrice) ||
-    avgPrice! <= 0
+    !isFiniteNumber(positionQty) ||
+    !isFiniteNumber(currentPrice) ||
+    !isFiniteNumber(avgPrice) ||
+    avgPrice <= 0
   ) {
-    return { unrealizedPnl: null, returnRate: null };
+    return { unrealizedPnL: null, returnRate: null };
   }
 
   return {
-    unrealizedPnl: (currentPrice! - avgPrice!) * positionQty!,
-    returnRate: ((currentPrice! - avgPrice!) / avgPrice!) * 100,
+    unrealizedPnL: (currentPrice - avgPrice) * positionQty,
+    returnRate: ((currentPrice - avgPrice) / avgPrice) * 100,
   };
 }
