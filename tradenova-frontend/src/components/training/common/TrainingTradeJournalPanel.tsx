@@ -7,6 +7,8 @@ import type {
 import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
 import {
   CheckCircle2,
+  Check,
+  ChevronDown,
   ChevronsRight,
   FileText,
   X,
@@ -24,6 +26,8 @@ import {
 } from "./trainingOrderCalculations";
 import {
   calculateRiskRuleExitQuantity,
+  calculatePriceChangePercent,
+  calculateTargetPrice,
   canConfigureRiskRule,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
@@ -741,6 +745,7 @@ export function TrainingTradeJournalPanel({
                 }
                 exitQuantity={stopLossExitQuantity}
                 hasPosition={positionQty > 0}
+                currentPrice={currentPrice}
               />
 
               <RiskRuleSection
@@ -760,6 +765,7 @@ export function TrainingTradeJournalPanel({
                 }
                 exitQuantity={takeProfitExitQuantity}
                 hasPosition={positionQty > 0}
+                currentPrice={currentPrice}
               />
 
               <button
@@ -834,6 +840,7 @@ function RiskRuleSection({
   onPercentChange,
   exitQuantity,
   hasPosition,
+  currentPrice,
 }: {
   title: string;
   tone: "loss" | "profit";
@@ -844,7 +851,18 @@ function RiskRuleSection({
   onPercentChange: (value: string) => void;
   exitQuantity: number;
   hasPosition: boolean;
+  currentPrice: number;
 }) {
+  const [pricePickerOpen, setPricePickerOpen] = useState(false);
+  const priceChangePercent = calculatePriceChangePercent(price, currentPrice);
+  const candidatePercents = Array.from(
+    { length: tone === "loss" ? 30 : 50 },
+    (_, index) => (index + 1) * (tone === "loss" ? -1 : 1),
+  );
+  const formatPercent = (value: number) =>
+    `${value > 0 ? "+" : ""}${Number(value.toFixed(2))}%`;
+  const hasCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0;
+
   return (
     <section className="rounded-xl border border-border/40 bg-background/30 p-3">
       <div
@@ -854,17 +872,82 @@ function RiskRuleSection({
       >
         {title}
       </div>
-      <label className="block">
-        <div className="mb-1 text-[11px] text-muted-foreground">{title} 가격</div>
-        <input
-          aria-label={`${title} 가격`}
-          type="number"
-          value={price}
-          onChange={(event) => onPriceChange(event.target.value)}
-          placeholder={pricePlaceholder}
-          className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-3 text-sm outline-none focus:border-primary/45"
-        />
-      </label>
+      <div
+        className="relative"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setPricePickerOpen(false);
+          }
+        }}
+      >
+        <div className="mb-1 flex items-center justify-between text-[11px]">
+          <span className="text-muted-foreground">{title} 가격</span>
+          {priceChangePercent !== null && (
+            <span className={tone === "loss" ? "text-red-300" : "text-emerald-300"}>
+              현재가 대비 {formatPercent(priceChangePercent)}
+            </span>
+          )}
+        </div>
+        <div className="flex rounded-lg border border-border/40 bg-background/55 focus-within:border-primary/45">
+          <input
+            aria-label={`${title} 가격`}
+            type="number"
+            value={price}
+            onFocus={() => setPricePickerOpen(true)}
+            onChange={(event) => onPriceChange(event.target.value)}
+            placeholder={pricePlaceholder}
+            className="h-9 min-w-0 flex-1 rounded-l-lg bg-transparent px-3 text-sm outline-none"
+          />
+          <button
+            type="button"
+            aria-label={`${title} 가격 후보 열기`}
+            aria-expanded={pricePickerOpen}
+            onClick={() => setPricePickerOpen((open) => !open)}
+            className="flex w-9 items-center justify-center border-l border-border/40 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+
+        {pricePickerOpen && (
+          <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-border/60 bg-background shadow-2xl">
+            <div className="space-y-0.5 border-b border-border/50 bg-muted/20 px-3 py-2 text-[11px]">
+              <div className="flex justify-between"><span className="text-muted-foreground">현재가</span><strong>{hasCurrentPrice ? `${currentPrice.toLocaleString()}원` : "-"}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">선택가</span><strong>{price && Number.isFinite(Number(price)) ? `${Number(price).toLocaleString()}원` : "-"}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">현재가 대비</span><strong>{priceChangePercent === null ? "-" : formatPercent(priceChangePercent)}</strong></div>
+            </div>
+            {hasCurrentPrice ? (
+              <div className="max-h-44 overflow-y-auto p-1" role="listbox" aria-label={`${title} 가격 후보`}>
+                {candidatePercents.map((candidatePercent) => {
+                  const candidatePrice = calculateTargetPrice(currentPrice, candidatePercent)!;
+                  const selected = Number(price) === candidatePrice && price !== "";
+                  return (
+                    <button
+                      key={candidatePercent}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => {
+                        onPriceChange(candidatePrice.toString());
+                        setPricePickerOpen(false);
+                      }}
+                      className={`flex h-8 w-full items-center justify-between rounded-lg px-2 text-xs transition hover:bg-primary/10 ${selected ? "bg-primary/10 text-primary" : "text-foreground"}`}
+                    >
+                      <span className="flex items-center gap-1 font-semibold">
+                        <span className="w-4">{selected && <Check className="h-3.5 w-3.5" />}</span>
+                        {formatPercent(candidatePercent)}
+                      </span>
+                      <span>{candidatePrice.toLocaleString()}원</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="px-3 py-4 text-center text-xs text-muted-foreground">유효한 현재가가 없어 가격 후보를 계산할 수 없습니다.</div>
+            )}
+          </div>
+        )}
+      </div>
       <div className="mt-2">
         <ExitPercentControl
           label="청산 비율"

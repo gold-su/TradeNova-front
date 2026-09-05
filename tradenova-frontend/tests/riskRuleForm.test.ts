@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateRiskRuleExitQuantity,
+  calculatePriceChangePercent,
+  calculateTargetPrice,
   canConfigureRiskRule,
   EXIT_PERCENT_CHOICES,
   isValidExitPercent,
@@ -9,6 +11,29 @@ import {
   riskRuleToDraft,
   submitRiskRuleDraft,
 } from "../src/components/training/common/riskRuleForm.ts";
+
+test("converts between target prices and changes from the current price", () => {
+  assert.equal(calculatePriceChangePercent(95, 100), -5);
+  assert.equal(calculatePriceChangePercent("105", 100), 5);
+  assert.equal(calculateTargetPrice(100, -1), 99);
+  assert.equal(calculateTargetPrice(100, -5), 95);
+  assert.equal(calculateTargetPrice(100, 1), 101);
+  assert.equal(calculateTargetPrice(100, 10), 110);
+});
+
+test("price change calculations reject empty or invalid values", () => {
+  assert.equal(calculatePriceChangePercent("", 100), null);
+  assert.equal(calculatePriceChangePercent("not-a-price", 100), null);
+  assert.equal(calculatePriceChangePercent(95, null), null);
+  assert.equal(calculatePriceChangePercent(95, 0), null);
+  assert.equal(calculateTargetPrice(null, -5), null);
+  assert.equal(calculateTargetPrice(Number.NaN, 5), null);
+});
+
+test("candidate prices round to the nearest whole won", () => {
+  assert.equal(calculateTargetPrice(110_550, -1), 109_445);
+  assert.equal(calculateTargetPrice(101, 1), 102);
+});
 
 test("calculates expected partial exit quantities with backend rounding rules", () => {
   assert.equal(calculateRiskRuleExitQuantity(100, 25), 25);

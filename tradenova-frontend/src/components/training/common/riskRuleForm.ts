@@ -6,6 +6,49 @@ import type {
 export const EXIT_PERCENT_CHOICES = [25, 50, 75, 100] as const;
 export const DEFAULT_EXIT_PERCENT = 100;
 
+/**
+ * Converts a target price into its percentage change from the current price.
+ * Empty/non-numeric targets and non-positive current prices cannot be compared.
+ */
+export function calculatePriceChangePercent(
+  targetPrice: number | string | null | undefined,
+  currentPrice: number | null | undefined,
+): number | null {
+  if (targetPrice === null || targetPrice === undefined || targetPrice === "") {
+    return null;
+  }
+
+  const target = Number(targetPrice);
+  if (
+    !Number.isFinite(target) ||
+    !Number.isFinite(currentPrice) ||
+    (currentPrice ?? 0) <= 0
+  ) {
+    return null;
+  }
+
+  return ((target - currentPrice!) / currentPrice!) * 100;
+}
+
+/**
+ * Returns a whole-won candidate price, matching the integer price presentation
+ * used throughout the training UI.
+ */
+export function calculateTargetPrice(
+  currentPrice: number | null | undefined,
+  changePercent: number,
+): number | null {
+  if (
+    !Number.isFinite(currentPrice) ||
+    (currentPrice ?? 0) <= 0 ||
+    !Number.isFinite(changePercent)
+  ) {
+    return null;
+  }
+
+  return Math.round(currentPrice! * (1 + changePercent / 100));
+}
+
 export type RiskRuleDraft = {
   stopLossPrice: string;
   stopLossExitPercent: string;
