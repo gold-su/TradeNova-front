@@ -50,3 +50,13 @@ test("does not calculate an open position with invalid prices", () => {
     returnRate: null,
   });
 });
+
+test("does not leak Infinity when finite inputs overflow", () => {
+  assert.deepEqual(
+    calculateUnrealizedPosition(Number.MAX_VALUE, 1, Number.MAX_VALUE),
+    {
+      unrealizedPnL: null,
+      returnRate: null,
+    },
+  );
+});
