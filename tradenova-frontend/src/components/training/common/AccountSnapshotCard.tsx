@@ -142,21 +142,6 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
           </div>
         </div>
 
-        <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border/30 pt-2">
-          <div>
-            <div className="text-[10px] text-muted-foreground">평가손익</div>
-            <div className={`mt-0.5 truncate text-xs font-semibold ${pnlTone(unrealizedPnl)}`}>
-              {signed(unrealizedPnl, "원")}
-            </div>
-          </div>
-
-          <div className="text-right">
-            <div className="text-[10px] text-muted-foreground">수익률</div>
-            <div className={`mt-0.5 text-xs font-semibold ${pnlTone(returnRate)}`}>
-              {signed(returnRate, "%")}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
