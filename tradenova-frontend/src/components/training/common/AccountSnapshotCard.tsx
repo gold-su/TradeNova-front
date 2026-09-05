@@ -1,5 +1,6 @@
 import type { ProgressResponse, TrainingChartDto } from "@/types/training";
 import { Wallet } from "lucide-react";
+import { calculateUnrealizedPosition } from "./accountSnapshotCalculations";
 
 function n(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
@@ -11,6 +12,19 @@ function n2(v: number | null | undefined) {
   return new Intl.NumberFormat("ko-KR", {
     maximumFractionDigits: 2,
   }).format(v);
+}
+
+function signed(v: number | null, suffix: string) {
+  if (v === null) return "-";
+  const value = new Intl.NumberFormat("ko-KR", {
+    maximumFractionDigits: 2,
+  }).format(v);
+  return `${v > 0 ? "+" : ""}${value}${suffix}`;
+}
+
+function pnlTone(v: number | null) {
+  if (v === null || v === 0) return "text-foreground";
+  return v > 0 ? "text-green-400" : "text-red-400";
 }
 
 function sectorLabel(sector?: string) {
@@ -46,6 +60,11 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
   const current = progress?.currentPrice ?? null;
 
   const hasPosition = !!qty && qty > 0;
+  const { unrealizedPnl, returnRate } = calculateUnrealizedPosition(
+    current,
+    avg,
+    qty,
+  );
 
   return (
     <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
@@ -95,6 +114,22 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
             <div className="text-[10px] text-muted-foreground">평단</div>
             <div className="mt-0.5 truncate text-xs font-semibold">
               {n2(avg)}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border/30 pt-2">
+          <div>
+            <div className="text-[10px] text-muted-foreground">평가손익</div>
+            <div className={`mt-0.5 truncate text-xs font-semibold ${pnlTone(unrealizedPnl)}`}>
+              {signed(unrealizedPnl, "원")}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div className="text-[10px] text-muted-foreground">수익률</div>
+            <div className={`mt-0.5 text-xs font-semibold ${pnlTone(returnRate)}`}>
+              {signed(returnRate, "%")}
             </div>
           </div>
         </div>
