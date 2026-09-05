@@ -30,8 +30,13 @@ export function calculateUnrealizedPosition(
     return { unrealizedPnL: null, returnRate: null };
   }
 
-  return {
-    unrealizedPnL: (currentPrice - avgPrice) * positionQty,
-    returnRate: ((currentPrice - avgPrice) / avgPrice) * 100,
-  };
+  const priceDifference = currentPrice - avgPrice;
+  const unrealizedPnL = priceDifference * positionQty;
+  const returnRate = (priceDifference / avgPrice) * 100;
+
+  if (!Number.isFinite(unrealizedPnL) || !Number.isFinite(returnRate)) {
+    return { unrealizedPnL: null, returnRate: null };
+  }
+
+  return { unrealizedPnL, returnRate };
 }
