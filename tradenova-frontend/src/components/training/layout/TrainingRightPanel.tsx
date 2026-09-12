@@ -4,7 +4,6 @@ import type {
   QuickPhraseResponse,
   ReportDocumentResponse,
   ReportDraftContent,
-  SessionAiPayload,
   TrainingChartDto,
   TrainingEventResponse,
   RiskRuleResponse,
@@ -37,12 +36,9 @@ type Props = {
   appendQuickPhrase: (content: string) => void;
   openBuyModal: () => void;
   openSellModal: () => void;
-  sessionAiPayload: SessionAiPayload | null;
-  sessionAiLoading: boolean;
   chartAiPayload: ChartAiPayload | null;
   chartAiLoading: boolean;
   onAnalyzeChartAi: () => void;
-  onAnalyzeSessionAi: () => void;
   syncNext: boolean;
   setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
   tradeForm: TradeForm;
@@ -71,12 +67,9 @@ export function TrainingRightPanel({
   disabled,
   onNext,
   onSellAll,
-  sessionAiPayload,
-  sessionAiLoading,
   chartAiPayload,
   chartAiLoading,
   onAnalyzeChartAi,
-  onAnalyzeSessionAi,
   syncNext,
   setSyncNext,
   tradeForm,
@@ -101,12 +94,9 @@ export function TrainingRightPanel({
               ? `Chart ${activeChart.chartIndex + 1}`
               : "차트 선택 안 됨"
           }
-          sessionAiPayload={sessionAiPayload}
-          sessionAiLoading={sessionAiLoading}
           chartAiPayload={chartAiPayload}
           chartAiLoading={chartAiLoading}
           onAnalyzeChartAi={onAnalyzeChartAi}
-          onAnalyzeSessionAi={onAnalyzeSessionAi}
           disabled={loading || !activeChart}
         />
 

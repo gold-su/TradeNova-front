@@ -318,6 +318,23 @@ export type SessionAiPayload = {
   snapshotCount: number;
   warnings: string[];
   strengths: string[];
+  decisionReview?: {
+    assessment: string;
+    evidence: string[];
+    betterAction: string;
+  } | null;
+  riskReview?: {
+    assessment: string;
+    evidence: string[];
+    improvement: string;
+  } | null;
+  behaviorPatterns?: Array<{
+    pattern: string;
+    evidence: string[];
+    impact: string;
+    correction: string;
+  }> | null;
+  nextTrainingFocus?: string[] | null;
 };
 
 export type ChartRefreshType =

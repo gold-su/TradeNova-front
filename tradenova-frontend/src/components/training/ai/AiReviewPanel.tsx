@@ -1,38 +1,29 @@
 import { useState } from "react";
-import type { ChartAiPayload, SessionAiPayload } from "@/types/training";
+import type { ChartAiPayload } from "@/types/training";
 import { Bot, X, CheckCircle2, CircleDashed } from "lucide-react";
+import {
+    ACTIVE_AI_REVIEW_TARGETS,
+    GENERATED_REVIEW_ACTION_LABEL,
+} from "@/components/training/ai/sessionAiReview";
 
 type Props = {
     activeChartLabel: string;
-    sessionAiPayload: SessionAiPayload | null;
-    sessionAiLoading: boolean;
     chartAiPayload: ChartAiPayload | null;
     chartAiLoading: boolean;
     onAnalyzeChartAi: () => void;
-    onAnalyzeSessionAi: () => void;
     disabled?: boolean;
 };
 
-type ReviewTarget = "CHART" | "SESSION";
-type ReviewPayload = ChartAiPayload | SessionAiPayload;
+type ReviewPayload = ChartAiPayload;
 
 function scoreLabel(score?: number | null) {
     if (score === undefined || score === null) return "-";
     return `${score}점`;
 }
 
-function isChartPayload(payload: ReviewPayload): payload is ChartAiPayload {
-    return payload.analysisScope === "CHART";
-}
-
 function reviewMeta(payload: ReviewPayload | null) {
     if (!payload) return "미생성";
-
-    if (isChartPayload(payload)) {
-        return `${scoreLabel(payload.score)} · ${payload.analysisType}`;
-    }
-
-    return `${scoreLabel(payload.score)} · SESSION`;
+    return `${scoreLabel(payload.score)} · ${payload.analysisType}`;
 }
 
 function ReviewStatus({
@@ -108,7 +99,7 @@ function ReviewRow({
                         onClick={onOpen}
                         className="inline-flex h-7 items-center rounded-md px-2.5 text-[11px] font-medium text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
                     >
-                        보기
+                        {GENERATED_REVIEW_ACTION_LABEL}
                     </button>
                 ) : (
                     <button
@@ -121,16 +112,6 @@ function ReviewRow({
                     </button>
                 )}
 
-                {ready && (
-                    <button
-                        type="button"
-                        disabled={disabled || loading}
-                        onClick={onGenerate}
-                        className="inline-flex h-7 items-center rounded-md px-2.5 text-[11px] text-muted-foreground transition hover:bg-background/70 hover:text-foreground disabled:opacity-40"
-                    >
-                        재생성
-                    </button>
-                )}
             </div>
         </div>
     );
@@ -145,18 +126,12 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function AiReviewPanel({
     activeChartLabel,
-    sessionAiPayload,
-    sessionAiLoading,
     chartAiPayload,
     chartAiLoading,
     onAnalyzeChartAi,
-    onAnalyzeSessionAi,
     disabled,
 }: Props) {
-    const [openTarget, setOpenTarget] = useState<ReviewTarget | null>(null);
-
-    const selectedPayload =
-        openTarget === "CHART" ? chartAiPayload : sessionAiPayload;
+    const [open, setOpen] = useState(false);
 
     return (
         <>
@@ -173,51 +148,43 @@ export function AiReviewPanel({
                 </div>
 
                 <div className="space-y-1.5">
-                    <ReviewRow
-                        title="Chart Review"
-                        subtitle={activeChartLabel}
-                        payload={chartAiPayload}
-                        loading={chartAiLoading}
-                        disabled={disabled}
-                        onGenerate={onAnalyzeChartAi}
-                        onOpen={() => setOpenTarget("CHART")}
-                    />
-
-                    <ReviewRow
-                        title="Session Report"
-                        subtitle="전체 훈련 세션"
-                        payload={sessionAiPayload}
-                        loading={sessionAiLoading}
-                        disabled={disabled}
-                        onGenerate={onAnalyzeSessionAi}
-                        onOpen={() => setOpenTarget("SESSION")}
-                    />
+                    {ACTIVE_AI_REVIEW_TARGETS.includes("CHART") && (
+                        <ReviewRow
+                            title="Chart Review"
+                            subtitle={activeChartLabel}
+                            payload={chartAiPayload}
+                            loading={chartAiLoading}
+                            disabled={disabled}
+                            onGenerate={onAnalyzeChartAi}
+                            onOpen={() => setOpen(true)}
+                        />
+                    )}
                 </div>
             </div>
 
-            {openTarget && selectedPayload && (
+            {open && chartAiPayload && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
                     <button
                         type="button"
                         aria-label="닫기"
                         className="absolute inset-0 cursor-default"
-                        onClick={() => setOpenTarget(null)}
+                        onClick={() => setOpen(false)}
                     />
 
                     <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl bg-background shadow-2xl">
                         <div className="flex items-center justify-between bg-background/95 px-5 py-4">
                             <div>
                                 <div className="text-base font-semibold">
-                                    {openTarget === "CHART" ? "Chart Review" : "Session Report"}
+                                    Chart Review
                                 </div>
                                 <div className="mt-0.5 text-xs text-muted-foreground">
-                                    {openTarget === "CHART" ? activeChartLabel : "전체 훈련 세션"}
+                                    {activeChartLabel}
                                 </div>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={() => setOpenTarget(null)}
+                                onClick={() => setOpen(false)}
                                 className="rounded-lg p-2 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
                             >
                                 <X className="h-4 w-4" />
@@ -228,31 +195,29 @@ export function AiReviewPanel({
                             <div className="mb-4 rounded-xl bg-background/40 p-4">
                                 <div className="text-[11px] text-muted-foreground">Score</div>
                                 <div className="mt-1 text-4xl font-bold tracking-tight">
-                                    {scoreLabel(selectedPayload.score)}
+                                    {scoreLabel(chartAiPayload.score)}
                                 </div>
 
-                                {isChartPayload(selectedPayload) && (
-                                    <div className="mt-2 text-xs text-muted-foreground">
-                                        {selectedPayload.analysisType === "DEEP"
-                                            ? "스냅샷 기반 정밀 분석"
-                                            : "거래/포지션 기반 빠른 분석"}
-                                    </div>
-                                )}
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                    {chartAiPayload.analysisType === "DEEP"
+                                        ? "스냅샷 기반 정밀 분석"
+                                        : "거래/포지션 기반 빠른 분석"}
+                                </div>
                             </div>
 
                             <div className="space-y-5">
                                 <section>
                                     <SectionTitle>Summary</SectionTitle>
                                     <p className="mt-2 text-sm leading-6 text-foreground/90">
-                                        {selectedPayload.summary}
+                                        {chartAiPayload.summary}
                                     </p>
                                 </section>
 
                                 <section>
                                     <SectionTitle>Strengths</SectionTitle>
                                     <div className="mt-2 space-y-1.5">
-                                        {selectedPayload.strengths?.length ? (
-                                            selectedPayload.strengths.map((item, idx) => (
+                                        {chartAiPayload.strengths?.length ? (
+                                            chartAiPayload.strengths.map((item, idx) => (
                                                 <div
                                                     key={idx}
                                                     className="rounded-lg bg-primary/[0.07] px-3 py-2 text-sm text-primary"
@@ -269,8 +234,8 @@ export function AiReviewPanel({
                                 <section>
                                     <SectionTitle>Warnings</SectionTitle>
                                     <div className="mt-2 space-y-1.5">
-                                        {selectedPayload.warnings?.length ? (
-                                            selectedPayload.warnings.map((item, idx) => (
+                                        {chartAiPayload.warnings?.length ? (
+                                            chartAiPayload.warnings.map((item, idx) => (
                                                 <div
                                                     key={idx}
                                                     className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300"
