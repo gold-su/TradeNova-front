@@ -4,6 +4,7 @@ import {
   ACTIVE_AI_REVIEW_TARGETS,
   EXISTING_SESSION_AI_ACTION_LABEL,
   GENERATED_REVIEW_ACTION_LABEL,
+  getSessionAiAction,
   getSessionAiReviewVisibility,
 } from "../src/components/training/ai/sessionAiReview.ts";
 import type { SessionAiPayload } from "../src/types/training.ts";
@@ -77,4 +78,11 @@ test("generated reviews expose viewing and loading actions, not regeneration", (
   assert.equal(EXISTING_SESSION_AI_ACTION_LABEL, "저장된 분석 불러오기");
   assert.notEqual(GENERATED_REVIEW_ACTION_LABEL, "재생성");
   assert.notEqual(EXISTING_SESSION_AI_ACTION_LABEL, "재생성");
+});
+
+test("completion Session AI action reflects loaded and stored state", () => {
+  assert.equal(getSessionAiAction(false, false), "GENERATE");
+  assert.equal(getSessionAiAction(false, true), "LOAD");
+  assert.equal(getSessionAiAction(true, false), null);
+  assert.equal(getSessionAiAction(true, true), null);
 });

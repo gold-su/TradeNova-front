@@ -12,7 +12,10 @@ import type {
   SessionSummaryResponse,
 } from "@/types/training";
 import { SessionAiReviewContent } from "@/components/training/ai/SessionAiReviewContent";
-import { EXISTING_SESSION_AI_ACTION_LABEL } from "@/components/training/ai/sessionAiReview";
+import {
+  EXISTING_SESSION_AI_ACTION_LABEL,
+  getSessionAiAction,
+} from "@/components/training/ai/sessionAiReview";
 
 type Props = {
   summary: SessionSummaryResponse | null;
@@ -107,6 +110,10 @@ export function TrainingCompletionPage({
   }
 
   const aiScore = sessionAiPayload?.score ?? summary.sessionAiScore ?? null;
+  const sessionAiAction = getSessionAiAction(
+    Boolean(sessionAiPayload),
+    summary.sessionAiExists,
+  );
 
   return (
     <main className="relative h-[calc(100vh-56px)] overflow-y-auto bg-background px-6 py-10">
@@ -178,18 +185,20 @@ export function TrainingCompletionPage({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={summary.sessionAiExists ? onLoadSessionAi : onAnalyzeSessionAi}
-              disabled={sessionAiLoading || newSessionLoading}
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {sessionAiLoading
-                ? "분석 중..."
-                : summary.sessionAiExists
-                  ? EXISTING_SESSION_AI_ACTION_LABEL
-                  : "AI 분석 생성"}
-            </button>
+            {sessionAiAction && (
+              <button
+                type="button"
+                onClick={sessionAiAction === "LOAD" ? onLoadSessionAi : onAnalyzeSessionAi}
+                disabled={sessionAiLoading || newSessionLoading}
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {sessionAiLoading
+                  ? "분석 중..."
+                  : sessionAiAction === "LOAD"
+                    ? EXISTING_SESSION_AI_ACTION_LABEL
+                    : "AI 분석 생성"}
+              </button>
+            )}
           </div>
 
           {sessionAiError && (
