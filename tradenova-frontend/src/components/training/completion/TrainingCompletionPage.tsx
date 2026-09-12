@@ -11,6 +11,8 @@ import type {
   SessionAiPayload,
   SessionSummaryResponse,
 } from "@/types/training";
+import { SessionAiReviewContent } from "@/components/training/ai/SessionAiReviewContent";
+import { EXISTING_SESSION_AI_ACTION_LABEL } from "@/components/training/ai/sessionAiReview";
 
 type Props = {
   summary: SessionSummaryResponse | null;
@@ -19,11 +21,13 @@ type Props = {
 
   sessionAiPayload: SessionAiPayload | null;
   sessionAiLoading: boolean;
+  sessionAiError: string | null;
 
   newSessionLoading: boolean;
 
   onReloadSummary: () => void;
   onAnalyzeSessionAi: () => void;
+  onLoadSessionAi: () => void;
   onStartNewSession: () => void;
 };
 
@@ -54,9 +58,11 @@ export function TrainingCompletionPage({
   summaryError,
   sessionAiPayload,
   sessionAiLoading,
+  sessionAiError,
   newSessionLoading,
   onReloadSummary,
   onAnalyzeSessionAi,
+  onLoadSessionAi,
   onStartNewSession,
 }: Props) {
   if (summaryLoading && !summary) {
@@ -168,33 +174,33 @@ export function TrainingCompletionPage({
               </div>
 
               <div className="mt-1 text-sm text-muted-foreground">
-                전체 차트, 거래, 매매 근거와 스냅샷을 종합해 평가합니다.
+                결과가 아닌 판단 과정을 거래 근거와 스냅샷으로 평가합니다.
               </div>
             </div>
 
             <button
               type="button"
-              onClick={onAnalyzeSessionAi}
+              onClick={summary.sessionAiExists ? onLoadSessionAi : onAnalyzeSessionAi}
               disabled={sessionAiLoading || newSessionLoading}
               className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               {sessionAiLoading
                 ? "분석 중..."
                 : summary.sessionAiExists
-                  ? "AI 분석 다시 보기"
+                  ? EXISTING_SESSION_AI_ACTION_LABEL
                   : "AI 분석 생성"}
             </button>
           </div>
 
+          {sessionAiError && (
+            <p role="alert" className="mt-4 text-sm text-red-300">
+              {sessionAiError}
+            </p>
+          )}
+
           {sessionAiPayload && (
             <div className="mt-5 rounded-2xl bg-background/55 p-5">
-              <div className="mb-2 text-sm font-semibold">
-                점수 {sessionAiPayload.score}점
-              </div>
-
-              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                {sessionAiPayload.summary}
-              </p>
+              <SessionAiReviewContent payload={sessionAiPayload} />
             </div>
           )}
         </section>

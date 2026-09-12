@@ -28,9 +28,11 @@ export default function TrainingSessionPage() {
         summaryError={page.summaryError}
         sessionAiPayload={page.sessionAiPayload}
         sessionAiLoading={page.sessionAiLoading}
+        sessionAiError={page.sessionAiError}
         newSessionLoading={page.newSessionLoading}
         onReloadSummary={() => page.loadSessionSummary(page.sessionId)}
         onAnalyzeSessionAi={page.onAnalyzeSessionAi}
+        onLoadSessionAi={() => page.loadLatestSessionAi(page.sessionId)}
         onStartNewSession={page.onStartNewSession}
       />
     );
@@ -52,9 +54,6 @@ export default function TrainingSessionPage() {
           loading={page.loading}
           onCreateSession={page.onCreateSession}
           onFinishSession={page.onFinishSession}
-          onAnalyzeSessionAi={page.onAnalyzeSessionAi}
-          sessionAiLoading={page.sessionAiLoading}
-          sessionAiExists={!!page.sessionAi}
           progressByChart={page.progressByChart}
           onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
         />
@@ -97,9 +96,6 @@ export default function TrainingSessionPage() {
         loading={page.loading}
         onCreateSession={page.onCreateSession}
         onFinishSession={page.onFinishSession}
-        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
-        sessionAiLoading={page.sessionAiLoading}
-        sessionAiExists={!!page.sessionAi}
         progressByChart={page.progressByChart}
         onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
       />
@@ -151,12 +147,9 @@ export default function TrainingSessionPage() {
         appendQuickPhrase={page.appendQuickPhrase}
         openBuyModal={page.openBuyModal}
         openSellModal={page.openSellModal}
-        sessionAiPayload={page.sessionAiPayload}
-        sessionAiLoading={page.sessionAiLoading}
         chartAiPayload={page.chartAiPayload}
         chartAiLoading={page.chartAiLoading}
         onAnalyzeChartAi={page.onAnalyzeChartAi}
-        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
         syncNext={page.syncNext}
         setSyncNext={page.setSyncNext}
         tradeForm={page.tradeForm}

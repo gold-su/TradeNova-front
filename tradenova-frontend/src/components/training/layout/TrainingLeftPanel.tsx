@@ -40,11 +40,6 @@ type Props = {
 
   onFinishSession: () => Promise<boolean>;
 
-  onAnalyzeSessionAi: () => void;
-
-  sessionAiLoading: boolean;
-  sessionAiExists: boolean;
-
   loadAccounts: (selectAccountId?: number) => Promise<void>;
 
   onCreateSession: () => void;
@@ -415,9 +410,6 @@ export function TrainingLeftPanel({
   setActiveChartId,
   loading,
   onFinishSession,
-  onAnalyzeSessionAi,
-  sessionAiLoading,
-  sessionAiExists,
   loadAccounts,
   progressByChart,
   onCreateScenarioSnapshot,
@@ -574,18 +566,6 @@ export function TrainingLeftPanel({
 
         {hasSession && (
           <section className="mt-auto space-y-2 border-t border-border/40 py-4">
-            <button
-              onClick={onAnalyzeSessionAi}
-              disabled={loading || sessionAiLoading}
-              className="w-full rounded-xl border border-primary/25 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/15 disabled:opacity-50"
-            >
-              {sessionAiLoading
-                ? "AI 리포트 생성 중..."
-                : sessionAiExists
-                  ? "AI 리포트 보기"
-                  : "AI 훈련 리포트"}
-            </button>
-
             <button
               onClick={() => {
                 setFinishFailed(false);
