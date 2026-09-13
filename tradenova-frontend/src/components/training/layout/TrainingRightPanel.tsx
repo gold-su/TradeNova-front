@@ -15,6 +15,7 @@ import { TrainingTradeJournalPanel } from "@/components/training/common/Training
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
 import { AiReviewPanel } from "@/components/training/ai/AiReviewPanel";
 import type { TradeForm } from "@/hooks/training/training.types";
+import { findLatestScenarioSnapshot } from "@/hooks/training/trainingTradeReason";
 
 type Props = {
   activeChart: TrainingChartDto | null;
@@ -83,6 +84,11 @@ export function TrainingRightPanel({
   riskSaving,
   saveRiskRule,
 }: Props) {
+  const latestScenarioSnapshot = findLatestScenarioSnapshot(
+    snapshots,
+    activeChart?.chartId ?? null,
+  );
+
   return (
     <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
       <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
@@ -101,6 +107,7 @@ export function TrainingRightPanel({
         />
 
         <TrainingTradeJournalPanel
+          key={activeChart?.chartId ?? "no-chart"}
           tradeForm={tradeForm}
           setTradeForm={setTradeForm}
           quickPhrases={quickPhrases}
@@ -121,6 +128,7 @@ export function TrainingRightPanel({
           cashBalance={activeProgress?.cashBalance ?? 0}
           positionQty={activeProgress?.positionQty ?? 0}
           currentPrice={activeProgress?.currentPrice ?? 0}
+          latestScenarioSnapshot={latestScenarioSnapshot}
         />
 
         <EventLogPanel items={events} loading={eventLoading} />

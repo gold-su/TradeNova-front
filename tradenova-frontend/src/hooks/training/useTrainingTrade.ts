@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { reportApi } from "@/api/reportApi";
 import { trainingApi } from "@/api/trainingApi";
 import type {
@@ -7,6 +7,10 @@ import type {
   TrainingEventResponse,
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
+import {
+  buildTradeEventPayload,
+  clearPendingTradeReason,
+} from "./trainingTradeReason";
 
 type UseTrainingTradeParams = {
   mutationGuard: { current: boolean };
@@ -45,6 +49,8 @@ export function useTrainingTrade({
     entryReason: "",
     riskNote: "",
     reasons: [],
+    reasonMode: "MANUAL",
+    scenarioSnapshotId: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -76,36 +82,20 @@ export function useTrainingTrade({
     sellAll?: boolean;
   }) => {
 
-    const reasons = tradeForm.reasons ?? [];
-
     return await reportApi.createEvent(chartId, {
       type: "TRADE",
       title: sellAll ? "SELL ALL 실행" : `${side} 실행`,
-      payloadJson: {
-        side,
-        qty,
-        price: res.executedPrice,
-        tradeId: res.tradeId,
-        candleTime: res.candleTime,
-
-        reasons,
-        reasonCount: reasons.length,
-
-        savedForAiReview: true,
-        sellAll,
-        reasonVersion: 2,
-      },
+      payloadJson: buildTradeEventPayload({ side, qty, res, tradeForm, sellAll }),
     });
   };
 
   const resetReasonOnly = () => {
-    setTradeForm((prev) => ({
-      ...prev,
-      entryReason: "",
-      riskNote: "",
-      reasons: [],
-    }));
+    setTradeForm(clearPendingTradeReason);
   };
+
+  useEffect(() => {
+    setTradeForm(clearPendingTradeReason);
+  }, [activeChartId]);
 
   const executeTrade = async (side: "BUY" | "SELL") => {
     if (!activeChartId) return;
