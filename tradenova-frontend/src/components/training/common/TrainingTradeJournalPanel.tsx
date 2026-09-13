@@ -119,6 +119,7 @@ export function TrainingTradeJournalPanel({
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
+  const [planDetailsOpen, setPlanDetailsOpen] = useState(false);
 
   const [draftReason, setDraftReason] = useState({
     entryReason: "",
@@ -259,50 +260,84 @@ export function TrainingTradeJournalPanel({
         </div>
 
         <div className="space-y-3">
-          {latestScenarioSnapshot && (
-            <section className="rounded-lg border border-primary/15 bg-primary/[0.04] p-3">
+          {latestScenarioSnapshot ? (
+            <section className="border-b border-primary/15 pb-3">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="text-xs font-bold text-foreground">현재 계획</div>
+                <div>
+                  <div className="text-[10px] font-bold tracking-wide text-primary">PLAN</div>
+                  <div className="text-xs font-bold text-foreground">현재 계획</div>
+                </div>
                 {scenarioSelected && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
                     <Check className="h-3 w-3" /> 계획 선택됨
                   </span>
                 )}
               </div>
-              <dl className="grid grid-cols-[64px_1fr] gap-x-2 gap-y-1 text-[11px] leading-5">
+              <dl className="grid grid-cols-[56px_1fr] gap-x-2 gap-y-1 text-[11px] leading-[18px]">
                 {([
                   ["관점", latestScenarioSnapshot.contentJson.thesis],
                   ["진입 조건", latestScenarioSnapshot.contentJson.entryReason],
-                  ["청산 계획", latestScenarioSnapshot.contentJson.exitPlan],
                   ["무효화", latestScenarioSnapshot.contentJson.riskNote],
                 ] satisfies Array<[string, string | undefined]>).filter(([, value]) => value?.trim()).map(([label, value]) => (
                   <div key={label} className="contents">
                     <dt className="text-muted-foreground">{label}</dt>
-                    <dd className="line-clamp-2 text-foreground/85">{value}</dd>
+                    <dd className="line-clamp-1 text-foreground/85">{value}</dd>
                   </div>
                 ))}
               </dl>
-              <button
-                type="button"
-                onClick={() =>
-                  setTradeForm((prev) => ({
-                    ...prev,
-                    reasonMode: scenarioSelected ? "MANUAL" : "SCENARIO",
-                    scenarioSnapshotId: scenarioSelected
-                      ? null
-                      : latestScenarioSnapshot.id,
-                  }))
-                }
-                className={[
-                  "mt-2 h-8 w-full rounded-lg border text-xs font-semibold transition",
-                  scenarioSelected
-                    ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-border/45 bg-background/45 text-foreground hover:border-primary/30",
-                ].join(" ")}
-              >
-                {scenarioSelected ? "계획 선택됨" : "현재 계획 사용"}
-              </button>
+              {latestScenarioSnapshot.contentJson.exitPlan?.trim() && (
+                <div className="mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPlanDetailsOpen((open) => !open)}
+                    aria-expanded={planDetailsOpen}
+                    className="text-[11px] text-muted-foreground transition hover:text-foreground"
+                  >
+                    {planDetailsOpen ? "청산 계획 접기" : "청산 계획 보기"}
+                  </button>
+                  {planDetailsOpen && (
+                    <p className="mt-1 text-[11px] leading-[18px] text-foreground/75">
+                      {latestScenarioSnapshot.contentJson.exitPlan}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTradeForm((prev) => ({
+                      ...prev,
+                      reasonMode: "SCENARIO",
+                      scenarioSnapshotId: latestScenarioSnapshot.id,
+                    }))
+                  }
+                  disabled={scenarioSelected}
+                  className="h-8 rounded-lg border border-border/45 bg-background/45 px-3 text-xs font-semibold text-foreground transition hover:border-primary/30 disabled:cursor-default disabled:border-primary/20 disabled:bg-primary/[0.06] disabled:text-primary"
+                >
+                  {scenarioSelected ? "✓ 계획 선택됨" : "현재 계획 사용"}
+                </button>
+                {scenarioSelected && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTradeForm((prev) => ({
+                        ...prev,
+                        reasonMode: "MANUAL",
+                        scenarioSnapshotId: null,
+                      }))
+                    }
+                    className="h-8 px-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+                  >
+                    선택 해제
+                  </button>
+                )}
+              </div>
             </section>
+          ) : (
+            <div className="border-b border-border/30 pb-3 text-xs text-muted-foreground">
+              저장된 계획이 없습니다
+            </div>
           )}
 
           <div className="flex items-center gap-2">
@@ -337,7 +372,7 @@ export function TrainingTradeJournalPanel({
               ].join(" ")}
             >
               <FileText className="h-3.5 w-3.5" />
-              {hasReasons ? `근거 ${reasons.length + (scenarioSelected ? 1 : 0)}개` : "추가 근거"}
+              {reasons.length > 0 ? `추가 근거 ${reasons.length}개` : "추가 근거 (선택)"}
             </button>
           </div>
 
@@ -397,20 +432,26 @@ export function TrainingTradeJournalPanel({
             </div>
           </div>
 
-          {hasReasons && (
-            <button
-              type="button"
-              onClick={openReasonModal}
-              className="w-full rounded-lg bg-background/35 px-3 py-2 text-left transition hover:bg-primary/[0.04]"
-            >
-              <div className="text-xs font-semibold text-foreground">
-                매매 근거 {reasons.length}개 저장됨
+          <button
+            type="button"
+            onClick={openReasonModal}
+            className="w-full rounded-lg border border-border/30 bg-background/25 px-3 py-2 text-left transition hover:border-primary/20 hover:bg-primary/[0.04]"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-[10px] font-bold tracking-wide text-muted-foreground">ACTION</div>
+                <div className="text-xs font-semibold text-foreground">이번 거래 근거</div>
               </div>
-              <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
-                {reasons[reasons.length - 1]?.title}
-              </div>
-            </button>
-          )}
+              <span className="text-[11px] text-muted-foreground">수정</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+              <span className={scenarioSelected ? "font-semibold text-primary" : undefined}>
+                {scenarioSelected ? "✓ 현재 계획 사용" : "수동 근거"}
+              </span>
+              {reasons.length > 0 && <span>추가 근거 {reasons.length}개</span>}
+              {!hasReasons && <span>아직 저장된 근거 없음</span>}
+            </div>
+          </button>
 
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -595,6 +636,14 @@ export function TrainingTradeJournalPanel({
               <div className="thin-scrollbar max-h-[72vh] space-y-2 overflow-y-auto px-5 py-4">
                 {selectedView === "ADD" ? (
                   <div className="space-y-4">
+                    {scenarioSelected && (
+                      <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-3 py-2 text-xs">
+                        <div className="font-semibold text-primary">✓ 현재 계획 사용</div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          계획 외에 이번 거래에서 추가로 본 점만 기록하세요.
+                        </div>
+                      </div>
+                    )}
                     {quickPhrases.length > 0 && (
                       <section className="rounded-2xl bg-background/35 p-2">
                         <div className="mb-2 text-xs font-semibold text-muted-foreground">
@@ -619,7 +668,7 @@ export function TrainingTradeJournalPanel({
                     <section className="rounded-2xl bg-background/35 p-3">
                       <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                         <Target className="h-3.5 w-3.5 text-primary" />
-                        매매 근거
+                        {scenarioSelected ? "추가 근거 (선택)" : "매매 근거"}
                       </div>
 
                       <textarea
@@ -631,10 +680,14 @@ export function TrainingTradeJournalPanel({
                             entryReason: e.target.value,
                           }))
                         }
-                        placeholder={`예:
-- 전고점 돌파 후 거래량 증가
-- 눌림 구간에서 지지 확인
-- 추세선 이탈 전까지 보유`}
+                        placeholder={
+                          scenarioSelected
+                            ? "계획 외에 이번 거래에서 추가로 본 점이 있다면 기록"
+                            : `예:
+ - 전고점 돌파 후 거래량 증가
+ - 눌림 구간에서 지지 확인
+ - 추세선 이탈 전까지 보유`
+                        }
                         className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
                       />
                     </section>
