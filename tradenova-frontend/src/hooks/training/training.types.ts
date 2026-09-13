@@ -50,6 +50,8 @@ export type TradeReasonItem = {
   createdAt: string;
 };
 
+export type TradeReasonMode = "MANUAL" | "SCENARIO";
+
 /**
  * 매수/매도 모달 입력 폼 상태
  */
@@ -58,6 +60,8 @@ export type TradeForm = {
   entryReason: string;
   riskNote: string;
   reasons: TradeReasonItem[];
+  reasonMode: TradeReasonMode;
+  scenarioSnapshotId: number | null;
 };
 
 /**

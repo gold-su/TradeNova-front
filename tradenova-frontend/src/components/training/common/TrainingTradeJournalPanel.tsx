@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { QuickPhraseResponse } from "@/types/training";
+import type { QuickPhraseResponse, ReportDocumentResponse } from "@/types/training";
 import type {
   TradeForm,
   TradeReasonItem,
@@ -65,6 +65,7 @@ type Props = {
   cashBalance: number;
   positionQty: number;
   currentPrice: number;
+  latestScenarioSnapshot: ReportDocumentResponse | null;
 };
 
 type ReasonView = "ADD" | string;
@@ -113,6 +114,7 @@ export function TrainingTradeJournalPanel({
   cashBalance,
   positionQty,
   currentPrice,
+  latestScenarioSnapshot,
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
@@ -137,13 +139,16 @@ export function TrainingTradeJournalPanel({
     Number(riskDraft.takeProfitExitPercent),
   );
 
-  const reasons = tradeForm.reasons ?? [];
+  const reasons = useMemo(() => tradeForm.reasons ?? [], [tradeForm.reasons]);
   const selectedReason = useMemo(
     () => reasons.find((item) => item.id === selectedView) ?? null,
     [reasons, selectedView],
   );
 
-  const hasReasons = reasons.length > 0;
+  const scenarioSelected =
+    tradeForm.reasonMode === "SCENARIO" &&
+    tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id;
+  const hasReasons = reasons.length > 0 || scenarioSelected;
 
   const appendQuickPhrase = (content: string) => {
     setDraftReason((prev) => ({
@@ -197,7 +202,7 @@ export function TrainingTradeJournalPanel({
 
   const openReasonModal = () => {
     setReasonOpen(true);
-    setSelectedView(hasReasons ? reasons[0].id : "ADD");
+    setSelectedView(reasons.length > 0 ? reasons[0].id : "ADD");
   };
 
   const validQuantity =
@@ -246,6 +251,52 @@ export function TrainingTradeJournalPanel({
         </div>
 
         <div className="space-y-3">
+          {latestScenarioSnapshot && (
+            <section className="rounded-lg border border-primary/15 bg-primary/[0.04] p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-xs font-bold text-foreground">현재 계획</div>
+                {scenarioSelected && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                    <Check className="h-3 w-3" /> 계획 선택됨
+                  </span>
+                )}
+              </div>
+              <dl className="grid grid-cols-[64px_1fr] gap-x-2 gap-y-1 text-[11px] leading-5">
+                {([
+                  ["관점", latestScenarioSnapshot.contentJson.thesis],
+                  ["진입 조건", latestScenarioSnapshot.contentJson.entryReason],
+                  ["청산 계획", latestScenarioSnapshot.contentJson.exitPlan],
+                  ["무효화", latestScenarioSnapshot.contentJson.riskNote],
+                ] satisfies Array<[string, string | undefined]>).filter(([, value]) => value?.trim()).map(([label, value]) => (
+                  <div key={label} className="contents">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="line-clamp-2 text-foreground/85">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <button
+                type="button"
+                onClick={() =>
+                  setTradeForm((prev) => ({
+                    ...prev,
+                    reasonMode: scenarioSelected ? "MANUAL" : "SCENARIO",
+                    scenarioSnapshotId: scenarioSelected
+                      ? null
+                      : latestScenarioSnapshot.id,
+                  }))
+                }
+                className={[
+                  "mt-2 h-8 w-full rounded-lg border text-xs font-semibold transition",
+                  scenarioSelected
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border/45 bg-background/45 text-foreground hover:border-primary/30",
+                ].join(" ")}
+              >
+                {scenarioSelected ? "계획 선택됨" : "현재 계획 사용"}
+              </button>
+            </section>
+          )}
+
           <div className="flex items-center gap-2">
             <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
               수량
@@ -278,7 +329,7 @@ export function TrainingTradeJournalPanel({
               ].join(" ")}
             >
               <FileText className="h-3.5 w-3.5" />
-              {hasReasons ? `근거 ${reasons.length}개` : "근거 작성"}
+              {hasReasons ? `근거 ${reasons.length + (scenarioSelected ? 1 : 0)}개` : "추가 근거"}
             </button>
           </div>
 
