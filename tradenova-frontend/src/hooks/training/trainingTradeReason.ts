@@ -12,6 +12,23 @@ export function clearPendingTradeReason(tradeForm: TradeForm): TradeForm {
   };
 }
 
+export function reconcileScenarioSelection(
+  tradeForm: TradeForm,
+  latestScenarioSnapshot: ReportDocumentResponse | null,
+): TradeForm {
+  if (tradeForm.reasonMode !== "SCENARIO") return tradeForm;
+
+  if (tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id) {
+    return tradeForm;
+  }
+
+  return {
+    ...tradeForm,
+    reasonMode: "MANUAL",
+    scenarioSnapshotId: null,
+  };
+}
+
 export function findLatestScenarioSnapshot(
   snapshots: ReportDocumentResponse[],
   activeChartId: number | null,

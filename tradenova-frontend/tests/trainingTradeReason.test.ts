@@ -6,6 +6,7 @@ import {
   buildTradeEventPayload,
   clearPendingTradeReason,
   findLatestScenarioSnapshot,
+  reconcileScenarioSelection,
 } from "../src/hooks/training/trainingTradeReason.ts";
 
 const snapshot = (
@@ -144,4 +145,74 @@ test("pending reasons and Scenario selection clear without changing snapshots", 
   assert.equal(cleared.reasonMode, "MANUAL");
   assert.equal(cleared.scenarioSnapshotId, null);
   assert.equal(findLatestScenarioSnapshot([savedScenario], 7), savedScenario);
+});
+
+test("a newer Scenario clears the previously selected Scenario", () => {
+  const staleSelection = form({
+    reasonMode: "SCENARIO",
+    scenarioSnapshotId: 10,
+  });
+
+  const reconciled = reconcileScenarioSelection(
+    staleSelection,
+    snapshot(11, 7, ["SCENARIO"], "2026-02-01T00:00:00Z"),
+  );
+
+  assert.equal(reconciled.reasonMode, "MANUAL");
+  assert.equal(reconciled.scenarioSnapshotId, null);
+});
+
+test("an unavailable selected Scenario clears without removing manual reasons", () => {
+  const selected = form({
+    reasonMode: "SCENARIO",
+    scenarioSnapshotId: 10,
+    reasons: [manualReason],
+  });
+  const reconciled = reconcileScenarioSelection(selected, null);
+
+  assert.equal(reconciled.reasonMode, "MANUAL");
+  assert.equal(reconciled.scenarioSnapshotId, null);
+  assert.deepEqual(reconciled.reasons, [manualReason]);
+});
+
+test("the selected Scenario remains selected while it is still latest", () => {
+  const selected = form({
+    reasonMode: "SCENARIO",
+    scenarioSnapshotId: 10,
+  });
+
+  assert.equal(
+    reconcileScenarioSelection(
+      selected,
+      snapshot(10, 7, ["SCENARIO"], "2026-01-01T00:00:00Z"),
+    ),
+    selected,
+  );
+});
+
+test("a newly available Scenario is not automatically selected", () => {
+  const manual = form({ reasons: [manualReason] });
+
+  assert.equal(
+    reconcileScenarioSelection(
+      manual,
+      snapshot(11, 7, ["SCENARIO"], "2026-02-01T00:00:00Z"),
+    ),
+    manual,
+  );
+});
+
+test("a reconciled stale selection emits a manual payload without its old id", () => {
+  const reconciled = reconcileScenarioSelection(
+    form({ reasonMode: "SCENARIO", scenarioSnapshotId: 10 }),
+    snapshot(11, 7, ["SCENARIO"], "2026-02-01T00:00:00Z"),
+  );
+  const payload = buildTradeEventPayload({
+    side: "BUY",
+    res: response,
+    tradeForm: reconciled,
+  });
+
+  assert.equal(payload.reasonMode, "MANUAL");
+  assert.equal("scenarioSnapshotId" in payload, false);
 });

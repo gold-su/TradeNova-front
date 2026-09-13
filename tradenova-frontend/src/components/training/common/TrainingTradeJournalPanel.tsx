@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import type { QuickPhraseResponse, ReportDocumentResponse } from "@/types/training";
 import type {
   TradeForm,
@@ -35,6 +35,7 @@ import {
   riskRuleToDraft,
   submitRiskRuleDraft,
 } from "./riskRuleForm";
+import { reconcileScenarioSelection } from "@/hooks/training/trainingTradeReason";
 
 type Props = {
   tradeForm: TradeForm;
@@ -149,6 +150,13 @@ export function TrainingTradeJournalPanel({
     tradeForm.reasonMode === "SCENARIO" &&
     tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id;
   const hasReasons = reasons.length > 0 || scenarioSelected;
+
+  useLayoutEffect(() => {
+    // Reconcile before paint so the UI and a trade click cannot observe different Scenarios.
+    setTradeForm((prev) =>
+      reconcileScenarioSelection(prev, latestScenarioSnapshot),
+    );
+  }, [latestScenarioSnapshot, setTradeForm]);
 
   const appendQuickPhrase = (content: string) => {
     setDraftReason((prev) => ({
