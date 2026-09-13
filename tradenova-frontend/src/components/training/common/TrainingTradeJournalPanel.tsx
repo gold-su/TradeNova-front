@@ -11,7 +11,6 @@ import {
   ChevronDown,
   ChevronsRight,
   FileText,
-  Info,
   X,
   ShieldAlert,
   Target,
@@ -36,6 +35,10 @@ import {
   submitRiskRuleDraft,
 } from "./riskRuleForm";
 import { reconcileScenarioSelection } from "@/hooks/training/trainingTradeReason";
+import {
+  transitionOrderMode,
+  type TrainingOrderMode,
+} from "@/hooks/training/trainingWorkspaceState";
 
 type Props = {
   tradeForm: TradeForm;
@@ -52,9 +55,9 @@ type Props = {
     side: "BUY" | "SELL";
   } | null;
 
-  onBuy: () => void;
-  onSell: () => void;
-  onSellAll: () => void;
+  onBuy: () => Promise<boolean>;
+  onSell: () => Promise<boolean>;
+  onSellAll: () => Promise<boolean>;
   onNext: () => void;
 
   advanceSteps: number;
@@ -119,7 +122,8 @@ export function TrainingTradeJournalPanel({
 }: Props) {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
-  const [planDetailsOpen, setPlanDetailsOpen] = useState(false);
+  const [orderMode, setOrderMode] = useState<TrainingOrderMode>(null);
+  const [sellAllSelected, setSellAllSelected] = useState(false);
 
   const [draftReason, setDraftReason] = useState({
     entryReason: "",
@@ -150,8 +154,6 @@ export function TrainingTradeJournalPanel({
   const scenarioSelected =
     tradeForm.reasonMode === "SCENARIO" &&
     tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id;
-  const hasReasons = reasons.length > 0 || scenarioSelected;
-
   useLayoutEffect(() => {
     // Reconcile before paint so the UI and a trade click cannot observe different Scenarios.
     setTradeForm((prev) =>
@@ -220,269 +222,44 @@ export function TrainingTradeJournalPanel({
       : 0;
   const estimatedAmount = calculateEstimatedAmount(validQuantity, currentPrice);
   const setQuantity = (qty: number) => {
+    setSellAllSelected(false);
     setTradeForm((prev) => ({ ...prev, qty }));
+  };
+
+  const executeOrder = async () => {
+    let succeeded = false;
+    if (orderMode === "BUY") succeeded = await onBuy();
+    if (orderMode === "SELL") {
+      succeeded = sellAllSelected ? await onSellAll() : await onSell();
+    }
+    if (succeeded) {
+      setOrderMode((current) => transitionOrderMode(current, "TRADE_SUCCEEDED"));
+      setSellAllSelected(false);
+    }
   };
 
   return (
     <>
       <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">매매 결정</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              수량, 근거, 진행 단위를 설정합니다.
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={[
-            "mb-3 flex h-9 items-center gap-2 overflow-hidden rounded-lg border px-3 text-xs",
-            lastSavedMessage
-              ? lastSavedMessage.side === "BUY"
-                ? "border-primary/20 bg-primary/[0.06] text-primary"
-                : "border-red-500/20 bg-red-500/10 text-red-300"
-              : "border-border/35 bg-background/35 text-muted-foreground",
-          ].join(" ")}
-          role="status"
-          aria-live="polite"
-          title={lastSavedMessage?.text}
-        >
-          {lastSavedMessage ? (
+        {lastSavedMessage && (
+          <div className={`mb-3 flex h-9 items-center gap-2 rounded-lg border px-3 text-xs ${lastSavedMessage.side === "BUY" ? "border-primary/20 bg-primary/[0.06] text-primary" : "border-red-500/20 bg-red-500/10 text-red-300"}`} role="status" aria-live="polite">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-          ) : (
-            <Info className="h-3.5 w-3.5 shrink-0 opacity-70" />
-          )}
-          <span className="truncate">
-            {lastSavedMessage?.text ??
-              "주문 결과와 진행 상태가 여기에 표시됩니다."}
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          {latestScenarioSnapshot ? (
-            <section className="border-b border-primary/15 pb-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div>
-                  <div className="text-[10px] font-bold tracking-wide text-primary">PLAN</div>
-                  <div className="text-xs font-bold text-foreground">현재 계획</div>
-                </div>
-                {scenarioSelected && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-                    <Check className="h-3 w-3" /> 계획 선택됨
-                  </span>
-                )}
-              </div>
-              <dl className="grid grid-cols-[56px_1fr] gap-x-2 gap-y-1 text-[11px] leading-[18px]">
-                {([
-                  ["관점", latestScenarioSnapshot.contentJson.thesis],
-                  ["진입 조건", latestScenarioSnapshot.contentJson.entryReason],
-                  ["무효화", latestScenarioSnapshot.contentJson.riskNote],
-                ] satisfies Array<[string, string | undefined]>).filter(([, value]) => value?.trim()).map(([label, value]) => (
-                  <div key={label} className="contents">
-                    <dt className="text-muted-foreground">{label}</dt>
-                    <dd className="line-clamp-1 text-foreground/85">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-              {latestScenarioSnapshot.contentJson.exitPlan?.trim() && (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setPlanDetailsOpen((open) => !open)}
-                    aria-expanded={planDetailsOpen}
-                    className="text-[11px] text-muted-foreground transition hover:text-foreground"
-                  >
-                    {planDetailsOpen ? "청산 계획 접기" : "청산 계획 보기"}
-                  </button>
-                  {planDetailsOpen && (
-                    <p className="mt-1 text-[11px] leading-[18px] text-foreground/75">
-                      {latestScenarioSnapshot.contentJson.exitPlan}
-                    </p>
-                  )}
-                </div>
-              )}
-              <div className="mt-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setTradeForm((prev) => ({
-                      ...prev,
-                      reasonMode: "SCENARIO",
-                      scenarioSnapshotId: latestScenarioSnapshot.id,
-                    }))
-                  }
-                  disabled={scenarioSelected}
-                  className="h-8 rounded-lg border border-border/45 bg-background/45 px-3 text-xs font-semibold text-foreground transition hover:border-primary/30 disabled:cursor-default disabled:border-primary/20 disabled:bg-primary/[0.06] disabled:text-primary"
-                >
-                  {scenarioSelected ? "✓ 계획 선택됨" : "현재 계획 사용"}
-                </button>
-                {scenarioSelected && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTradeForm((prev) => ({
-                        ...prev,
-                        reasonMode: "MANUAL",
-                        scenarioSnapshotId: null,
-                      }))
-                    }
-                    className="h-8 px-1 text-[11px] text-muted-foreground transition hover:text-foreground"
-                  >
-                    선택 해제
-                  </button>
-                )}
-              </div>
-            </section>
-          ) : (
-            <div className="border-b border-border/30 pb-3 text-xs text-muted-foreground">
-              저장된 계획이 없습니다
-            </div>
-          )}
-
-          <div className="flex items-center gap-2">
-            <label className="shrink-0 text-[11px] font-medium text-muted-foreground">
-              수량
-            </label>
-
-            <input
-              type="number"
-              min={1}
-              step={1}
-              value={tradeForm.qty}
-              onChange={(e) =>
-                setTradeForm((prev) => ({
-                  ...prev,
-                  qty: Number(e.target.value),
-                }))
-              }
-              className="h-8 w-20 rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none transition focus:border-primary/45 focus:bg-background/70"
-            />
-
-            <div className="flex-1" />
-
-            <button
-              type="button"
-              onClick={openReasonModal}
-              className={[
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition",
-                hasReasons
-                  ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
-                  : "border-amber-500/25 bg-amber-500/15 text-amber-300 hover:bg-amber-500/20",
-              ].join(" ")}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              {reasons.length > 0 ? `추가 근거 ${reasons.length}개` : "추가 근거 (선택)"}
-            </button>
+            <span className="truncate">{lastSavedMessage.text}</span>
           </div>
+        )}
 
-          <div className="space-y-2 rounded-lg bg-background/35 p-2.5">
-            <div className="flex items-center gap-2">
-              <span className="w-9 text-[10px] font-bold text-primary">BUY</span>
-              <div className="grid flex-1 grid-cols-4 gap-1.5">
-                {ORDER_PERCENTAGES.map((percent) => {
-                  const qty = calculateBuyQuantityByPercent(
-                    cashBalance,
-                    currentPrice,
-                    percent,
-                  );
-                  return (
-                    <button
-                      key={`buy-${percent}`}
-                      type="button"
-                      disabled={disabled || qty === 0}
-                      onClick={() => setQuantity(qty)}
-                      className="h-7 rounded-md bg-primary/[0.08] text-[11px] font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-35"
-                    >
-                      {percent}%
-                    </button>
-                  );
-                })}
-              </div>
+        {orderMode === null ? (
+          <div className="space-y-3">
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">TRADE</div>
+              <div className="text-sm font-semibold">거래 실행</div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-9 text-[10px] font-bold text-red-300">SELL</span>
-              <div className="grid flex-1 grid-cols-4 gap-1.5">
-                {ORDER_PERCENTAGES.map((percent) => {
-                  const qty = calculateSellQuantityByPercent(positionQty, percent);
-                  return (
-                    <button
-                      key={`sell-${percent}`}
-                      type="button"
-                      disabled={disabled || qty === 0}
-                      onClick={() => setQuantity(qty)}
-                      className="h-7 rounded-md bg-red-500/[0.08] text-[11px] font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-35"
-                    >
-                      {percent}%
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_BUY"))} disabled={disabled} className="h-10 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:opacity-45">BUY</button>
+              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_SELL"))} disabled={disabled} className="h-10 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-45">SELL</button>
             </div>
-            <div className="flex items-center justify-between border-t border-border/30 pt-2 text-[11px]">
-              <span className="text-muted-foreground">
-                주문수량 <strong className="text-foreground">{validQuantity}주</strong>
-              </span>
-              <span className="text-muted-foreground">
-                예상 주문금액{" "}
-                <strong className="text-foreground">
-                  {new Intl.NumberFormat("ko-KR").format(estimatedAmount)}원
-                </strong>
-              </span>
-            </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={openReasonModal}
-            className="w-full rounded-lg border border-border/30 bg-background/25 px-3 py-2 text-left transition hover:border-primary/20 hover:bg-primary/[0.04]"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-[10px] font-bold tracking-wide text-muted-foreground">ACTION</div>
-                <div className="text-xs font-semibold text-foreground">이번 거래 근거</div>
-              </div>
-              <span className="text-[11px] text-muted-foreground">수정</span>
-            </div>
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-              <span className={scenarioSelected ? "font-semibold text-primary" : undefined}>
-                {scenarioSelected ? "✓ 현재 계획 사용" : "수동 근거"}
-              </span>
-              {reasons.length > 0 && <span>추가 근거 {reasons.length}개</span>}
-              {!hasReasons && <span>아직 저장된 근거 없음</span>}
-            </div>
-          </button>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={onBuy}
-              disabled={disabled}
-              className="h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] disabled:opacity-45"
-            >
-              BUY
-            </button>
-
-            <button
-              type="button"
-              onClick={onSell}
-              disabled={disabled}
-              className="h-9 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-45"
-            >
-              SELL
-            </button>
-
-            <button
-              type="button"
-              onClick={onSellAll}
-              disabled={disabled}
-              className="h-9 rounded-lg bg-background/55 text-sm font-bold text-muted-foreground transition hover:bg-background/75 hover:text-foreground active:scale-[0.98] disabled:opacity-45"
-            >
-              ALL
-            </button>
-          </div>
-
-          <div className="rounded-lg bg-background/35 p-2">
+            <div className="rounded-lg bg-background/35 p-2">
             <div className="mb-2 flex items-center gap-2">
               <div className="flex h-9 shrink-0 items-center gap-1 rounded-lg bg-background/55 px-2">
                 <input
@@ -537,12 +314,6 @@ export function TrainingTradeJournalPanel({
               </button>
             </div>
 
-            {!riskRuleAvailable && (
-              <div className="mb-2 px-2 text-[11px] text-amber-200/80">
-                포지션을 먼저 매수한 후 리스크룰을 설정할 수 있습니다.
-              </div>
-            )}
-
             <button
               type="button"
               onClick={() => setSyncNext((prev) => !prev)}
@@ -560,7 +331,50 @@ export function TrainingTradeJournalPanel({
               </span>
             </button>
           </div>
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "CANCEL"))} className="text-sm font-semibold text-muted-foreground hover:text-foreground">← {orderMode === "BUY" ? "매수" : "매도"}</button>
+
+            {orderMode === "SELL" && (
+              <div className="text-xs text-muted-foreground">보유 <strong className="text-foreground">{positionQty.toLocaleString()}주</strong></div>
+            )}
+
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">{orderMode === "BUY" ? "수량" : "매도 수량"}</span>
+              <input type="number" min={1} step={1} value={tradeForm.qty} onChange={(event) => { setSellAllSelected(false); setTradeForm((prev) => ({ ...prev, qty: Number(event.target.value) })); }} className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none focus:border-primary/45" />
+            </label>
+
+            <div className={`grid gap-1.5 ${orderMode === "SELL" ? "grid-cols-5" : "grid-cols-4"}`}>
+              {ORDER_PERCENTAGES.map((percent) => {
+                const qty = orderMode === "BUY" ? calculateBuyQuantityByPercent(cashBalance, currentPrice, percent) : calculateSellQuantityByPercent(positionQty, percent);
+                return <button key={percent} type="button" disabled={disabled || qty === 0} onClick={() => setQuantity(qty)} className={`h-8 rounded-md text-[11px] font-semibold transition disabled:opacity-35 ${orderMode === "BUY" ? "bg-primary/[0.08] text-primary hover:bg-primary/15" : "bg-red-500/[0.08] text-red-300 hover:bg-red-500/15"}`}>{percent}%</button>;
+              })}
+              {orderMode === "SELL" && (
+                <button type="button" disabled={disabled || positionQty <= 0} onClick={() => { setSellAllSelected(true); setTradeForm((prev) => ({ ...prev, qty: positionQty })); }} className={`h-8 rounded-md text-[11px] font-bold transition disabled:opacity-35 ${sellAllSelected ? "bg-red-500/20 text-red-200 ring-1 ring-red-400/30" : "bg-background/55 text-muted-foreground hover:text-foreground"}`}>ALL</button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="rounded-lg bg-background/35 px-3 py-2"><span className="text-muted-foreground">{orderMode === "BUY" ? "사용 가능 현금" : "주문 수량"}</span><strong className="mt-0.5 block">{orderMode === "BUY" ? `${cashBalance.toLocaleString()}원` : `${validQuantity.toLocaleString()}주`}</strong></div>
+              <div className="rounded-lg bg-background/35 px-3 py-2 text-right"><span className="text-muted-foreground">예상 주문금액</span><strong className="mt-0.5 block">{estimatedAmount.toLocaleString()}원</strong></div>
+            </div>
+
+            <section className="border-t border-border/35 pt-3">
+              <div className="mb-2"><div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">ACTION</div><div className="text-xs font-semibold">이번 {orderMode === "BUY" ? "매수" : "매도"} 근거</div></div>
+              {latestScenarioSnapshot && (
+                <div className="mb-2 flex items-center gap-2">
+                  <button type="button" onClick={() => setTradeForm((prev) => ({ ...prev, reasonMode: scenarioSelected ? "MANUAL" : "SCENARIO", scenarioSnapshotId: scenarioSelected ? null : latestScenarioSnapshot.id }))} className={`h-8 rounded-lg border px-3 text-xs font-semibold ${scenarioSelected ? "border-primary/25 bg-primary/10 text-primary" : "border-border/40 hover:border-primary/30"}`}>{scenarioSelected ? "✓ 현재 계획 사용" : "현재 계획 사용"}</button>
+                  {scenarioSelected && <span className="text-[11px] text-muted-foreground">다시 눌러 선택 해제</span>}
+                </div>
+              )}
+              <button type="button" onClick={openReasonModal} className="flex h-8 items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"><FileText className="h-3.5 w-3.5" />{reasons.length > 0 ? `추가 근거 ${reasons.length}개` : scenarioSelected ? "+ 추가 근거 (선택)" : "+ 매매 근거"}</button>
+            </section>
+
+            <button type="button" onClick={executeOrder} disabled={disabled} className={`h-10 w-full rounded-lg text-sm font-bold transition disabled:opacity-45 ${orderMode === "BUY" ? "bg-primary text-primary-foreground hover:brightness-110" : "bg-red-500 text-white hover:bg-red-500/90"}`}>{loading ? "처리 중..." : orderMode === "BUY" ? "매수 실행" : sellAllSelected ? "전량 매도 실행" : "매도 실행"}</button>
+            <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "CANCEL"))} disabled={loading} className="h-8 w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-40">취소</button>
+          </div>
+        )}
       </div>
 
       {reasonOpen && (

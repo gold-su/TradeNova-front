@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type {
   ChartAiPayload,
   SessionAiPayload,
   TrainingEventResponse,
 } from "@/types/training";
+
+function apiError(error: unknown) {
+  if (!axios.isAxiosError<{ error?: string; message?: string }>(error)) {
+    return { status: undefined, code: undefined, message: undefined };
+  }
+  return {
+    status: error.response?.status,
+    code: error.response?.data?.error,
+    message: error.response?.data?.message,
+  };
+}
 
 /**
  * 훈련 화면의 AI 관련 로직 훅
@@ -49,9 +61,8 @@ export function useTrainingAi(
       const latest = await reportApi.getLatestSessionAi(sid);
       setSessionAi(latest);
       return latest;
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 404 || code === "SESSION_AI_NOT_FOUND") {
         setSessionAi(null);
@@ -59,7 +70,7 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        e?.response?.data?.message ?? "세션 AI 결과 조회에 실패했습니다.",
+        message ?? "세션 AI 결과 조회에 실패했습니다.",
       );
       return null;
     } finally {
@@ -83,9 +94,8 @@ export function useTrainingAi(
 
       setSessionAi(event);
       appendEvent?.(event);
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 409 || code === "SESSION_AI_ALREADY_EXISTS") {
         await loadLatestSessionAi(sessionId);
@@ -93,7 +103,7 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        e?.response?.data?.message ?? "세션 AI 분석에 실패했습니다.",
+        message ?? "세션 AI 분석에 실패했습니다.",
       );
     } finally {
       setSessionAiLoading(false);
@@ -119,9 +129,8 @@ export function useTrainingAi(
       const latest = await reportApi.getLatestChartAi(cid);
       setChartAi(latest);
       return latest;
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 404 || code === "CHART_AI_NOT_FOUND") {
         setChartAi(null);
@@ -129,7 +138,7 @@ export function useTrainingAi(
       }
 
       setChartAiError(
-        e?.response?.data?.message ?? "차트 AI 결과 조회에 실패했습니다.",
+        message ?? "차트 AI 결과 조회에 실패했습니다.",
       );
       return null;
     } finally {
@@ -143,9 +152,6 @@ export function useTrainingAi(
    * - 이미 있으면 409 대신 latest 재조회
    */
   const onAnalyzeChartAi = async () => {
-
-    console.log("analyze chartId =", chartId);
-
     if (!chartId) return;
 
     try {
@@ -156,9 +162,8 @@ export function useTrainingAi(
 
       setChartAi(event);
       appendEvent?.(event);
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 409 || code === "CHART_AI_ALREADY_EXISTS") {
         await loadLatestChartAi(chartId);
@@ -166,7 +171,7 @@ export function useTrainingAi(
       }
 
       setChartAiError(
-        e?.response?.data?.message ?? "차트 AI 분석에 실패했습니다.",
+        message ?? "차트 AI 분석에 실패했습니다.",
       );
     } finally {
       setChartAiLoading(false);

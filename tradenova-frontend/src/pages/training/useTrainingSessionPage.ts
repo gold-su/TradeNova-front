@@ -5,6 +5,7 @@ import type {
   ProgressResponse,
   SessionSummaryResponse,
   TradeResponse,
+  TrainingEventResponse,
 } from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
 import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
@@ -18,6 +19,7 @@ import {
   finishTrainingAndOpenCompletion,
 } from "./trainingSessionLifecycle";
 import axios from "axios";
+import { resolveReviewTargetChartId } from "@/hooks/training/trainingWorkspaceState";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -85,11 +87,30 @@ export function useTrainingSessionPage() {
   const report = useTrainingReport(core.activeChartId);
 
   // ===== AI 로직 =====
+  const [reviewTargetChartId, setReviewTargetChartId] = useState<number | null>(
+    null,
+  );
+  const appendChartAiEvent = (event: TrainingEventResponse) => {
+    if (reviewTargetChartId === core.activeChartId) report.appendEvent(event);
+  };
   const ai = useTrainingAi(
     core.sessionId,
-    core.activeChartId,
-    report.appendEvent,
+    reviewTargetChartId,
+    appendChartAiEvent,
   );
+
+  useEffect(() => {
+    const resolved = resolveReviewTargetChartId(
+      reviewTargetChartId,
+      core.activeChartId,
+      core.charts.map((chart) => chart.chartId),
+    );
+    if (resolved !== reviewTargetChartId) setReviewTargetChartId(resolved);
+  }, [core.activeChartId, core.charts, reviewTargetChartId]);
+
+  useEffect(() => {
+    setReviewTargetChartId(null);
+  }, [core.sessionId]);
 
   const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
 
@@ -144,7 +165,6 @@ export function useTrainingSessionPage() {
     mutationGuard,
     activeChartId: core.activeChartId,
     status: core.status,
-    loadEvents: report.loadEvents,
     setSnapshots: report.setSnapshots,
     setError: (message) => {
       report.setError(message);
@@ -417,6 +437,8 @@ export function useTrainingSessionPage() {
     chartAiPayload: ai.chartAiPayload,
     chartAiLoading: ai.chartAiLoading,
     chartAiError: ai.chartAiError,
+    reviewTargetChartId,
+    setReviewTargetChartId,
     loadLatestChartAi: ai.loadLatestChartAi,
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
 

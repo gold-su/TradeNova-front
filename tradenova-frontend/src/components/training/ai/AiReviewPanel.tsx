@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { ChartAiPayload } from "@/types/training";
+import { useState, type Dispatch, type SetStateAction } from "react";
+import type { ChartAiPayload, TrainingChartDto } from "@/types/training";
 import { Bot, X, CheckCircle2, CircleDashed } from "lucide-react";
 import {
     ACTIVE_AI_REVIEW_TARGETS,
@@ -7,12 +7,27 @@ import {
 } from "@/components/training/ai/sessionAiReview";
 
 type Props = {
-    activeChartLabel: string;
+    charts: TrainingChartDto[];
+    reviewTargetChartId: number | null;
+    setReviewTargetChartId: Dispatch<SetStateAction<number | null>>;
     chartAiPayload: ChartAiPayload | null;
     chartAiLoading: boolean;
     onAnalyzeChartAi: () => void;
     disabled?: boolean;
 };
+
+function sectorLabel(sector?: string) {
+    const labels: Record<string, string> = {
+        SEMICONDUCTOR: "반도체",
+        SECONDARY_BATTERY: "2차전지",
+        PLATFORM: "플랫폼",
+        BIO: "바이오",
+        FINANCE: "금융",
+        DEFENSE: "방산",
+        SHIPBUILDING: "조선",
+    };
+    return sector ? labels[sector] ?? "블라인드 차트" : "블라인드 차트";
+}
 
 type ReviewPayload = ChartAiPayload;
 
@@ -125,33 +140,55 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function AiReviewPanel({
-    activeChartLabel,
+    charts,
+    reviewTargetChartId,
+    setReviewTargetChartId,
     chartAiPayload,
     chartAiLoading,
     onAnalyzeChartAi,
     disabled,
 }: Props) {
     const [open, setOpen] = useState(false);
+    const targetChart = charts.find((chart) => chart.chartId === reviewTargetChartId) ?? null;
+    const targetLabel = targetChart
+        ? `Chart ${targetChart.chartIndex + 1} · ${sectorLabel(targetChart.trainingSector)}`
+        : "차트 선택";
 
     return (
         <>
-            <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
+            <section className="border-t border-border/35 py-4">
                 <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-                        <div className="text-sm font-semibold">AI Review</div>
+                        <div className="text-xs font-semibold tracking-wide text-muted-foreground">AI REVIEW</div>
                     </div>
 
                     <div className="text-[11px] text-muted-foreground">
-                        결과 요약
+                        차트별 분석
                     </div>
                 </div>
+
+                <label className="mb-2 block">
+                    <span className="sr-only">리뷰 대상 차트</span>
+                    <select
+                        aria-label="리뷰 대상 차트"
+                        value={reviewTargetChartId ?? ""}
+                        onChange={(event) => setReviewTargetChartId(Number(event.target.value))}
+                        className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-2 text-xs font-semibold outline-none focus:border-primary/40"
+                    >
+                        {charts.map((chart) => (
+                            <option key={chart.chartId} value={chart.chartId}>
+                                Chart {chart.chartIndex + 1} · {sectorLabel(chart.trainingSector)}
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
                 <div className="space-y-1.5">
                     {ACTIVE_AI_REVIEW_TARGETS.includes("CHART") && (
                         <ReviewRow
                             title="Chart Review"
-                            subtitle={activeChartLabel}
+                            subtitle={targetLabel}
                             payload={chartAiPayload}
                             loading={chartAiLoading}
                             disabled={disabled}
@@ -160,7 +197,7 @@ export function AiReviewPanel({
                         />
                     )}
                 </div>
-            </div>
+            </section>
 
             {open && chartAiPayload && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
@@ -178,7 +215,7 @@ export function AiReviewPanel({
                                     Chart Review
                                 </div>
                                 <div className="mt-0.5 text-xs text-muted-foreground">
-                                    {activeChartLabel}
+                                    {targetLabel}
                                 </div>
                             </div>
 

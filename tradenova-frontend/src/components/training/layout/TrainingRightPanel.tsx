@@ -1,9 +1,7 @@
 import type {
-  ChartAiPayload,
   ProgressResponse,
   QuickPhraseResponse,
   ReportDocumentResponse,
-  ReportDraftContent,
   TrainingChartDto,
   TrainingEventResponse,
   RiskRuleResponse,
@@ -13,9 +11,9 @@ import { AccountSnapshotCard } from "@/components/training/common/AccountSnapsho
 import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
 import { TrainingTradeJournalPanel } from "@/components/training/common/TrainingTradeJournalPanel";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
-import { AiReviewPanel } from "@/components/training/ai/AiReviewPanel";
 import type { TradeForm } from "@/hooks/training/training.types";
 import { findLatestScenarioSnapshot } from "@/hooks/training/trainingTradeReason";
+import { TrainingPlanSection } from "@/components/training/common/TrainingPlanSection";
 
 type Props = {
   activeChart: TrainingChartDto | null;
@@ -23,29 +21,27 @@ type Props = {
   quickPhrases: QuickPhraseResponse[];
   events: TrainingEventResponse[];
   snapshots: ReportDocumentResponse[];
-  draft: ReportDraftContent;
-  setDraft: React.Dispatch<React.SetStateAction<ReportDraftContent>>;
   loading: boolean;
-  draftSaving: boolean;
   eventLoading: boolean;
   disabled: boolean;
   onNext: () => void;
-  onSellAll: () => void;
-  onSaveDraft: () => void;
-  onCreateSnapshot: () => void;
-  onCreateNoteEvent: () => void;
-  appendQuickPhrase: (content: string) => void;
-  openBuyModal: () => void;
-  openSellModal: () => void;
-  chartAiPayload: ChartAiPayload | null;
-  chartAiLoading: boolean;
-  onAnalyzeChartAi: () => void;
+  onSellAll: () => Promise<boolean>;
+  onCreateScenarioSnapshot: (
+    chartId: number,
+    content: {
+      thesis: string;
+      entryReason: string;
+      exitPlan: string;
+      riskNote: string;
+      freeNote: string;
+    },
+  ) => Promise<unknown>;
   syncNext: boolean;
   setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
   tradeForm: TradeForm;
   setTradeForm: React.Dispatch<React.SetStateAction<TradeForm>>;
-  executeBuy: () => void;
-  executeSell: () => void;
+  executeBuy: () => Promise<boolean>;
+  executeSell: () => Promise<boolean>;
   lastSavedMessage: {
     text: string;
     side: "BUY" | "SELL";
@@ -68,9 +64,7 @@ export function TrainingRightPanel({
   disabled,
   onNext,
   onSellAll,
-  chartAiPayload,
-  chartAiLoading,
-  onAnalyzeChartAi,
+  onCreateScenarioSnapshot,
   syncNext,
   setSyncNext,
   tradeForm,
@@ -90,20 +84,14 @@ export function TrainingRightPanel({
   );
 
   return (
-    <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
-      <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
+    <aside className="w-[400px] shrink-0 border-l border-border/60 bg-background/40 p-4">
+      <div className="thin-scrollbar h-full space-y-3 overflow-y-auto pr-1">
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
-        <AiReviewPanel
-          activeChartLabel={
-            activeChart
-              ? `Chart ${activeChart.chartIndex + 1}`
-              : "차트 선택 안 됨"
-          }
-          chartAiPayload={chartAiPayload}
-          chartAiLoading={chartAiLoading}
-          onAnalyzeChartAi={onAnalyzeChartAi}
-          disabled={loading || !activeChart}
+        <TrainingPlanSection
+          activeChart={activeChart}
+          latestScenario={latestScenarioSnapshot}
+          onCreateScenario={onCreateScenarioSnapshot}
         />
 
         <TrainingTradeJournalPanel

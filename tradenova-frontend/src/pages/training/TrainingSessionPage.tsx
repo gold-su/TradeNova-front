@@ -55,7 +55,11 @@ export default function TrainingSessionPage() {
           onCreateSession={page.onCreateSession}
           onFinishSession={page.onFinishSession}
           progressByChart={page.progressByChart}
-          onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
+          reviewTargetChartId={page.reviewTargetChartId}
+          setReviewTargetChartId={page.setReviewTargetChartId}
+          chartAiPayload={page.chartAiPayload}
+          chartAiLoading={page.chartAiLoading}
+          onAnalyzeChartAi={page.onAnalyzeChartAi}
         />
 
         <main className="flex flex-1 items-center justify-center p-6">
@@ -97,7 +101,11 @@ export default function TrainingSessionPage() {
         onCreateSession={page.onCreateSession}
         onFinishSession={page.onFinishSession}
         progressByChart={page.progressByChart}
-        onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
+        reviewTargetChartId={page.reviewTargetChartId}
+        setReviewTargetChartId={page.setReviewTargetChartId}
+        chartAiPayload={page.chartAiPayload}
+        chartAiLoading={page.chartAiLoading}
+        onAnalyzeChartAi={page.onAnalyzeChartAi}
       />
 
       <TrainingCenterPanel
@@ -131,25 +139,14 @@ export default function TrainingSessionPage() {
         quickPhrases={page.quickPhrases}
         events={page.events}
         snapshots={page.snapshots}
-        draft={page.draft}
-        setDraft={page.setDraft}
         loading={page.loading}
-        draftSaving={page.draftSaving}
         eventLoading={page.eventLoading}
         disabled={page.disabled}
         onNext={page.onNext}
         advanceSteps={page.advanceSteps}
         setAdvanceSteps={page.setAdvanceSteps}
         onSellAll={page.onSellAll}
-        onSaveDraft={page.onSaveDraft}
-        onCreateSnapshot={page.onCreateSnapshot}
-        onCreateNoteEvent={page.onCreateNoteEvent}
-        appendQuickPhrase={page.appendQuickPhrase}
-        openBuyModal={page.openBuyModal}
-        openSellModal={page.openSellModal}
-        chartAiPayload={page.chartAiPayload}
-        chartAiLoading={page.chartAiLoading}
-        onAnalyzeChartAi={page.onAnalyzeChartAi}
+        onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
         syncNext={page.syncNext}
         setSyncNext={page.setSyncNext}
         tradeForm={page.tradeForm}
