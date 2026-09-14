@@ -8,7 +8,6 @@ import type {
   RiskRuleUpsertRequest,
 } from "@/types/training";
 import { AccountSnapshotCard } from "@/components/training/common/AccountSnapshotCard";
-import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
 import { TrainingTradeJournalPanel } from "@/components/training/common/TrainingTradeJournalPanel";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
 import type { TradeForm } from "@/hooks/training/training.types";
@@ -84,18 +83,21 @@ export function TrainingRightPanel({
   );
 
   return (
-    <aside className="w-[400px] shrink-0 border-l border-border/60 bg-background/40 p-4">
-      <div className="thin-scrollbar h-full space-y-3 overflow-y-auto pr-1">
+    <aside className="flex h-full min-h-0 w-[360px] shrink-0 flex-col border-l border-border/40 bg-background/40 px-4 py-4">
+      <div className="thin-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
         <TrainingPlanSection
+          key={`plan-${activeChart?.chartId ?? "none"}`}
+          snapshots={snapshots}
+          events={events}
           activeChart={activeChart}
           latestScenario={latestScenarioSnapshot}
           onCreateScenario={onCreateScenarioSnapshot}
         />
 
         <TrainingTradeJournalPanel
-          key={activeChart?.chartId ?? "no-chart"}
+          key={`trade-${activeChart?.chartId ?? "none"}`}
           tradeForm={tradeForm}
           setTradeForm={setTradeForm}
           quickPhrases={quickPhrases}
@@ -119,9 +121,9 @@ export function TrainingRightPanel({
           latestScenarioSnapshot={latestScenarioSnapshot}
         />
 
-        <EventLogPanel items={events} loading={eventLoading} />
-
-        <SnapshotListPanel items={snapshots} />
+      </div>
+      <div className="mt-4 max-h-[220px] shrink-0 overflow-y-auto border-t border-border/35 pt-3">
+        <EventLogPanel items={events.filter((event) => event.chartId === activeChart?.chartId)} loading={eventLoading} />
       </div>
     </aside>
   );

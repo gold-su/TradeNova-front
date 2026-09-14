@@ -35,8 +35,6 @@ type Props = {
 
   onCreateSession: () => void;
   progressByChart?: ProgressMap;
-  reviewTargetChartId: number | null;
-  setReviewTargetChartId: Dispatch<SetStateAction<number | null>>;
   chartAiPayload: ChartAiPayload | null;
   chartAiLoading: boolean;
   onAnalyzeChartAi: () => void;
@@ -82,8 +80,6 @@ export function TrainingLeftPanel({
   onFinishSession,
   loadAccounts,
   progressByChart,
-  reviewTargetChartId,
-  setReviewTargetChartId,
   chartAiPayload,
   chartAiLoading,
   onAnalyzeChartAi,
@@ -233,12 +229,12 @@ export function TrainingLeftPanel({
         {hasSession && (
           <AiReviewPanel
             charts={charts}
-            reviewTargetChartId={reviewTargetChartId}
-            setReviewTargetChartId={setReviewTargetChartId}
+            key={activeChartId}
+            activeChartId={activeChartId}
             chartAiPayload={chartAiPayload}
             chartAiLoading={chartAiLoading}
             onAnalyzeChartAi={onAnalyzeChartAi}
-            disabled={loading || !reviewTargetChartId}
+            disabled={loading || !activeChartId}
           />
         )}
 

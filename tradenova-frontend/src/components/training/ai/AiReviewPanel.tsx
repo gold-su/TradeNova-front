@@ -1,6 +1,6 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import type { ChartAiPayload, TrainingChartDto } from "@/types/training";
-import { Bot, X, CheckCircle2, CircleDashed } from "lucide-react";
+import { Bot, X } from "lucide-react";
 import {
     ACTIVE_AI_REVIEW_TARGETS,
     GENERATED_REVIEW_ACTION_LABEL,
@@ -8,8 +8,7 @@ import {
 
 type Props = {
     charts: TrainingChartDto[];
-    reviewTargetChartId: number | null;
-    setReviewTargetChartId: Dispatch<SetStateAction<number | null>>;
+    activeChartId: number | null;
     chartAiPayload: ChartAiPayload | null;
     chartAiLoading: boolean;
     onAnalyzeChartAi: () => void;
@@ -41,38 +40,6 @@ function reviewMeta(payload: ReviewPayload | null) {
     return `${scoreLabel(payload.score)} · ${payload.analysisType}`;
 }
 
-function ReviewStatus({
-    payload,
-    loading,
-}: {
-    payload: ReviewPayload | null;
-    loading: boolean;
-}) {
-    if (loading) {
-        return (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <CircleDashed className="h-3 w-3 animate-spin" />
-                분석 중
-            </span>
-        );
-    }
-
-    if (payload) {
-        return (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
-                <CheckCircle2 className="h-3 w-3" />
-                생성완료
-            </span>
-        );
-    }
-
-    return (
-        <span className="text-[11px] text-muted-foreground">
-            미생성
-        </span>
-    );
-}
-
 function ReviewRow({
     title,
     subtitle,
@@ -93,17 +60,17 @@ function ReviewRow({
     const ready = !!payload;
 
     return (
-        <div className="group flex min-h-[52px] items-center gap-3 rounded-lg border border-border/35 bg-background/25 px-3 py-2 transition-all duration-200 hover:border-primary/40 hover:bg-primary/[0.04] hover:shadow-[0_0_18px_rgba(34,197,94,0.08)]">
+        <div className="flex min-h-[56px] items-center gap-2 rounded-lg bg-muted/20 px-2.5 py-2">
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-foreground">
                         {title}
                     </span>
-                    <ReviewStatus payload={payload} loading={loading} />
+
                 </div>
 
                 <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    {ready ? reviewMeta(payload) : subtitle}
+                    {loading ? "분석 중" : ready ? reviewMeta(payload) : subtitle}
                 </div>
             </div>
 
@@ -123,7 +90,7 @@ function ReviewRow({
                         onClick={onGenerate}
                         className="inline-flex h-7 items-center rounded-md bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:bg-primary/15 disabled:opacity-40"
                     >
-                        {loading ? "생성 중" : "생성"}
+                        {loading ? "분석 중" : "분석 생성"}
                     </button>
                 )}
 
@@ -141,15 +108,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function AiReviewPanel({
     charts,
-    reviewTargetChartId,
-    setReviewTargetChartId,
+    activeChartId,
     chartAiPayload,
     chartAiLoading,
     onAnalyzeChartAi,
     disabled,
 }: Props) {
     const [open, setOpen] = useState(false);
-    const targetChart = charts.find((chart) => chart.chartId === reviewTargetChartId) ?? null;
+    const targetChart = charts.find((chart) => chart.chartId === activeChartId) ?? null;
     const targetLabel = targetChart
         ? `Chart ${targetChart.chartIndex + 1} · ${sectorLabel(targetChart.trainingSector)}`
         : "차트 선택";
@@ -168,27 +134,12 @@ export function AiReviewPanel({
                     </div>
                 </div>
 
-                <label className="mb-2 block">
-                    <span className="sr-only">리뷰 대상 차트</span>
-                    <select
-                        aria-label="리뷰 대상 차트"
-                        value={reviewTargetChartId ?? ""}
-                        onChange={(event) => setReviewTargetChartId(Number(event.target.value))}
-                        className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-2 text-xs font-semibold outline-none focus:border-primary/40"
-                    >
-                        {charts.map((chart) => (
-                            <option key={chart.chartId} value={chart.chartId}>
-                                Chart {chart.chartIndex + 1} · {sectorLabel(chart.trainingSector)}
-                            </option>
-                        ))}
-                    </select>
-                </label>
 
                 <div className="space-y-1.5">
                     {ACTIVE_AI_REVIEW_TARGETS.includes("CHART") && (
                         <ReviewRow
-                            title="Chart Review"
-                            subtitle={targetLabel}
+                            title={targetLabel}
+                            subtitle="미생성"
                             payload={chartAiPayload}
                             loading={chartAiLoading}
                             disabled={disabled}
@@ -221,6 +172,7 @@ export function AiReviewPanel({
 
                             <button
                                 type="button"
+                                aria-label="AI 리뷰 닫기"
                                 onClick={() => setOpen(false)}
                                 className="rounded-lg p-2 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
                             >

@@ -1,8 +1,9 @@
-import { useLayoutEffect, useMemo, useState } from "react";
+import { WorkspaceDialog } from "./WorkspaceDialog";
+import { TradeDialogContent } from "./TradeDialogContent";
+import { useLayoutEffect, useState } from "react";
 import type { QuickPhraseResponse, ReportDocumentResponse } from "@/types/training";
 import type {
   TradeForm,
-  TradeReasonItem,
 } from "@/hooks/training/training.types";
 import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
 import {
@@ -10,20 +11,9 @@ import {
   Check,
   ChevronDown,
   ChevronsRight,
-  FileText,
   X,
   ShieldAlert,
-  Target,
-  Sparkles,
-  Trash2,
-  Plus,
 } from "lucide-react";
-import {
-  calculateBuyQuantityByPercent,
-  calculateEstimatedAmount,
-  calculateSellQuantityByPercent,
-  ORDER_PERCENTAGES,
-} from "./trainingOrderCalculations";
 import {
   calculateRiskRuleExitQuantity,
   calculatePriceChangePercent,
@@ -72,28 +62,8 @@ type Props = {
   latestScenarioSnapshot: ReportDocumentResponse | null;
 };
 
-type ReasonView = "ADD" | string;
-
 function clampStep(value: number) {
   return Math.max(1, Math.min(value || 1, 500));
-}
-
-function makeReasonTitle(entryReason: string, riskNote: string, index: number) {
-  const firstLine =
-    entryReason
-      .split("\n")
-      .map((v) => v.trim())
-      .find(Boolean) ||
-    riskNote
-      .split("\n")
-      .map((v) => v.trim())
-      .find(Boolean);
-
-  return firstLine ? firstLine.slice(0, 18) : `근거 ${index + 1}`;
-}
-
-function createReasonId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function TrainingTradeJournalPanel({
@@ -120,15 +90,9 @@ export function TrainingTradeJournalPanel({
   currentPrice,
   latestScenarioSnapshot,
 }: Props) {
-  const [reasonOpen, setReasonOpen] = useState(false);
-  const [selectedView, setSelectedView] = useState<ReasonView>("ADD");
   const [orderMode, setOrderMode] = useState<TrainingOrderMode>(null);
   const [sellAllSelected, setSellAllSelected] = useState(false);
-
-  const [draftReason, setDraftReason] = useState({
-    entryReason: "",
-    riskNote: "",
-  });
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   const [riskOpen, setRiskOpen] = useState(false);
   const [riskDraft, setRiskDraft] = useState(() => riskRuleToDraft(riskRule));
@@ -145,15 +109,6 @@ export function TrainingTradeJournalPanel({
     Number(riskDraft.takeProfitExitPercent),
   );
 
-  const reasons = useMemo(() => tradeForm.reasons ?? [], [tradeForm.reasons]);
-  const selectedReason = useMemo(
-    () => reasons.find((item) => item.id === selectedView) ?? null,
-    [reasons, selectedView],
-  );
-
-  const scenarioSelected =
-    tradeForm.reasonMode === "SCENARIO" &&
-    tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id;
   useLayoutEffect(() => {
     // Reconcile before paint so the UI and a trade click cannot observe different Scenarios.
     setTradeForm((prev) =>
@@ -161,72 +116,17 @@ export function TrainingTradeJournalPanel({
     );
   }, [latestScenarioSnapshot, setTradeForm]);
 
-  const appendQuickPhrase = (content: string) => {
-    setDraftReason((prev) => ({
-      ...prev,
-      entryReason: [prev.entryReason, content].filter(Boolean).join("\n"),
-    }));
-  };
-
-  const resetDraft = () => {
-    setDraftReason({
-      entryReason: "",
-      riskNote: "",
-    });
-  };
-
-  const addReason = () => {
-    const entryReason = draftReason.entryReason.trim();
-    const riskNote = draftReason.riskNote.trim();
-
-    if (!entryReason && !riskNote) return;
-
-    const nextReason: TradeReasonItem = {
-      id: createReasonId(),
-      title: makeReasonTitle(entryReason, riskNote, reasons.length),
-      entryReason,
-      riskNote,
-      createdAt: new Date().toISOString(),
-    };
-
-    setTradeForm((prev) => ({
-      ...prev,
-      reasons: [...(prev.reasons ?? []), nextReason],
-      entryReason: "",
-      riskNote: "",
-    }));
-
-    resetDraft();
-    setSelectedView(nextReason.id);
-  };
-
-  const deleteReason = (id: string) => {
-    setTradeForm((prev) => ({
-      ...prev,
-      reasons: (prev.reasons ?? []).filter((item) => item.id !== id),
-    }));
-
-    if (selectedView === id) {
-      setSelectedView("ADD");
-    }
-  };
-
-  const openReasonModal = () => {
-    setReasonOpen(true);
-    setSelectedView(reasons.length > 0 ? reasons[0].id : "ADD");
-  };
-
   const validQuantity =
     Number.isInteger(Number(tradeForm.qty)) && Number(tradeForm.qty) > 0
       ? Number(tradeForm.qty)
       : 0;
-  const estimatedAmount = calculateEstimatedAmount(validQuantity, currentPrice);
   const setQuantity = (qty: number) => {
     setSellAllSelected(false);
     setTradeForm((prev) => ({ ...prev, qty }));
   };
 
   const executeOrder = async () => {
+    setOrderError(null);
     let succeeded = false;
     if (orderMode === "BUY") succeeded = await onBuy();
     if (orderMode === "SELL") {
@@ -235,12 +135,14 @@ export function TrainingTradeJournalPanel({
     if (succeeded) {
       setOrderMode((current) => transitionOrderMode(current, "TRADE_SUCCEEDED"));
       setSellAllSelected(false);
+    } else {
+      setOrderError("주문이 완료되지 않았습니다. 수량과 계좌 상태를 확인한 뒤 다시 시도해주세요.");
     }
   };
 
   return (
     <>
-      <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
+      <div className="pb-2">
         {lastSavedMessage && (
           <div className={`mb-3 flex h-9 items-center gap-2 rounded-lg border px-3 text-xs ${lastSavedMessage.side === "BUY" ? "border-primary/20 bg-primary/[0.06] text-primary" : "border-red-500/20 bg-red-500/10 text-red-300"}`} role="status" aria-live="polite">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -248,18 +150,18 @@ export function TrainingTradeJournalPanel({
           </div>
         )}
 
-        {orderMode === null ? (
+        {(
           <div className="space-y-3">
             <div>
               <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">TRADE</div>
               <div className="text-sm font-semibold">거래 실행</div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_BUY"))} disabled={disabled} className="h-10 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:opacity-45">BUY</button>
-              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_SELL"))} disabled={disabled} className="h-10 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-45">SELL</button>
+              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_BUY"))} disabled={disabled} className="h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:opacity-45">BUY</button>
+              <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "OPEN_SELL"))} disabled={disabled} className="h-9 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-45">SELL</button>
             </div>
 
-            <div className="rounded-lg bg-background/35 p-2">
+            <div className="pt-1">
             <div className="mb-2 flex items-center gap-2">
               <div className="flex h-9 shrink-0 items-center gap-1 rounded-lg bg-background/55 px-2">
                 <input
@@ -332,276 +234,21 @@ export function TrainingTradeJournalPanel({
             </button>
           </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "CANCEL"))} className="text-sm font-semibold text-muted-foreground hover:text-foreground">← {orderMode === "BUY" ? "매수" : "매도"}</button>
-
-            {orderMode === "SELL" && (
-              <div className="text-xs text-muted-foreground">보유 <strong className="text-foreground">{positionQty.toLocaleString()}주</strong></div>
-            )}
-
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">{orderMode === "BUY" ? "수량" : "매도 수량"}</span>
-              <input type="number" min={1} step={1} value={tradeForm.qty} onChange={(event) => { setSellAllSelected(false); setTradeForm((prev) => ({ ...prev, qty: Number(event.target.value) })); }} className="h-9 w-full rounded-lg border border-border/40 bg-background/55 px-3 text-sm font-semibold outline-none focus:border-primary/45" />
-            </label>
-
-            <div className={`grid gap-1.5 ${orderMode === "SELL" ? "grid-cols-5" : "grid-cols-4"}`}>
-              {ORDER_PERCENTAGES.map((percent) => {
-                const qty = orderMode === "BUY" ? calculateBuyQuantityByPercent(cashBalance, currentPrice, percent) : calculateSellQuantityByPercent(positionQty, percent);
-                return <button key={percent} type="button" disabled={disabled || qty === 0} onClick={() => setQuantity(qty)} className={`h-8 rounded-md text-[11px] font-semibold transition disabled:opacity-35 ${orderMode === "BUY" ? "bg-primary/[0.08] text-primary hover:bg-primary/15" : "bg-red-500/[0.08] text-red-300 hover:bg-red-500/15"}`}>{percent}%</button>;
-              })}
-              {orderMode === "SELL" && (
-                <button type="button" disabled={disabled || positionQty <= 0} onClick={() => { setSellAllSelected(true); setTradeForm((prev) => ({ ...prev, qty: positionQty })); }} className={`h-8 rounded-md text-[11px] font-bold transition disabled:opacity-35 ${sellAllSelected ? "bg-red-500/20 text-red-200 ring-1 ring-red-400/30" : "bg-background/55 text-muted-foreground hover:text-foreground"}`}>ALL</button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div className="rounded-lg bg-background/35 px-3 py-2"><span className="text-muted-foreground">{orderMode === "BUY" ? "사용 가능 현금" : "주문 수량"}</span><strong className="mt-0.5 block">{orderMode === "BUY" ? `${cashBalance.toLocaleString()}원` : `${validQuantity.toLocaleString()}주`}</strong></div>
-              <div className="rounded-lg bg-background/35 px-3 py-2 text-right"><span className="text-muted-foreground">예상 주문금액</span><strong className="mt-0.5 block">{estimatedAmount.toLocaleString()}원</strong></div>
-            </div>
-
-            <section className="border-t border-border/35 pt-3">
-              <div className="mb-2"><div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">ACTION</div><div className="text-xs font-semibold">이번 {orderMode === "BUY" ? "매수" : "매도"} 근거</div></div>
-              {latestScenarioSnapshot && (
-                <div className="mb-2 flex items-center gap-2">
-                  <button type="button" onClick={() => setTradeForm((prev) => ({ ...prev, reasonMode: scenarioSelected ? "MANUAL" : "SCENARIO", scenarioSnapshotId: scenarioSelected ? null : latestScenarioSnapshot.id }))} className={`h-8 rounded-lg border px-3 text-xs font-semibold ${scenarioSelected ? "border-primary/25 bg-primary/10 text-primary" : "border-border/40 hover:border-primary/30"}`}>{scenarioSelected ? "✓ 현재 계획 사용" : "현재 계획 사용"}</button>
-                  {scenarioSelected && <span className="text-[11px] text-muted-foreground">다시 눌러 선택 해제</span>}
-                </div>
-              )}
-              <button type="button" onClick={openReasonModal} className="flex h-8 items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"><FileText className="h-3.5 w-3.5" />{reasons.length > 0 ? `추가 근거 ${reasons.length}개` : scenarioSelected ? "+ 추가 근거 (선택)" : "+ 매매 근거"}</button>
-            </section>
-
-            <button type="button" onClick={executeOrder} disabled={disabled} className={`h-10 w-full rounded-lg text-sm font-bold transition disabled:opacity-45 ${orderMode === "BUY" ? "bg-primary text-primary-foreground hover:brightness-110" : "bg-red-500 text-white hover:bg-red-500/90"}`}>{loading ? "처리 중..." : orderMode === "BUY" ? "매수 실행" : sellAllSelected ? "전량 매도 실행" : "매도 실행"}</button>
-            <button type="button" onClick={() => setOrderMode((current) => transitionOrderMode(current, "CANCEL"))} disabled={loading} className="h-8 w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-40">취소</button>
-          </div>
         )}
       </div>
-
-      {reasonOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <button
-            type="button"
-            aria-label="닫기"
-            className="absolute inset-0 cursor-default"
-            onClick={() => setReasonOpen(false)}
+      {orderMode && (
+        <WorkspaceDialog title={orderMode} description="현재 차트의 주문과 판단을 함께 기록합니다." busy={loading} onClose={() => { setOrderMode(null); setSellAllSelected(false); setOrderError(null); }}>
+          <TradeDialogContent
+            side={orderMode} tradeForm={tradeForm} setTradeForm={setTradeForm}
+            quickPhrases={quickPhrases} latestScenario={latestScenarioSnapshot}
+            cashBalance={cashBalance} positionQty={positionQty} currentPrice={currentPrice}
+            setQuantity={setQuantity} sellAllSelected={sellAllSelected}
+            selectAll={() => { setSellAllSelected(true); setTradeForm((prev) => ({ ...prev, qty: positionQty })); }}
+            disabled={disabled} loading={loading} error={orderError}
+            onCancel={() => { setOrderMode(null); setSellAllSelected(false); setOrderError(null); }}
+            onSubmit={executeOrder} validQuantity={validQuantity}
           />
-
-          <div className="relative z-10 flex w-full max-w-4xl overflow-hidden rounded-3xl border border-border/45 bg-background shadow-2xl">
-            <aside className="max-h-[560px] w-[190px] shrink-0 border-r border-border/35 bg-background/35 p-3">
-              <button
-                type="button"
-                onClick={() => setSelectedView("ADD")}
-                className={[
-                  "mb-2 flex h-12 w-full items-center gap-2 rounded-2xl px-3 text-left text-sm font-semibold transition",
-                  selectedView === "ADD"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-                ].join(" ")}
-              >
-                <Plus className="h-4 w-4" />
-                추가
-              </button>
-
-              <div className="thin-scrollbar space-y-1 overflow-y-auto">
-                {reasons.map((reason, index) => (
-                  <button
-                    key={reason.id}
-                    type="button"
-                    onClick={() => setSelectedView(reason.id)}
-                    className={[
-                      "w-full rounded-2xl px-3 py-3 text-left transition",
-                      selectedView === reason.id
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-                    ].join(" ")}
-                  >
-                    <div className="text-xs font-semibold">
-                      근거 {index + 1}
-                    </div>
-                    <div className="mt-1 line-clamp-1 text-[11px] opacity-80">
-                      {reason.title}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </aside>
-
-            <section className="flex min-w-0 flex-1 flex-col">
-              <div className="flex items-start justify-between border-b border-border/35 px-5 py-4">
-                <div>
-                  <div className="flex items-center gap-2 text-lg font-bold">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    매매 근거
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    매매 근거를 작성하세요.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setReasonOpen(false)}
-                  className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="thin-scrollbar max-h-[72vh] space-y-2 overflow-y-auto px-5 py-4">
-                {selectedView === "ADD" ? (
-                  <div className="space-y-4">
-                    {scenarioSelected && (
-                      <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-3 py-2 text-xs">
-                        <div className="font-semibold text-primary">✓ 현재 계획 사용</div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          계획 외에 이번 거래에서 추가로 본 점만 기록하세요.
-                        </div>
-                      </div>
-                    )}
-                    {quickPhrases.length > 0 && (
-                      <section className="rounded-2xl bg-background/35 p-2">
-                        <div className="mb-2 text-xs font-semibold text-muted-foreground">
-                          빠른 입력
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5">
-                          {quickPhrases.slice(0, 8).map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => appendQuickPhrase(item.content)}
-                              className="rounded-full bg-background/55 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-primary/[0.08] hover:text-primary"
-                            >
-                              {item.title || item.content.slice(0, 12)}
-                            </button>
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    <section className="rounded-2xl bg-background/35 p-3">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                        <Target className="h-3.5 w-3.5 text-primary" />
-                        {scenarioSelected ? "추가 근거 (선택)" : "매매 근거"}
-                      </div>
-
-                      <textarea
-                        rows={9}
-                        value={draftReason.entryReason}
-                        onChange={(e) =>
-                          setDraftReason((prev) => ({
-                            ...prev,
-                            entryReason: e.target.value,
-                          }))
-                        }
-                        placeholder={
-                          scenarioSelected
-                            ? "계획 외에 이번 거래에서 추가로 본 점이 있다면 기록"
-                            : `예:
- - 전고점 돌파 후 거래량 증가
- - 눌림 구간에서 지지 확인
- - 추세선 이탈 전까지 보유`
-                        }
-                        className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
-                      />
-                    </section>
-
-                    <section className="rounded-2xl bg-background/35 p-3">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                        <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
-                        리스크 메모
-                      </div>
-
-                      <textarea
-                        rows={5}
-                        value={draftReason.riskNote}
-                        onChange={(e) =>
-                          setDraftReason((prev) => ({
-                            ...prev,
-                            riskNote: e.target.value,
-                          }))
-                        }
-                        placeholder={`예:
-- 직전 저점 이탈 시 정리
-- 비중 과다 주의
-- 추격 매수 금지`}
-                        className="w-full resize-none rounded-xl border border-border/35 bg-background/55 px-3 py-2 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/45 focus:border-primary/45 focus:bg-background/70"
-                      />
-                    </section>
-                  </div>
-                ) : selectedReason ? (
-                  <div className="space-y-4">
-                    <section className="rounded-2xl bg-background/35 p-4">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                        <Target className="h-3.5 w-3.5 text-primary" />
-                        매매 근거
-                      </div>
-                      <div className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
-                        {selectedReason.entryReason || "-"}
-                      </div>
-                    </section>
-
-                    <section className="rounded-2xl bg-background/35 p-4">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                        <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
-                        리스크 메모
-                      </div>
-                      <div className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
-                        {selectedReason.riskNote || "-"}
-                      </div>
-                    </section>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex items-center justify-between border-t border-border/35 px-5 py-4">
-                {selectedView === "ADD" ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={resetDraft}
-                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      비우기
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={addReason}
-                      disabled={
-                        !draftReason.entryReason.trim() &&
-                        !draftReason.riskNote.trim()
-                      }
-                      className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
-                    >
-                      근거 추가
-                    </button>
-                  </>
-                ) : selectedReason ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => deleteReason(selectedReason.id)}
-                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      삭제
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setReasonOpen(false)}
-                      className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
-                    >
-                      확인
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </section>
-          </div>
-        </div>
+        </WorkspaceDialog>
       )}
       {riskOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
