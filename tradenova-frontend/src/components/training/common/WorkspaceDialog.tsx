@@ -39,9 +39,11 @@ export function WorkspaceDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) onClose();
       }}
-      className={`m-auto max-h-[90dvh] w-[calc(100%-32px)] overflow-visible rounded-2xl border border-white/10 bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/35 ${wide ? "max-w-[600px]" : "max-w-[460px]"}`}
+      className={`m-auto max-h-[90dvh] w-[calc(100%-32px)] overflow-visible rounded-2xl border border-white/10 bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/35 ${wide ? "h-[min(750px,88dvh)] max-h-[88dvh] max-w-[700px]" : "max-w-[460px]"}`}
     >
-      <div className="flex max-h-[90dvh] flex-col overflow-hidden rounded-2xl">
+      <div
+        className={`flex max-h-[90dvh] flex-col overflow-hidden rounded-2xl ${wide ? "h-full" : ""}`}
+      >
         <header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-3 pt-5">
           <div>
             <h2 className="text-base font-semibold">{title}</h2>

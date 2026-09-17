@@ -6,28 +6,34 @@ import type {
 export const SCENARIO_FIELDS = [
   {
     key: "thesis",
-    label: "관점",
-    example: "예: 거래량이 증가하며 단기 추세 전환을 기대",
+    label: "시장 관점",
+    helper: "현재 차트를 어떻게 보고 있나요?",
+    example: "예: 최근 저점 부근에서 매수세 유입 가능성을 관찰",
   },
   {
     key: "entryReason",
     label: "진입 조건",
-    example: "예: 전고점 돌파와 거래량 증가 확인 시 진입",
+    helper: "어떤 조건이 확인되면 진입하나요?",
+    example:
+      "예: 최근 저점을 유지하며 거래량이 20봉 평균 대비 증가할 경우 진입",
   },
   {
     key: "exitPlan",
     label: "청산 계획",
-    example: "예: 목표 구간 도달 시 일부 청산",
+    helper: "어떤 상황에서 포지션을 정리하나요?",
+    example: "예: 손절가 도달 시 전량 청산, 목표가 도달 시 계획대로 익절",
   },
   {
     key: "riskNote",
-    label: "무효화",
-    example: "예: 최근 저점 이탈 시 기존 가정 무효",
+    label: "계획 무효화",
+    helper: "어떤 상황이면 기존 판단을 폐기하나요?",
+    example: "예: 최근 저점 이탈 시 기존 반등 가정 무효",
   },
   {
     key: "freeNote",
-    label: "자유 메모",
-    example: "추가로 기억할 내용을 기록하세요. (선택)",
+    label: "메모",
+    helper: "선택 사항",
+    example: "추가로 기억할 판단이나 조건을 기록하세요. (선택)",
   },
 ] as const;
 
@@ -90,13 +96,19 @@ export function getTradeReasonHistory(
             ? "SELL"
             : "BUY",
         label: linked
-          ? `현재 계획 사용${manualCount ? ` · 추가 근거 ${manualCount}개` : ""}`
-          : "수동 근거",
+          ? `계획 연결${manualCount ? ` · 추가 근거 ${manualCount}개` : ""}`
+          : "계획 없이 거래",
+        scenarioId: linked ? Number(payload.scenarioSnapshotId) : null,
+        qty:
+          typeof payload.qty === "number" && Number.isFinite(payload.qty)
+            ? payload.qty
+            : null,
+        price:
+          typeof payload.price === "number" && Number.isFinite(payload.price)
+            ? payload.price
+            : null,
         reasons,
       };
     })
-    .filter(
-      (item) =>
-        item.reasons.length > 0 || item.label.startsWith("현재 계획 사용"),
-    );
+    .filter((item) => item.reasons.length > 0 || item.scenarioId != null);
 }

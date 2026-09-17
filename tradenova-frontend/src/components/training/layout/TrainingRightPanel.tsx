@@ -84,7 +84,7 @@ export function TrainingRightPanel({
 
   return (
     <aside className="flex h-full min-h-0 w-[360px] shrink-0 flex-col border-l border-border/40 bg-background/40 px-4 py-4">
-      <div className="thin-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+      <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
         <TrainingPlanSection
@@ -95,6 +95,8 @@ export function TrainingRightPanel({
           latestScenario={latestScenarioSnapshot}
           onCreateScenario={onCreateScenarioSnapshot}
         />
+
+        <div className="min-h-4 flex-1" aria-hidden="true" />
 
         <TrainingTradeJournalPanel
           key={`trade-${activeChart?.chartId ?? "none"}`}
@@ -118,12 +120,17 @@ export function TrainingRightPanel({
           cashBalance={activeProgress?.cashBalance ?? 0}
           positionQty={activeProgress?.positionQty ?? 0}
           currentPrice={activeProgress?.currentPrice ?? 0}
-          latestScenarioSnapshot={latestScenarioSnapshot}
+          scenarioSnapshots={snapshots}
+          chartId={activeChart?.chartId ?? null}
         />
-
       </div>
       <div className="mt-4 max-h-[220px] shrink-0 overflow-y-auto border-t border-border/35 pt-3">
-        <EventLogPanel items={events.filter((event) => event.chartId === activeChart?.chartId)} loading={eventLoading} />
+        <EventLogPanel
+          items={events.filter(
+            (event) => event.chartId === activeChart?.chartId,
+          )}
+          loading={eventLoading}
+        />
       </div>
     </aside>
   );

@@ -230,34 +230,53 @@ try {
   await right.getByText("아직 작성된 계획이 없습니다.").waitFor();
   await screenshot("01-default-1080p");
   await right
-    .getByRole("button", { name: "+ 시나리오 작성", exact: true })
+    .getByRole("button", { name: "+ 첫 계획 작성", exact: true })
     .click();
   let dialog = page.getByRole("dialog");
   assert.equal(await dialog.locator("textarea[placeholder]").count(), 5);
+  const editorOverflow = await dialog
+    .getByRole("tabpanel")
+    .evaluate((node) => node.scrollHeight - node.clientHeight);
+  assert.ok(editorOverflow <= 1, `Editor overflow: ${editorOverflow}px`);
   await screenshot("02-scenario-editor");
   await dialog
-    .getByRole("textbox", { name: "관점 *", exact: true })
+    .getByRole("textbox", { name: /시장 관점/ })
     .fill("거래량 증가와 단기 추세 전환 기대");
   await dialog
-    .getByRole("textbox", { name: "진입 조건", exact: true })
+    .getByRole("textbox", { name: /진입 조건/ })
     .fill("전고점 돌파 후 지지 확인");
   await dialog
-    .getByRole("textbox", { name: "청산 계획", exact: true })
+    .getByRole("textbox", { name: /청산 계획/ })
     .fill("목표 구간에서 일부 청산");
   await dialog
-    .getByRole("textbox", { name: "무효화", exact: true })
+    .getByRole("textbox", { name: /계획 무효화/ })
     .fill("최근 저점 이탈");
-  await dialog.getByRole("button", { name: "시나리오 저장" }).click();
-  await dialog.waitFor({ state: "detached" });
-  await right.getByText("거래량 증가와 단기 추세 전환 기대").first().waitFor();
-  await right.getByRole("button", { name: "시나리오 관리" }).click();
+  await dialog.getByRole("button", { name: "새 버전 저장" }).click();
   await dialog
-    .getByRole("textbox", { name: "관점 *", exact: true })
+    .getByRole("status")
+    .getByText("v1 계획이 저장되었습니다.")
+    .waitFor();
+  assert.equal(
+    await dialog.getByRole("textbox", { name: /시장 관점/ }).inputValue(),
+    "",
+  );
+  await right.getByText("거래량 증가와 단기 추세 전환 기대").first().waitFor();
+  await dialog.getByRole("button", { name: "현재 계획 불러오기" }).click();
+  assert.equal(
+    await dialog.getByRole("textbox", { name: /시장 관점/ }).inputValue(),
+    "거래량 증가와 단기 추세 전환 기대",
+  );
+  await dialog
+    .getByRole("textbox", { name: /시장 관점/ })
     .fill("거래량 증가와 단기 추세 전환 — 수정");
-  await dialog.getByRole("button", { name: "시나리오 저장" }).click();
-  await dialog.waitFor({ state: "detached" });
-  await right.getByRole("button", { name: "시나리오 관리" }).click();
+  await dialog.getByRole("button", { name: "새 버전 저장" }).click();
+  await dialog
+    .getByRole("status")
+    .getByText("v2 계획이 저장되었습니다.")
+    .waitFor();
+  const editorHeight = (await dialog.boundingBox()).height;
   await dialog.getByRole("tab", { name: "시나리오 기록", exact: true }).click();
+  assert.ok(Math.abs((await dialog.boundingBox()).height - editorHeight) <= 1);
   await dialog
     .getByText("거래량 증가와 단기 추세 전환 기대", { exact: true })
     .waitFor();
@@ -266,7 +285,8 @@ try {
   await dialog
     .getByRole("tab", { name: "매매 근거 기록", exact: true })
     .click();
-  await dialog.getByText("기록된 매매 근거가 없습니다.").waitFor();
+  assert.ok(Math.abs((await dialog.boundingBox()).height - editorHeight) <= 1);
+  await dialog.getByText("아직 기록된 매매 근거가 없습니다.").waitFor();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "BUY", exact: true }).click();
   dialog = page.getByRole("dialog", { name: "BUY", exact: true });
@@ -275,8 +295,8 @@ try {
   assert.ok(bounds.width >= 420 && bounds.width <= 500);
   assert.equal(
     await dialog
-      .getByRole("button", { name: "현재 계획 사용", exact: true })
-      .getAttribute("aria-pressed"),
+      .getByRole("combobox", { name: "적용 계획" })
+      .getAttribute("aria-expanded"),
     "false",
   );
   await dialog.getByRole("button", { name: "취소", exact: true }).click();
@@ -290,9 +310,9 @@ try {
     "13",
   );
   await dialog.getByRole("spinbutton", { name: "수량", exact: true }).fill("4");
-  await dialog
-    .getByRole("button", { name: "현재 계획 사용", exact: true })
-    .click();
+  await dialog.getByRole("combobox", { name: "적용 계획" }).click();
+  await screenshot("04-plan-select-open");
+  await dialog.getByRole("option", { name: /v1 ·/ }).click();
   await dialog
     .getByRole("textbox", { name: "이번 매수 근거", exact: true })
     .fill("돌파 이후 지지 확인");
@@ -313,7 +333,15 @@ try {
       .length,
     2,
   );
-  const errorToastClose = page.getByRole("button", { name: "오류 메시지 닫기", exact: true });
+  assert.equal(
+    events[1].find((event) => event.type === "TRADE").payloadJson
+      .scenarioSnapshotId,
+    snapshots[1][1].id,
+  );
+  const errorToastClose = page.getByRole("button", {
+    name: "오류 메시지 닫기",
+    exact: true,
+  });
   if (await errorToastClose.isVisible()) await errorToastClose.click();
   assert.deepEqual(
     requests.filter((r) => r.endpoint.endsWith("/trades/buy")).at(-1).body,
@@ -327,10 +355,8 @@ try {
     "",
   );
   assert.equal(
-    await dialog
-      .getByRole("button", { name: "현재 계획 사용", exact: true })
-      .getAttribute("aria-pressed"),
-    "false",
+    await dialog.getByRole("combobox", { name: "적용 계획" }).innerText(),
+    `v2 · 거래량 증가와 단기 추세 전환 — 수정 (현재 계획)`,
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "SELL", exact: true }).click();
@@ -343,6 +369,8 @@ try {
       .inputValue(),
     "2",
   );
+  await dialog.getByRole("combobox", { name: "적용 계획" }).click();
+  await dialog.getByRole("option", { name: "계획 없이 거래" }).click();
   await dialog
     .getByRole("textbox", { name: "이번 매도 근거", exact: true })
     .fill("목표 구간 일부 청산");
@@ -355,9 +383,10 @@ try {
   );
   await page.getByRole("button", { name: "SELL", exact: true }).click();
   await dialog.getByRole("button", { name: "ALL", exact: true }).click();
-  await dialog
-    .getByRole("button", { name: "현재 계획 사용", exact: true })
-    .click();
+  assert.equal(
+    await dialog.getByRole("combobox", { name: "적용 계획" }).innerText(),
+    `v2 · 거래량 증가와 단기 추세 전환 — 수정 (현재 계획)`,
+  );
   await dialog
     .getByRole("button", { name: "전량 매도 실행", exact: true })
     .click();
@@ -365,13 +394,22 @@ try {
   assert.ok(requests.some((r) => r.endpoint.endsWith("/trades/sell-all")));
   assert.equal(progress[1].positionQty, 0);
   assert.equal(snapshots[1].length, 2);
-  await right.getByRole("button", { name: "시나리오 관리" }).click();
+  await right.getByRole("button", { name: "계획 관리" }).click();
   dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("textbox", { name: /시장 관점/ })
+    .fill("매매 후 새 계획");
+  await dialog.getByRole("button", { name: "새 버전 저장" }).click();
+  await dialog
+    .getByRole("status")
+    .getByText("v3 계획이 저장되었습니다.")
+    .waitFor();
+  assert.equal(snapshots[1].length, 3);
   await dialog
     .getByRole("tab", { name: "매매 근거 기록", exact: true })
     .click();
-  await dialog.getByText("현재 계획 사용 · 추가 근거 1개").waitFor();
-  await dialog.getByText("수동 근거", { exact: true }).waitFor();
+  await dialog.getByText(/PLAN v1/).waitFor();
+  await dialog.getByText("계획 없이 거래", { exact: true }).waitFor();
   assert.equal(await dialog.locator("article").count(), 3);
   await screenshot("06-trade-reason-history");
   await page.keyboard.press("Escape");

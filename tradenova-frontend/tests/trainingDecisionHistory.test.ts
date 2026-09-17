@@ -75,9 +75,9 @@ test("trade history renders scenario linkage, manual counts and legacy reasons w
     1,
   );
   assert.equal(rows.length, 2);
-  assert.equal(rows[0].label, "수동 근거");
+  assert.equal(rows[0].label, "계획 없이 거래");
   assert.equal(rows[0].reasons[0].entryReason, "legacy reason");
-  assert.equal(rows[1].label, "현재 계획 사용 · 추가 근거 1개");
+  assert.equal(rows[1].label, "계획 연결 · 추가 근거 1개");
   assert.equal(rows[1].side, "SELL");
   assert.equal("scenarioSnapshotId" in rows[1], false);
 });
