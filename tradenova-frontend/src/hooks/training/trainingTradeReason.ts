@@ -14,11 +14,18 @@ export function clearPendingTradeReason(tradeForm: TradeForm): TradeForm {
 
 export function reconcileScenarioSelection(
   tradeForm: TradeForm,
-  latestScenarioSnapshot: ReportDocumentResponse | null,
+  availableScenarios: ReportDocumentResponse[] | ReportDocumentResponse | null,
 ): TradeForm {
   if (tradeForm.reasonMode !== "SCENARIO") return tradeForm;
 
-  if (tradeForm.scenarioSnapshotId === latestScenarioSnapshot?.id) {
+  const scenarios = Array.isArray(availableScenarios)
+    ? availableScenarios
+    : availableScenarios
+      ? [availableScenarios]
+      : [];
+  if (
+    scenarios.some((scenario) => scenario.id === tradeForm.scenarioSnapshotId)
+  ) {
     return tradeForm;
   }
 
@@ -29,22 +36,37 @@ export function reconcileScenarioSelection(
   };
 }
 
+export function selectTradeScenario(
+  tradeForm: TradeForm,
+  scenarioSnapshotId: number | null,
+  scenarios: ReportDocumentResponse[],
+): TradeForm {
+  const scenario = scenarios.find((item) => item.id === scenarioSnapshotId);
+  return {
+    ...tradeForm,
+    reasonMode: scenario ? "SCENARIO" : "MANUAL",
+    scenarioSnapshotId: scenario?.id ?? null,
+  };
+}
+
 export function findLatestScenarioSnapshot(
   snapshots: ReportDocumentResponse[],
   activeChartId: number | null,
 ) {
   if (activeChartId == null) return null;
 
-  return snapshots
-    .filter(
-      (snapshot) =>
-        snapshot.chartId === activeChartId &&
-        snapshot.contentJson.tags?.includes("SCENARIO"),
-    )
-    .sort((a, b) => {
-      const createdOrder = Date.parse(b.createdAt) - Date.parse(a.createdAt);
-      return createdOrder || b.id - a.id;
-    })[0] ?? null;
+  return (
+    snapshots
+      .filter(
+        (snapshot) =>
+          snapshot.chartId === activeChartId &&
+          snapshot.contentJson.tags?.includes("SCENARIO"),
+      )
+      .sort((a, b) => {
+        const createdOrder = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        return createdOrder || b.id - a.id;
+      })[0] ?? null
+  );
 }
 
 export function createScenarioClaim(
@@ -77,8 +99,7 @@ export function buildTradeEventPayload({
   sellAll?: boolean;
 }) {
   const scenarioSelected =
-    tradeForm.reasonMode === "SCENARIO" &&
-    tradeForm.scenarioSnapshotId != null;
+    tradeForm.reasonMode === "SCENARIO" && tradeForm.scenarioSnapshotId != null;
   const reasons = [
     ...(scenarioSelected ? [createScenarioClaim(side)] : []),
     ...(tradeForm.reasons ?? []),

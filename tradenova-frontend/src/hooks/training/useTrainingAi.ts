@@ -1,10 +1,22 @@
+import { useChartAiReview } from "./useChartAiReview";
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type {
-  ChartAiPayload,
   SessionAiPayload,
   TrainingEventResponse,
 } from "@/types/training";
+
+function apiError(error: unknown) {
+  if (!axios.isAxiosError<{ error?: string; message?: string }>(error)) {
+    return { status: undefined, code: undefined, message: undefined };
+  }
+  return {
+    status: error.response?.status,
+    code: error.response?.data?.error,
+    message: error.response?.data?.message,
+  };
+}
 
 /**
  * 훈련 화면의 AI 관련 로직 훅
@@ -26,10 +38,7 @@ export function useTrainingAi(
   const [sessionAiLoading, setSessionAiLoading] = useState(false);
   const [sessionAiError, setSessionAiError] = useState<string | null>(null);
 
-  // ===== 차트 AI 상태 =====
-  const [chartAi, setChartAi] = useState<TrainingEventResponse | null>(null);
-  const [chartAiLoading, setChartAiLoading] = useState(false);
-  const [chartAiError, setChartAiError] = useState<string | null>(null);
+  const chartReview = useChartAiReview(sessionId, chartId, appendEvent);
 
   /**
    * 세션 AI 최신 결과 조회
@@ -49,9 +58,8 @@ export function useTrainingAi(
       const latest = await reportApi.getLatestSessionAi(sid);
       setSessionAi(latest);
       return latest;
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 404 || code === "SESSION_AI_NOT_FOUND") {
         setSessionAi(null);
@@ -59,7 +67,7 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        e?.response?.data?.message ?? "세션 AI 결과 조회에 실패했습니다.",
+        message ?? "세션 AI 결과 조회에 실패했습니다.",
       );
       return null;
     } finally {
@@ -83,9 +91,8 @@ export function useTrainingAi(
 
       setSessionAi(event);
       appendEvent?.(event);
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
+    } catch (error: unknown) {
+      const { status, code, message } = apiError(error);
 
       if (status === 409 || code === "SESSION_AI_ALREADY_EXISTS") {
         await loadLatestSessionAi(sessionId);
@@ -93,83 +100,10 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        e?.response?.data?.message ?? "세션 AI 분석에 실패했습니다.",
+        message ?? "세션 AI 분석에 실패했습니다.",
       );
     } finally {
       setSessionAiLoading(false);
-    }
-  };
-
-  /**
-   * 차트 AI 최신 결과 조회
-   */
-  const loadLatestChartAi = async (targetChartId?: number | null) => {
-
-    const cid = targetChartId ?? chartId;
-
-    if (!cid) {
-      setChartAi(null);
-      return null;
-    }
-
-    try {
-      setChartAiLoading(true);
-      setChartAiError(null);
-
-      const latest = await reportApi.getLatestChartAi(cid);
-      setChartAi(latest);
-      return latest;
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
-
-      if (status === 404 || code === "CHART_AI_NOT_FOUND") {
-        setChartAi(null);
-        return null;
-      }
-
-      setChartAiError(
-        e?.response?.data?.message ?? "차트 AI 결과 조회에 실패했습니다.",
-      );
-      return null;
-    } finally {
-      setChartAiLoading(false);
-    }
-  };
-
-  /**
-   * 차트 AI 분석 실행
-   * - 새로 생성되면 latest 재조회
-   * - 이미 있으면 409 대신 latest 재조회
-   */
-  const onAnalyzeChartAi = async () => {
-
-    console.log("analyze chartId =", chartId);
-
-    if (!chartId) return;
-
-    try {
-      setChartAiLoading(true);
-      setChartAiError(null);
-
-      const event = await reportApi.analyzeChartAi(chartId);
-
-      setChartAi(event);
-      appendEvent?.(event);
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.error;
-
-      if (status === 409 || code === "CHART_AI_ALREADY_EXISTS") {
-        await loadLatestChartAi(chartId);
-        return;
-      }
-
-      setChartAiError(
-        e?.response?.data?.message ?? "차트 AI 분석에 실패했습니다.",
-      );
-    } finally {
-      setChartAiLoading(false);
     }
   };
 
@@ -185,22 +119,8 @@ export function useTrainingAi(
     loadLatestSessionAi(sessionId);
   }, [sessionId]);
 
-  /**
-   * 활성 차트가 바뀌면 차트 AI latest 자동 조회
-   */
-  useEffect(() => {
-    if (!chartId) {
-      setChartAi(null);
-      return;
-    }
-
-    loadLatestChartAi(chartId);
-  }, [chartId]);
-
   const sessionAiPayload = (sessionAi?.payloadJson ??
     null) as SessionAiPayload | null;
-  const chartAiPayload = (chartAi?.payloadJson ??
-    null) as ChartAiPayload | null;
 
   return {
     sessionAi,
@@ -210,11 +130,6 @@ export function useTrainingAi(
     loadLatestSessionAi,
     onAnalyzeSessionAi,
 
-    chartAi,
-    chartAiPayload,
-    chartAiLoading,
-    chartAiError,
-    loadLatestChartAi,
-    onAnalyzeChartAi,
+    ...chartReview,
   };
 }

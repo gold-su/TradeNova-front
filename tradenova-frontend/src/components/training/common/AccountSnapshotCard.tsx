@@ -71,7 +71,7 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
   );
 
   return (
-    <div className="rounded-xl border border-border/45 bg-background/25 p-3 shadow-sm">
+    <section className="border-b border-border/35 pb-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
@@ -85,7 +85,7 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border/35 bg-background/25 px-3 py-2">
+      <div>
         <div className="flex items-end justify-between">
           <div>
             <div className="text-[10px] text-muted-foreground">현재가</div>
@@ -99,7 +99,7 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-2 grid grid-cols-3 gap-2">
           <div>
             <div className="text-[10px] text-muted-foreground">현금</div>
             <div className="mt-0.5 truncate text-xs font-semibold">
@@ -143,6 +143,6 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
         </div>
 
       </div>
-    </div>
+    </section>
   );
 }

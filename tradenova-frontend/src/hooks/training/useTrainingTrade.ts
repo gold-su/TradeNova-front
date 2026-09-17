@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import { trainingApi } from "@/api/trainingApi";
 import type {
@@ -16,7 +17,6 @@ type UseTrainingTradeParams = {
   mutationGuard: { current: boolean };
   activeChartId: number | null;
   status: string;
-  loadEvents: (chartId: number) => Promise<void>;
   setSnapshots: React.Dispatch<React.SetStateAction<ReportDocumentResponse[]>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
   applyTrade: (res: TradeResponse) => void;
@@ -36,7 +36,6 @@ function formatPrice(value: number) {
 export function useTrainingTrade({
   mutationGuard,
   activeChartId,
-  loadEvents: _loadEvents,
   setError,
   applyTrade,
   onTradeExecuted,
@@ -98,16 +97,16 @@ export function useTrainingTrade({
   }, [activeChartId]);
 
   const executeTrade = async (side: "BUY" | "SELL") => {
-    if (!activeChartId) return;
+    if (!activeChartId) return false;
 
     const qty = Number(tradeForm.qty);
 
     if (!Number.isInteger(qty) || qty <= 0) {
       setError("수량을 올바르게 입력해주세요.");
-      return;
+      return false;
     }
 
-    if (mutationGuard.current) return;
+    if (mutationGuard.current) return false;
     mutationGuard.current = true;
 
     try {
@@ -121,9 +120,13 @@ export function useTrainingTrade({
           side === "BUY"
             ? await trainingApi.buy(activeChartId, { qty })
             : await trainingApi.sell(activeChartId, { qty });
-      } catch (e: any) {
-        setError(e?.response?.data?.message ?? `${side} 실패`);
-        return;
+      } catch (error: unknown) {
+        setError(
+          axios.isAxiosError<{ message?: string }>(error)
+            ? (error.response?.data?.message ?? `${side} 실패`)
+            : `${side} 실패`,
+        );
+        return false;
       }
 
       applyTrade(tradeRes);
@@ -162,6 +165,7 @@ export function useTrainingTrade({
       );
 
       resetReasonOnly();
+      return true;
     } finally {
       setLoading(false);
       mutationGuard.current = false;
@@ -169,9 +173,9 @@ export function useTrainingTrade({
   };
 
   const onSellAll = async () => {
-    if (!activeChartId) return;
+    if (!activeChartId) return false;
 
-    if (mutationGuard.current) return;
+    if (mutationGuard.current) return false;
     mutationGuard.current = true;
 
     try {
@@ -184,15 +188,19 @@ export function useTrainingTrade({
 
       try {
         res = await trainingApi.sellAll(activeChartId);
-      } catch (e: any) {
-        setError(e?.response?.data?.message ?? "SELL ALL 실패");
-        return;
+      } catch (error: unknown) {
+        setError(
+          axios.isAxiosError<{ message?: string }>(error)
+            ? (error.response?.data?.message ?? "SELL ALL 실패")
+            : "SELL ALL 실패",
+        );
+        return false;
       }
 
       applyTrade(res);
 
       // 포지션이 없으면 백엔드는 snapshot만 담고 실제 거래는 생성하지 않는다.
-      if (res.tradeId == null) return;
+      if (res.tradeId == null) return false;
 
       onTradeExecuted?.({
         side: "SELL",
@@ -225,6 +233,7 @@ export function useTrainingTrade({
       );
 
       resetReasonOnly();
+      return true;
     } finally {
       setLoading(false);
       mutationGuard.current = false;

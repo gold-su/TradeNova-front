@@ -85,11 +85,7 @@ export function useTrainingSessionPage() {
   const report = useTrainingReport(core.activeChartId);
 
   // ===== AI 로직 =====
-  const ai = useTrainingAi(
-    core.sessionId,
-    core.activeChartId,
-    report.appendEvent,
-  );
+  const ai = useTrainingAi(core.sessionId, core.activeChartId, report.appendEvent);
 
   const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
 
@@ -144,7 +140,6 @@ export function useTrainingSessionPage() {
     mutationGuard,
     activeChartId: core.activeChartId,
     status: core.status,
-    loadEvents: report.loadEvents,
     setSnapshots: report.setSnapshots,
     setError: (message) => {
       report.setError(message);
