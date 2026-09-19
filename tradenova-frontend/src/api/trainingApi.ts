@@ -15,6 +15,8 @@ import type {
   TrainingTradeItemResponse,
   SessionSummaryResponse,
   TrainingChartDto,
+  TrainingHistoryDetailResponse,
+  TrainingHistorySummaryResponse,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -49,6 +51,18 @@ export const trainingApi = {
     http
       .get<SessionSummaryResponse>(
         `/api/training/sessions/${sessionId}/summary`,
+      )
+      .then((r) => r.data),
+
+  getTrainingHistory: () =>
+    http
+      .get<TrainingHistorySummaryResponse[]>("/api/training/sessions/history")
+      .then((r) => r.data),
+
+  getTrainingHistoryDetail: (sessionId: number) =>
+    http
+      .get<TrainingHistoryDetailResponse>(
+        `/api/training/sessions/${sessionId}/history`,
       )
       .then((r) => r.data),
 
