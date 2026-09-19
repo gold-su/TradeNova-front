@@ -174,6 +174,42 @@ export type SessionSummaryResponse = {
   sessionAiScore: number | null;
 };
 
+// ===== Training History =====
+export type TrainingHistorySummaryResponse = {
+  sessionId: number;
+  status: TrainingStatus;
+  createdAt: string;
+  completedAt: string | null;
+  totalChartCount: number;
+  completedChartCount: number;
+  totalTradeCount: number;
+  snapshotCount: number;
+  hasSessionAiReview: boolean;
+  sessionAiScore: number | null;
+};
+
+export type TrainingHistoryChartResponse = {
+  chartId: number;
+  chartIndex: number | null;
+  status: TrainingStatus;
+  active: boolean;
+  refreshed: boolean;
+  symbolTicker: string | null;
+  symbolName: string | null;
+  sector: string | null;
+  tradeCount: number;
+  snapshotCount: number;
+  hasChartAiReview: boolean;
+  chartAiScore: number | null;
+  chartAiReview: TrainingEventResponse | null;
+};
+
+export type TrainingHistoryDetailResponse = {
+  session: TrainingHistorySummaryResponse;
+  sessionAiReview: TrainingEventResponse | null;
+  charts: TrainingHistoryChartResponse[];
+};
+
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
