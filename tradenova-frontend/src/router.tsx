@@ -1,5 +1,5 @@
 // src/router.tsx
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -10,9 +10,8 @@ import SignupPage from "@/pages/SignupPage";
 import TrainingSessionPage from "@/pages/training/TrainingSessionPage";
 
 import MyPageLayout from "@/pages/mypage/MyPageLayout";
-import MyProfilePage from "@/pages/mypage/MyProfilePage";
+import MyPageHub from "@/pages/mypage/MyPageHub";
 import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
-import MyReportsPage from "@/pages/mypage/MyReportsPage";
 
 export const router = createBrowserRouter([
     //헤더 보이는 영역
@@ -36,9 +35,10 @@ export const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
                 children: [
-                    { path: "profile", element: <MyProfilePage /> },
+                    { index: true, element: <MyPageHub /> },
+                    { path: "profile", element: <Navigate to="/mypage" replace /> },
                     { path: "accounts", element: <MyAccountsPage /> },
-                    { path: "reports", element: <MyReportsPage /> },
+                    { path: "reports", element: <Navigate to="/mypage" replace /> },
                 ],
             },
         ],
