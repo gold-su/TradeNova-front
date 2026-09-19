@@ -133,6 +133,9 @@ export default function TrainingSessionPage() {
         activeChart={page.activeChart}
         activeProgress={page.activeProgress}
         quickPhrases={page.quickPhrases}
+        createQuickPhrase={page.createQuickPhrase}
+        updateQuickPhrase={page.updateQuickPhrase}
+        deleteQuickPhrase={page.deleteQuickPhrase}
         events={page.events}
         snapshots={page.snapshots}
         loading={page.loading}
