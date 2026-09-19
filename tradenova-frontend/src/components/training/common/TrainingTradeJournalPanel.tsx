@@ -27,7 +27,6 @@ import {
 } from "./riskRuleForm";
 import {
   reconcileScenarioSelection,
-  selectTradeScenario,
 } from "@/hooks/training/trainingTradeReason";
 import { getScenarioHistory } from "@/hooks/training/trainingDecisionHistory";
 import {
@@ -39,6 +38,9 @@ type Props = {
   tradeForm: TradeForm;
   setTradeForm: React.Dispatch<React.SetStateAction<TradeForm>>;
   quickPhrases: QuickPhraseResponse[];
+  createQuickPhrase: (content: string) => Promise<QuickPhraseResponse>;
+  updateQuickPhrase: (id: number, content: string) => Promise<QuickPhraseResponse>;
+  deleteQuickPhrase: (id: number) => Promise<void>;
   disabled: boolean;
   loading: boolean;
 
@@ -76,6 +78,9 @@ export function TrainingTradeJournalPanel({
   tradeForm,
   setTradeForm,
   quickPhrases,
+  createQuickPhrase,
+  updateQuickPhrase,
+  deleteQuickPhrase,
   disabled,
   loading,
   syncNext,
@@ -124,9 +129,6 @@ export function TrainingTradeJournalPanel({
     setTradeForm((prev) => reconcileScenarioSelection(prev, scenarios));
   }, [scenarios, setTradeForm]);
   const openOrder = (side: "BUY" | "SELL") => {
-    setTradeForm((prev) =>
-      selectTradeScenario(prev, scenarios[0]?.id ?? null, scenarios),
-    );
     setOrderMode(side);
     setOrderError(null);
   };
@@ -291,6 +293,9 @@ export function TrainingTradeJournalPanel({
             tradeForm={tradeForm}
             setTradeForm={setTradeForm}
             quickPhrases={quickPhrases}
+            createQuickPhrase={createQuickPhrase}
+            updateQuickPhrase={updateQuickPhrase}
+            deleteQuickPhrase={deleteQuickPhrase}
             scenarios={scenarios}
             cashBalance={cashBalance}
             positionQty={positionQty}

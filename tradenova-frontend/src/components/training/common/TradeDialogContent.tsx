@@ -12,13 +12,24 @@ import {
 } from "./trainingOrderCalculations";
 import { updateActionReason } from "@/hooks/training/trainingWorkspaceState";
 import { selectTradeScenario } from "@/hooks/training/trainingTradeReason";
-import { Check, ChevronDown } from "lucide-react";
+import {
+  removeQuickPhraseReason,
+  selectedQuickPhraseIds,
+  syncQuickPhraseReason,
+  toggleQuickPhraseReason,
+} from "@/hooks/training/quickPhraseSelection";
+import { QuickPhrasePicker } from "../trade-reason/QuickPhrasePicker";
+import { QuickPhraseManagerDialog } from "../trade-reason/QuickPhraseManagerDialog";
+import { Check, ChevronDown, Settings } from "lucide-react";
 
 type Props = {
   side: "BUY" | "SELL";
   tradeForm: TradeForm;
   setTradeForm: Dispatch<SetStateAction<TradeForm>>;
   quickPhrases: QuickPhraseResponse[];
+  createQuickPhrase: (content: string) => Promise<QuickPhraseResponse>;
+  updateQuickPhrase: (id: number, content: string) => Promise<QuickPhraseResponse>;
+  deleteQuickPhrase: (id: number) => Promise<void>;
   scenarios: ReportDocumentResponse[];
   cashBalance: number;
   positionQty: number;
@@ -39,6 +50,9 @@ export function TradeDialogContent({
   tradeForm,
   setTradeForm,
   quickPhrases,
+  createQuickPhrase,
+  updateQuickPhrase,
+  deleteQuickPhrase,
   scenarios,
   cashBalance,
   positionQty,
@@ -54,6 +68,7 @@ export function TradeDialogContent({
   validQuantity,
 }: Props) {
   const [planOpen, setPlanOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
   const buying = side === "BUY";
   const selectedIndex =
     tradeForm.reasonMode === "SCENARIO"
@@ -65,6 +80,7 @@ export function TradeDialogContent({
   const action = tradeForm.reasons?.find(
     (reason) => reason.id === "action-input",
   );
+  const selectedPhraseIds = selectedQuickPhraseIds(tradeForm);
   const updateReason = (value: string) =>
     setTradeForm((prev) => updateActionReason(prev, value));
   const orderQuantity =
@@ -281,12 +297,20 @@ export function TradeDialogContent({
           <div className="text-[10px] font-bold tracking-widest text-muted-foreground">
             ACTION
           </div>
-          <label
-            htmlFor="trade-action"
-            className="mb-2 mt-1 block text-sm font-semibold"
-          >
-            이번 {buying ? "매수" : "매도"} 근거
-          </label>
+          <div className="mb-2 mt-1 flex items-center justify-between gap-2">
+            <label htmlFor="trade-action" className="text-sm font-semibold">
+              이번 {buying ? "매수" : "매도"} 근거
+            </label>
+            <button
+              type="button"
+              aria-label="매매 근거 관리"
+              title="매매 근거 관리"
+              onClick={() => setManagerOpen(true)}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </button>
+          </div>
           {selectedPlan && (
             <div className="mb-2 text-xs text-primary">
               PLAN · v{selectedVersion} 연결{" "}
@@ -295,6 +319,13 @@ export function TradeDialogContent({
               </span>
             </div>
           )}
+          <QuickPhrasePicker
+            items={quickPhrases}
+            selectedIds={selectedPhraseIds}
+            onToggle={(phrase) =>
+              setTradeForm((prev) => toggleQuickPhraseReason(prev, phrase))
+            }
+          />
           <textarea
             id="trade-action"
             rows={3}
@@ -305,35 +336,8 @@ export function TradeDialogContent({
                 ? "계획 외에 이번 거래에서 추가로 본 점을 기록하세요."
                 : "예: 돌파 이후 지지를 확인해 진입"
             }
-            className="w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
+            className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
           />
-          {quickPhrases.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {quickPhrases.slice(0, 4).map((phrase) => (
-                <button
-                  key={phrase.id}
-                  type="button"
-                  onClick={() =>
-                    updateReason(
-                      [action?.entryReason, phrase.content]
-                        .filter(Boolean)
-                        .join("\n"),
-                    )
-                  }
-                  className="max-w-full truncate rounded-full bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted/60"
-                >
-                  {phrase.content}
-                </button>
-              ))}
-            </div>
-          )}
-          {tradeForm.reasons
-            ?.filter((reason) => reason.id !== "action-input")
-            .map((reason) => (
-              <p key={reason.id} className="mt-2 text-xs text-muted-foreground">
-                {reason.title} · {reason.entryReason}
-              </p>
-            ))}
         </fieldset>
         {error && (
           <p role="alert" className="text-xs text-red-300">
@@ -372,6 +376,21 @@ export function TradeDialogContent({
                 : "매도 실행"}
         </button>
       </footer>
+      {managerOpen && (
+        <QuickPhraseManagerDialog
+          items={quickPhrases}
+          onClose={() => setManagerOpen(false)}
+          onCreate={createQuickPhrase}
+          onUpdate={updateQuickPhrase}
+          onDelete={deleteQuickPhrase}
+          onUpdatedSelection={(phrase) =>
+            setTradeForm((prev) => syncQuickPhraseReason(prev, phrase))
+          }
+          onDeletedSelection={(id) =>
+            setTradeForm((prev) => removeQuickPhraseReason(prev, id))
+          }
+        />
+      )}
     </>
   );
 }
