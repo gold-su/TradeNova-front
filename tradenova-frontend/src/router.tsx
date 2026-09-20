@@ -15,6 +15,9 @@ import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
 import TrainingHistoryPage from "@/pages/mypage/TrainingHistoryPage";
 import TrainingHistoryDetailPage from "@/pages/mypage/TrainingHistoryDetailPage";
 import GrowthAnalyticsPage from "@/pages/growth/GrowthAnalyticsPage";
+import CommunityListPage from "@/pages/community/CommunityListPage";
+import CommunityEditorPage from "@/pages/community/CommunityEditorPage";
+import CommunityDetailPage from "@/pages/community/CommunityDetailPage";
 
 export const router = createBrowserRouter([
     //헤더 보이는 영역
@@ -34,6 +37,10 @@ export const router = createBrowserRouter([
                 path: "/growth",
                 element: <ProtectedRoute><GrowthAnalyticsPage /></ProtectedRoute>,
             },
+            { path: "/community", element: <ProtectedRoute><CommunityListPage /></ProtectedRoute> },
+            { path: "/community/new", element: <ProtectedRoute><CommunityEditorPage /></ProtectedRoute> },
+            { path: "/community/:postId", element: <ProtectedRoute><CommunityDetailPage /></ProtectedRoute> },
+            { path: "/community/:id/edit", element: <ProtectedRoute><CommunityEditorPage /></ProtectedRoute> },
             {
                 path: "/mypage",
                 element: (

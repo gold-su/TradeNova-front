@@ -1,0 +1,3 @@
+import type { CommunityAuthor as Author } from "@/types/community";
+import { communityAuthorMeta } from "@/pages/community/communityView";
+export function CommunityAuthor({author,compact=false}:{author:Author;compact?:boolean}){return <div className="flex min-w-0 items-center gap-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{author.nickname.slice(0,1)}</span><div className="min-w-0"><p className="truncate text-sm font-medium">{author.nickname}</p><p className="text-[11px] text-muted-foreground">{communityAuthorMeta(author,compact)}</p></div></div>}
