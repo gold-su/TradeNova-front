@@ -14,6 +14,7 @@ import MyPageHub from "@/pages/mypage/MyPageHub";
 import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
 import TrainingHistoryPage from "@/pages/mypage/TrainingHistoryPage";
 import TrainingHistoryDetailPage from "@/pages/mypage/TrainingHistoryDetailPage";
+import GrowthAnalyticsPage from "@/pages/growth/GrowthAnalyticsPage";
 
 export const router = createBrowserRouter([
     //헤더 보이는 영역
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
                         <TrainingSessionPage />
                     </ProtectedRoute>
                 ),
+            },
+            {
+                path: "/growth",
+                element: <ProtectedRoute><GrowthAnalyticsPage /></ProtectedRoute>,
             },
             {
                 path: "/mypage",

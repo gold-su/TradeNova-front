@@ -17,6 +17,8 @@ import type {
   TrainingChartDto,
   TrainingHistoryDetailResponse,
   TrainingHistorySummaryResponse,
+  GrowthOverviewResponse,
+  GrowthPeriod,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -64,6 +66,13 @@ export const trainingApi = {
       .get<TrainingHistoryDetailResponse>(
         `/api/training/sessions/${sessionId}/history`,
       )
+      .then((r) => r.data),
+
+  getGrowthAnalytics: (period: GrowthPeriod) =>
+    http
+      .get<GrowthOverviewResponse>("/api/training/growth", {
+        params: period === "ALL" ? undefined : { limit: period === "LAST_10" ? 10 : 30 },
+      })
       .then((r) => r.data),
 
   // ===== Candles =====
