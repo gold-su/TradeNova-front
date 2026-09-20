@@ -58,12 +58,7 @@ export function AppHeader() {
                     </button>
 
                     {isAuthenticated ? (
-                        <Button variant="ghost" asChild className="rounded-full px-3">
-                            <Link to="/mypage" aria-label="마이페이지">
-                                <UserRound className="h-4 w-4" />
-                                <span className="hidden sm:inline">마이페이지</span>
-                            </Link>
-                        </Button>
+                        <><Button variant="ghost" asChild className="hidden rounded-full px-3 sm:inline-flex"><Link to="/growth">성장 분석</Link></Button><Button variant="ghost" asChild className="rounded-full px-3"><Link to="/mypage" aria-label="마이페이지"><UserRound className="h-4 w-4" /><span className="hidden sm:inline">마이페이지</span></Link></Button></>
                     ) : (
                         <>
                             <Button variant="ghost" asChild className="hidden md:inline-flex">
@@ -90,9 +85,7 @@ export function AppHeader() {
                         <Link to="/community" onClick={() => setOpen(false)}>Community</Link>
                         <div className="mt-2 flex gap-2">
                             {isAuthenticated ? (
-                                <Button asChild className="flex-1">
-                                    <Link to="/mypage" onClick={() => setOpen(false)}>마이페이지</Link>
-                                </Button>
+                                <><Button variant="outline" asChild className="flex-1"><Link to="/growth" onClick={() => setOpen(false)}>성장 분석</Link></Button><Button asChild className="flex-1"><Link to="/mypage" onClick={() => setOpen(false)}>마이페이지</Link></Button></>
                             ) : (
                                 <>
                                     <Button variant="outline" asChild className="flex-1">

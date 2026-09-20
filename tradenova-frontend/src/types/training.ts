@@ -210,6 +210,28 @@ export type TrainingHistoryDetailResponse = {
   charts: TrainingHistoryChartResponse[];
 };
 
+// ===== Growth Analytics =====
+export type GrowthPeriod = "LAST_10" | "LAST_30" | "ALL";
+export type GrowthMetricResponse = { numerator: number; denominator: number; rate: number };
+export type GrowthTrendPointResponse = { sessionId: number; completedAt: string | null; score: number };
+export type GrowthOverviewResponse = {
+  period: GrowthPeriod;
+  totalCompletedSessions: number;
+  totalTrades: number;
+  totalXp: number;
+  level: number;
+  levelTitle: string;
+  currentLevelXp: number;
+  nextLevelXp: number;
+  progressPercent: number;
+  planSessionRate: GrowthMetricResponse;
+  actionReasonRate: GrowthMetricResponse;
+  riskRuleSessionRate: GrowthMetricResponse;
+  aiReviewSessionRate: GrowthMetricResponse;
+  averageSessionAiScore: number | null;
+  scoreTrend: GrowthTrendPointResponse[];
+};
+
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
