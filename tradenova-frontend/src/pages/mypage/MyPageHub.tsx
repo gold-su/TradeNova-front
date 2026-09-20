@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronUp, LogOut, Settings2, UserRound } from "lucide-react";
+import { BookOpen, LogOut, Settings2, UserRound } from "lucide-react";
 import { authApi } from "@/api/authApi";
 import { Button } from "@/components/ui/button";
 import { QuickPhraseManagerDialog } from "@/components/training/trade-reason/QuickPhraseManagerDialog";
@@ -8,13 +8,11 @@ import { useQuickPhrases } from "@/hooks/useQuickPhrases";
 import { useTrainingHistory } from "@/hooks/useTrainingHistory";
 import type { TrainingHistorySummaryResponse } from "@/types/training";
 import { getSessionAiLabel, getTrainingHistoryViewState, readStoredProfile } from "./myPageState";
-import { TrainingHistoryDetailDialog } from "./TrainingHistoryDetailDialog";
+import { trainingHistoryDetailPath } from "./trainingHistoryBrowser";
 
 export default function MyPageHub() {
   const navigate = useNavigate();
   const [managerOpen, setManagerOpen] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
-  const [detailSessionId, setDetailSessionId] = useState<number | null>(null);
   const profile = readStoredProfile(localStorage);
   const {
     quickPhrases,
@@ -27,12 +25,7 @@ export default function MyPageHub() {
   } = useQuickPhrases();
   const history = useTrainingHistory();
   const historyState = getTrainingHistoryViewState({ loading: history.loading, error: history.error, itemCount: history.items.length });
-  const visibleHistory = historyExpanded ? history.items : history.items.slice(0, 5);
-
-  const openDetail = (sessionId: number) => {
-    setDetailSessionId(sessionId);
-    void history.loadDetail(sessionId);
-  };
+  const visibleHistory = history.items.slice(0, 5);
 
   const logout = () => {
     authApi.logoutLocal();
@@ -74,9 +67,9 @@ export default function MyPageHub() {
             {historyState === "empty" && <div className="rounded-lg border border-dashed border-border/50 px-4 py-6 text-center"><p className="text-sm font-medium">아직 완료한 훈련이 없습니다.</p><Button asChild size="sm" className="mt-4"><Link to="/training">새 훈련 시작</Link></Button></div>}
             {historyState === "ready" && <>
               <div className="divide-y divide-border/40 border-y border-border/40">
-                {visibleHistory.map((session) => <HistoryRow key={session.sessionId} session={session} onOpen={() => openDetail(session.sessionId)} />)}
+                {visibleHistory.map((session) => <HistoryRow key={session.sessionId} session={session} />)}
               </div>
-              {history.items.length > 5 && <Button variant="ghost" size="sm" className="mt-2 w-full text-xs" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? <><ChevronUp className="h-3.5 w-3.5" />접기</> : <><ChevronDown className="h-3.5 w-3.5" />전체 훈련 기록 보기</>}</Button>}
+              <Button asChild variant="ghost" size="sm" className="mt-2 w-full text-xs"><Link to="/mypage/history">전체 훈련 기록 보기 →</Link></Button>
             </>}
           </div>
         </section>
@@ -105,12 +98,11 @@ export default function MyPageHub() {
       </section>
 
       {managerOpen && <QuickPhraseManagerDialog items={quickPhrases} onClose={() => setManagerOpen(false)} onCreate={createQuickPhrase} onUpdate={updateQuickPhrase} onDelete={deleteQuickPhrase} />}
-      {detailSessionId !== null && <TrainingHistoryDetailDialog detail={history.detail} loading={history.detailLoading} error={history.detailError} onRetry={() => void history.loadDetail(detailSessionId)} onClose={() => setDetailSessionId(null)} />}
     </div>
   );
 }
 
-function HistoryRow({ session, onOpen }: { session: TrainingHistorySummaryResponse; onOpen: () => void }) {
+function HistoryRow({ session }: { session: TrainingHistorySummaryResponse }) {
   const aiLabel = getSessionAiLabel(session);
   const completedAt = session.completedAt ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.completedAt)) : "완료 시각 없음";
   return (
@@ -119,7 +111,7 @@ function HistoryRow({ session, onOpen }: { session: TrainingHistorySummaryRespon
         <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-medium">{completedAt}</p>{aiLabel && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{aiLabel}</span>}</div>
         <p className="mt-1 text-xs text-muted-foreground">차트 {session.completedChartCount}/{session.totalChartCount} · 거래 {session.totalTradeCount} · 스냅샷 {session.snapshotCount}</p>
       </div>
-      <Button size="sm" variant="ghost" className="shrink-0 text-xs" onClick={onOpen}>상세 보기</Button>
+      <Button asChild size="sm" variant="ghost" className="shrink-0 text-xs"><Link to={trainingHistoryDetailPath(session.sessionId)}>상세 보기</Link></Button>
     </div>
   );
 }

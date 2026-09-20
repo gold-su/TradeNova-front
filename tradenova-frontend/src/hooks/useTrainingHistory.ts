@@ -6,9 +6,6 @@ export function useTrainingHistory() {
   const [items, setItems] = useState<TrainingHistorySummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [detail, setDetail] = useState<TrainingHistoryDetailResponse | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,18 +21,33 @@ export function useTrainingHistory() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const loadDetail = useCallback(async (sessionId: number) => {
+  return { items, loading, error, load };
+}
+
+export function useTrainingHistoryDetail(sessionId: number | null) {
+  const [detail, setDetail] = useState<TrainingHistoryDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
     setDetail(null);
-    setDetailLoading(true);
-    setDetailError(false);
+    setLoading(true);
+    setError(false);
+    if (sessionId === null) {
+      setError(true);
+      setLoading(false);
+      return;
+    }
     try {
       setDetail(await trainingApi.getTrainingHistoryDetail(sessionId));
     } catch {
-      setDetailError(true);
+      setError(true);
     } finally {
-      setDetailLoading(false);
+      setLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
-  return { items, loading, error, load, detail, detailLoading, detailError, loadDetail };
+  useEffect(() => { void load(); }, [load]);
+
+  return { detail, loading, error, load };
 }
