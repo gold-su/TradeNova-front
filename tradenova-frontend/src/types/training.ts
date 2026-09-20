@@ -215,6 +215,30 @@ export type GrowthPeriod = "LAST_10" | "LAST_30" | "ALL";
 export type GrowthMetricResponse = { numerator: number; denominator: number; rate: number };
 export type GrowthTrendPointResponse = { sessionId: number; completedAt: string | null; score: number };
 export type GrowthOverviewResponse = {
+  lifetime: {
+    totalXp: number;
+    level: number;
+    levelTitle: string;
+    currentLevelXp: number;
+    nextLevelXp: number;
+    progressPercent: number;
+  };
+  period: {
+    key: GrowthPeriod;
+    limit: number | null;
+    completedSessions: number;
+    totalTrades: number;
+    planSessionRate: GrowthMetricResponse;
+    actionReasonRate: GrowthMetricResponse;
+    riskRuleSessionRate: GrowthMetricResponse;
+    aiReviewSessionRate: GrowthMetricResponse;
+    averageSessionAiScore: number | null;
+    scoreTrend: GrowthTrendPointResponse[];
+  };
+};
+
+/** Compatibility contract served before lifetime/period were nested. */
+export type LegacyGrowthOverviewResponse = {
   period: GrowthPeriod;
   totalCompletedSessions: number;
   totalTrades: number;
@@ -231,6 +255,8 @@ export type GrowthOverviewResponse = {
   averageSessionAiScore: number | null;
   scoreTrend: GrowthTrendPointResponse[];
 };
+
+export type GrowthApiResponse = GrowthOverviewResponse | LegacyGrowthOverviewResponse;
 
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {

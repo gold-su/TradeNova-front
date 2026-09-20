@@ -17,7 +17,7 @@ import type {
   TrainingChartDto,
   TrainingHistoryDetailResponse,
   TrainingHistorySummaryResponse,
-  GrowthOverviewResponse,
+  GrowthApiResponse,
   GrowthPeriod,
 } from "@/types/training";
 
@@ -70,7 +70,7 @@ export const trainingApi = {
 
   getGrowthAnalytics: (period: GrowthPeriod) =>
     http
-      .get<GrowthOverviewResponse>("/api/training/growth", {
+      .get<GrowthApiResponse>("/api/training/growth", {
         params: period === "ALL" ? undefined : { limit: period === "LAST_10" ? 10 : 30 },
       })
       .then((r) => r.data),
