@@ -12,6 +12,7 @@ import TrainingSessionPage from "@/pages/training/TrainingSessionPage";
 import MyPageLayout from "@/pages/mypage/MyPageLayout";
 import MyPageHub from "@/pages/mypage/MyPageHub";
 import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
+import TrainingHistoryPage from "@/pages/mypage/TrainingHistoryPage";
 
 export const router = createBrowserRouter([
     //헤더 보이는 영역
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
                     { path: "profile", element: <Navigate to="/mypage" replace /> },
                     { path: "accounts", element: <MyAccountsPage /> },
                     { path: "reports", element: <Navigate to="/mypage" replace /> },
+                    { path: "history", element: <TrainingHistoryPage /> },
                 ],
             },
         ],

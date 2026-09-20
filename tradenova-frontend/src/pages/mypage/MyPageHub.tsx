@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronUp, LogOut, Settings2, UserRound } from "lucide-react";
+import { BookOpen, ChevronRight, LogOut, Settings2, UserRound } from "lucide-react";
 import { authApi } from "@/api/authApi";
 import { Button } from "@/components/ui/button";
 import { QuickPhraseManagerDialog } from "@/components/training/trade-reason/QuickPhraseManagerDialog";
@@ -13,7 +13,6 @@ import { TrainingHistoryDetailDialog } from "./TrainingHistoryDetailDialog";
 export default function MyPageHub() {
   const navigate = useNavigate();
   const [managerOpen, setManagerOpen] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [detailSessionId, setDetailSessionId] = useState<number | null>(null);
   const profile = readStoredProfile(localStorage);
   const {
@@ -27,7 +26,7 @@ export default function MyPageHub() {
   } = useQuickPhrases();
   const history = useTrainingHistory();
   const historyState = getTrainingHistoryViewState({ loading: history.loading, error: history.error, itemCount: history.items.length });
-  const visibleHistory = historyExpanded ? history.items : history.items.slice(0, 5);
+  const visibleHistory = history.items.slice(0, 5);
 
   const openDetail = (sessionId: number) => {
     setDetailSessionId(sessionId);
@@ -76,7 +75,7 @@ export default function MyPageHub() {
               <div className="divide-y divide-border/40 border-y border-border/40">
                 {visibleHistory.map((session) => <HistoryRow key={session.sessionId} session={session} onOpen={() => openDetail(session.sessionId)} />)}
               </div>
-              {history.items.length > 5 && <Button variant="ghost" size="sm" className="mt-2 w-full text-xs" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? <><ChevronUp className="h-3.5 w-3.5" />접기</> : <><ChevronDown className="h-3.5 w-3.5" />전체 훈련 기록 보기</>}</Button>}
+              {history.items.length > 5 && <Button asChild variant="ghost" size="sm" className="mt-2 w-full text-xs"><Link to="/mypage/history">전체 훈련 기록 보기<ChevronRight className="h-3.5 w-3.5" /></Link></Button>}
             </>}
           </div>
         </section>
