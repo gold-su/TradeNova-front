@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildScoreChart, scorePolyline } from "../src/pages/growth/growthChart.ts";
-import { splitGrowthOverview } from "../src/pages/growth/growthView.ts";
-import type { GrowthOverviewResponse } from "../src/types/training.ts";
+import { isNestedGrowthResponse, normalizeGrowthOverview, splitGrowthOverview } from "../src/pages/growth/growthView.ts";
+import type { GrowthOverviewResponse, LegacyGrowthOverviewResponse } from "../src/types/training.ts";
 
 test("growth score chart keeps chronological input order on a fixed 0-100 scale", () => {
   const points = buildScoreChart([
@@ -38,4 +38,28 @@ test("period changes retain lifetime level while replacing metrics and trend", (
   assert.deepEqual(ten.lifetime, thirty.lifetime);
   assert.notDeepEqual(ten.period.planSessionRate, thirty.period.planSessionRate);
   assert.notDeepEqual(ten.period.scoreTrend, thirty.period.scoreTrend);
+});
+
+test("nested lifetime and period response renders without normalization loss", () => {
+  const metric = { numerator: 1, denominator: 2, rate: 50 };
+  const nested: GrowthOverviewResponse = { lifetime: { totalXp: 800, level: 2, levelTitle: "Planner", currentLevelXp: 300, nextLevelXp: 200, progressPercent: 60 }, period: { key: "LAST_10", limit: 10, completedSessions: 10, totalTrades: 20, planSessionRate: metric, actionReasonRate: metric, riskRuleSessionRate: metric, aiReviewSessionRate: metric, averageSessionAiScore: null, scoreTrend: [] } };
+  assert.equal(isNestedGrowthResponse(nested), true);
+  assert.equal(normalizeGrowthOverview(nested).lifetime.level, 2);
+  assert.equal(normalizeGrowthOverview(nested).period.planSessionRate.rate, 50);
+  assert.equal(normalizeGrowthOverview(nested).period.averageSessionAiScore, null);
+  assert.deepEqual(normalizeGrowthOverview(nested).period.scoreTrend, []);
+});
+
+test("legacy flat period response uses the unfiltered response for lifetime level", () => {
+  const metric = { numerator: 1, denominator: 1, rate: 100 };
+  const legacy = (period: "LAST_10" | "ALL", sessions: number, xp: number): LegacyGrowthOverviewResponse => ({ period, totalCompletedSessions: sessions, totalTrades: sessions * 2, totalXp: xp, level: Math.floor(xp / 500) + 1, levelTitle: "Planner", currentLevelXp: xp % 500, nextLevelXp: 500 - xp % 500, progressPercent: xp % 500 / 5, planSessionRate: metric, actionReasonRate: metric, riskRuleSessionRate: metric, aiReviewSessionRate: metric, averageSessionAiScore: 42, scoreTrend: [{ sessionId: 1, completedAt: null, score: 42 }] });
+  const selected = legacy("LAST_10", 10, 1200);
+  const all = legacy("ALL", 30, 3600);
+  const normalized = normalizeGrowthOverview(selected, all);
+  assert.equal(isNestedGrowthResponse(selected), false);
+  assert.equal(normalized.lifetime.totalXp, 3600);
+  assert.equal(normalized.lifetime.level, 8);
+  assert.equal(normalized.period.completedSessions, 10);
+  assert.equal(normalized.period.totalTrades, 20);
+  assert.equal(normalized.period.scoreTrend.length, 1);
 });

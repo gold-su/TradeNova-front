@@ -237,6 +237,27 @@ export type GrowthOverviewResponse = {
   };
 };
 
+/** Compatibility contract served before lifetime/period were nested. */
+export type LegacyGrowthOverviewResponse = {
+  period: GrowthPeriod;
+  totalCompletedSessions: number;
+  totalTrades: number;
+  totalXp: number;
+  level: number;
+  levelTitle: string;
+  currentLevelXp: number;
+  nextLevelXp: number;
+  progressPercent: number;
+  planSessionRate: GrowthMetricResponse;
+  actionReasonRate: GrowthMetricResponse;
+  riskRuleSessionRate: GrowthMetricResponse;
+  aiReviewSessionRate: GrowthMetricResponse;
+  averageSessionAiScore: number | null;
+  scoreTrend: GrowthTrendPointResponse[];
+};
+
+export type GrowthApiResponse = GrowthOverviewResponse | LegacyGrowthOverviewResponse;
+
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
