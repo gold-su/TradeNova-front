@@ -5,6 +5,7 @@ import {
     ACTIVE_AI_REVIEW_TARGETS,
     GENERATED_REVIEW_ACTION_LABEL,
 } from "@/components/training/ai/sessionAiReview";
+import { ChartAiReviewContent } from "@/components/training/ai/ChartAiReviewContent";
 
 type Props = {
     charts: TrainingChartDto[];
@@ -98,14 +99,6 @@ function ReviewRow({
         </div>
     );
 }
-function SectionTitle({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            {children}
-        </div>
-    );
-}
-
 export function AiReviewPanel({
     charts,
     activeChartId,
@@ -181,63 +174,7 @@ export function AiReviewPanel({
                         </div>
 
                         <div className="thin-scrollbar max-h-[72vh] overflow-y-auto px-5 pb-5">
-                            <div className="mb-4 rounded-xl bg-background/40 p-4">
-                                <div className="text-[11px] text-muted-foreground">Score</div>
-                                <div className="mt-1 text-4xl font-bold tracking-tight">
-                                    {scoreLabel(chartAiPayload.score)}
-                                </div>
-
-                                <div className="mt-2 text-xs text-muted-foreground">
-                                    {chartAiPayload.analysisType === "DEEP"
-                                        ? "스냅샷 기반 정밀 분석"
-                                        : "거래/포지션 기반 빠른 분석"}
-                                </div>
-                            </div>
-
-                            <div className="space-y-5">
-                                <section>
-                                    <SectionTitle>Summary</SectionTitle>
-                                    <p className="mt-2 text-sm leading-6 text-foreground/90">
-                                        {chartAiPayload.summary}
-                                    </p>
-                                </section>
-
-                                <section>
-                                    <SectionTitle>Strengths</SectionTitle>
-                                    <div className="mt-2 space-y-1.5">
-                                        {chartAiPayload.strengths?.length ? (
-                                            chartAiPayload.strengths.map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="rounded-lg bg-primary/[0.07] px-3 py-2 text-sm text-primary"
-                                                >
-                                                    {item}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-sm text-muted-foreground">-</div>
-                                        )}
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <SectionTitle>Warnings</SectionTitle>
-                                    <div className="mt-2 space-y-1.5">
-                                        {chartAiPayload.warnings?.length ? (
-                                            chartAiPayload.warnings.map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300"
-                                                >
-                                                    {item}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-sm text-muted-foreground">-</div>
-                                        )}
-                                    </div>
-                                </section>
-                            </div>
+                            <ChartAiReviewContent payload={chartAiPayload} />
                         </div>
                     </div>
                 </div>
