@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildScoreChart, scorePolyline } from "../src/pages/growth/growthChart.ts";
 import { isNestedGrowthResponse, normalizeGrowthOverview, splitGrowthOverview } from "../src/pages/growth/growthView.ts";
 import type { GrowthOverviewResponse, LegacyGrowthOverviewResponse } from "../src/types/training.ts";
+import { formatProcessScore, formatTrendTooltip, getLevelProgress } from "../src/pages/growth/growthPresentation.ts";
 
 test("growth score chart keeps chronological input order on a fixed 0-100 scale", () => {
   const points = buildScoreChart([
@@ -62,4 +63,21 @@ test("legacy flat period response uses the unfiltered response for lifetime leve
   assert.equal(normalized.period.completedSessions, 10);
   assert.equal(normalized.period.totalTrades, 20);
   assert.equal(normalized.period.scoreTrend.length, 1);
+});
+
+test("lifetime XP presentation distinguishes total, current requirement, and remaining XP", () => {
+  assert.deepEqual(getLevelProgress(220, 280), { current: 220, requirement: 500, remaining: 280 });
+});
+
+test("process score formatting omits meaningless decimal zero", () => {
+  assert.equal(formatProcessScore(42), "42점");
+  assert.equal(formatProcessScore(42.5), "42.5점");
+  assert.equal(formatProcessScore(null), "—");
+});
+
+test("chart tooltip uses the persisted date and process score without a fake sequence", () => {
+  const tooltip = formatTrendTooltip({ sessionId: 129, completedAt: "2026-09-19T06:19:00Z", score: 75 });
+  assert.match(tooltip, /2026/);
+  assert.match(tooltip, /Process Review 75점/);
+  assert.doesNotMatch(tooltip, /129|번째/);
 });
