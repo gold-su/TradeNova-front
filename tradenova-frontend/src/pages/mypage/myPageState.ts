@@ -41,5 +41,24 @@ export function getSessionAiLabel({
   sessionAiScore: number | null;
 }) {
   if (!hasSessionAiReview) return null;
-  return sessionAiScore === null ? "AI 리뷰" : `AI 리뷰 · ${sessionAiScore}점`;
+  return sessionAiScore === null ? "AI Review" : `AI Review ${sessionAiScore}`;
+}
+
+export type TrainingHistoryTotals = {
+  sessions: number;
+  trades: number;
+  snapshots: number;
+};
+
+export function summarizeTrainingHistory(
+  items: Array<{ totalTradeCount: number; snapshotCount: number }>,
+): TrainingHistoryTotals {
+  return items.reduce(
+    (totals, item) => ({
+      sessions: totals.sessions + 1,
+      trades: totals.trades + item.totalTradeCount,
+      snapshots: totals.snapshots + item.snapshotCount,
+    }),
+    { sessions: 0, trades: 0, snapshots: 0 },
+  );
 }

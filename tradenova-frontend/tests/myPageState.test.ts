@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { accountFeatureAvailability, getSessionAiLabel, getTrainingHistoryViewState, readStoredProfile } from "../src/pages/mypage/myPageState.ts";
+import { accountFeatureAvailability, getSessionAiLabel, getTrainingHistoryViewState, readStoredProfile, summarizeTrainingHistory } from "../src/pages/mypage/myPageState.ts";
 
 test("my page reads the profile persisted by the login flow", () => {
   const values = new Map([["userEmail", "trader@example.com"], ["userNickname", "nova"]]);
@@ -25,6 +25,14 @@ test("training history exposes loading, error, empty and ready states", () => {
 
 test("session AI label only shows saved review and optional score", () => {
   assert.equal(getSessionAiLabel({ hasSessionAiReview: false, sessionAiScore: 90 }), null);
-  assert.equal(getSessionAiLabel({ hasSessionAiReview: true, sessionAiScore: null }), "AI 리뷰");
-  assert.equal(getSessionAiLabel({ hasSessionAiReview: true, sessionAiScore: 72 }), "AI 리뷰 · 72점");
+  assert.equal(getSessionAiLabel({ hasSessionAiReview: true, sessionAiScore: null }), "AI Review");
+  assert.equal(getSessionAiLabel({ hasSessionAiReview: true, sessionAiScore: 72 }), "AI Review 72");
+});
+
+test("training summary aggregates only values returned by history", () => {
+  assert.deepEqual(summarizeTrainingHistory([
+    { totalTradeCount: 4, snapshotCount: 2 },
+    { totalTradeCount: 3, snapshotCount: 1 },
+  ]), { sessions: 2, trades: 7, snapshots: 3 });
+  assert.deepEqual(summarizeTrainingHistory([]), { sessions: 0, trades: 0, snapshots: 0 });
 });

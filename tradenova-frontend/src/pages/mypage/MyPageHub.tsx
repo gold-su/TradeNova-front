@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronUp, LogOut, Settings2, UserRound } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, LogOut, Settings2, UserRound } from "lucide-react";
 import { authApi } from "@/api/authApi";
 import { Button } from "@/components/ui/button";
 import { QuickPhraseManagerDialog } from "@/components/training/trade-reason/QuickPhraseManagerDialog";
 import { useQuickPhrases } from "@/hooks/useQuickPhrases";
 import { useTrainingHistory } from "@/hooks/useTrainingHistory";
 import type { TrainingHistorySummaryResponse } from "@/types/training";
-import { getSessionAiLabel, getTrainingHistoryViewState, readStoredProfile } from "./myPageState";
+import { getSessionAiLabel, getTrainingHistoryViewState, readStoredProfile, summarizeTrainingHistory } from "./myPageState";
 import { TrainingHistoryDetailDialog } from "./TrainingHistoryDetailDialog";
 
 export default function MyPageHub() {
@@ -16,119 +16,77 @@ export default function MyPageHub() {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [detailSessionId, setDetailSessionId] = useState<number | null>(null);
   const profile = readStoredProfile(localStorage);
-  const {
-    quickPhrases,
-    quickPhrasesLoading,
-    quickPhrasesError,
-    loadQuickPhrases,
-    createQuickPhrase,
-    updateQuickPhrase,
-    deleteQuickPhrase,
-  } = useQuickPhrases();
+  const phrases = useQuickPhrases();
   const history = useTrainingHistory();
   const historyState = getTrainingHistoryViewState({ loading: history.loading, error: history.error, itemCount: history.items.length });
+  const totals = summarizeTrainingHistory(history.items);
   const visibleHistory = historyExpanded ? history.items : history.items.slice(0, 5);
 
   const openDetail = (sessionId: number) => {
     setDetailSessionId(sessionId);
     void history.loadDetail(sessionId);
   };
-
   const logout = () => {
     authApi.logoutLocal();
     navigate("/login", { replace: true });
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:py-8">
-      <header>
-        <p className="text-xs font-semibold tracking-[0.18em] text-primary">MY PAGE</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">계정과 훈련 허브</h1>
-        <p className="mt-1 text-sm text-muted-foreground">계정 정보와 훈련 설정을 관리하고, 기록을 확인합니다.</p>
+    <div className="mx-auto w-full max-w-5xl px-4 py-7 sm:px-6 lg:py-10">
+      <header className="border-b border-border/45 pb-5">
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-primary">MY PAGE</p>
+        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">계정과 훈련 기록</h1>
+        <p className="mt-1 text-sm text-muted-foreground">나의 훈련 흐름과 매매 근거를 한곳에서 관리합니다.</p>
       </header>
 
-      <section aria-labelledby="profile-heading" className="rounded-xl border border-border/55 bg-muted/[0.08] p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary"><UserRound className="h-4 w-4" /></div>
-          <div className="min-w-0 flex-1">
-            <h2 id="profile-heading" className="text-sm font-semibold">프로필</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">현재 로그인 계정</p>
-          </div>
-          <span className="rounded-full border border-border/50 px-2 py-1 text-[10px] text-muted-foreground">READ ONLY</span>
-        </div>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs text-muted-foreground">닉네임</dt><dd className="mt-1 font-medium">{profile.nickname || "등록 정보 없음"}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">이메일</dt><dd className="mt-1 break-all font-medium">{profile.email || "등록 정보 없음"}</dd></div>
-        </dl>
-      </section>
-
-      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-        <section aria-labelledby="training-heading" className="rounded-xl border border-border/55 bg-muted/[0.08] p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary"><BookOpen className="h-4 w-4" /></div>
-            <div><h2 id="training-heading" className="text-sm font-semibold">훈련 기록</h2><p className="mt-0.5 text-xs text-muted-foreground">최근 세션과 AI 리뷰</p></div>
-          </div>
-          <div className="mt-4">
-            {historyState === "loading" && <div aria-label="훈련 기록 불러오는 중" className="space-y-2"><div className="h-16 animate-pulse rounded-lg bg-muted/30" /><div className="h-16 animate-pulse rounded-lg bg-muted/30" /></div>}
-            {historyState === "error" && <div className="rounded-lg border border-dashed border-border/50 px-4 py-6 text-center"><p className="text-sm font-medium">훈련 기록을 불러오지 못했습니다.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void history.load()}>다시 시도</Button></div>}
-            {historyState === "empty" && <div className="rounded-lg border border-dashed border-border/50 px-4 py-6 text-center"><p className="text-sm font-medium">아직 완료한 훈련이 없습니다.</p><Button asChild size="sm" className="mt-4"><Link to="/training">새 훈련 시작</Link></Button></div>}
-            {historyState === "ready" && <>
-              <div className="divide-y divide-border/40 border-y border-border/40">
-                {visibleHistory.map((session) => <HistoryRow key={session.sessionId} session={session} onOpen={() => openDetail(session.sessionId)} />)}
-              </div>
-              {history.items.length > 5 && <Button variant="ghost" size="sm" className="mt-2 w-full text-xs" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? <><ChevronUp className="h-3.5 w-3.5" />접기</> : <><ChevronDown className="h-3.5 w-3.5" />전체 훈련 기록 보기</>}</Button>}
-            </>}
-          </div>
+      <div className="grid gap-4 border-b border-border/45 py-5 md:grid-cols-[minmax(0,1fr)_1.25fr] md:gap-8">
+        <section aria-labelledby="profile-heading" className="flex min-w-0 items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-2.5 text-primary"><UserRound className="h-5 w-5" /></div>
+          <div className="min-w-0"><h2 id="profile-heading" className="truncate text-base font-semibold">{profile.nickname || "사용자"}</h2><p className="truncate text-xs text-muted-foreground">{profile.email || "등록된 이메일 정보가 없습니다."}</p></div>
         </section>
-
-        <section aria-labelledby="reason-heading" className="rounded-xl border border-border/55 bg-muted/[0.08] p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary"><Settings2 className="h-4 w-4" /></div>
-            <div><h2 id="reason-heading" className="text-sm font-semibold">매매 근거 관리</h2><p className="mt-0.5 text-xs leading-5 text-muted-foreground">BUY/SELL 시 빠르게 선택할 수 있는 매매 근거를 관리합니다.</p></div>
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">{quickPhrasesLoading ? "불러오는 중" : quickPhrasesError ? "불러오기 실패" : `${quickPhrases.length}개 등록됨`}</span>
-            <Button variant="outline" size="sm" onClick={() => setManagerOpen(true)} disabled={quickPhrasesLoading}>근거 관리</Button>
-          </div>
-          {quickPhrasesError && <button type="button" onClick={() => void loadQuickPhrases()} className="mt-3 text-xs font-medium text-primary hover:underline">다시 시도</button>}
+        <section aria-labelledby="summary-heading" className="md:border-l md:border-border/45 md:pl-8">
+          <h2 id="summary-heading" className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">훈련 요약</h2>
+          {history.loading ? <div className="mt-2 h-9 w-full max-w-sm animate-pulse rounded-md bg-muted/25" aria-label="훈련 요약 불러오는 중" /> : history.error ? <p className="mt-2 text-xs text-muted-foreground">요약을 불러오지 못했습니다.</p> : <dl className="mt-2 grid max-w-md grid-cols-3 gap-4"><SummaryMetric label="완료 세션" value={totals.sessions} /><SummaryMetric label="총 거래" value={totals.trades} /><SummaryMetric label="스냅샷" value={totals.snapshots} /></dl>}
         </section>
       </div>
 
-      <section aria-labelledby="account-heading" className="rounded-xl border border-border/55 bg-muted/[0.08] p-4 sm:p-5">
-        <h2 id="account-heading" className="text-sm font-semibold">계정 설정</h2>
-        <div className="mt-4 divide-y divide-border/40 border-y border-border/40">
-          <SettingRow title="프로필 수정" description="서버 API가 준비되면 사용할 수 있습니다." />
-          <SettingRow title="비밀번호 변경" description="서버 API가 준비되면 사용할 수 있습니다." />
-          <SettingRow title="회원탈퇴" description="서버 API가 준비되면 확인 절차와 함께 제공됩니다." danger />
-        </div>
-        <Button variant="outline" size="sm" onClick={logout} className="mt-4"><LogOut className="h-4 w-4" />로그아웃</Button>
-      </section>
+      <main className="py-7">
+        <section aria-labelledby="training-heading">
+          <div className="flex items-end justify-between gap-4"><div><h2 id="training-heading" className="text-lg font-semibold">최근 훈련</h2><p className="mt-0.5 text-xs text-muted-foreground">완료한 세션과 저장된 AI 리뷰를 확인합니다.</p></div>{historyState === "ready" && <span className="text-xs tabular-nums text-muted-foreground">{history.items.length} sessions</span>}</div>
+          <div className="mt-4 overflow-hidden rounded-xl bg-muted/[0.08] ring-1 ring-border/40">
+            {historyState === "loading" && <HistoryLoading />}
+            {historyState === "error" && <HistoryMessage message="훈련 기록을 불러오지 못했습니다." action={<Button size="sm" variant="outline" onClick={() => void history.load()}>다시 시도</Button>} />}
+            {historyState === "empty" && <HistoryMessage message="아직 완료한 훈련이 없습니다." action={<Button asChild size="sm"><Link to="/training">새 훈련 시작</Link></Button>} />}
+            {historyState === "ready" && <div className="divide-y divide-border/35">{visibleHistory.map((session) => <HistoryRow key={session.sessionId} session={session} onOpen={() => openDetail(session.sessionId)} />)}</div>}
+          </div>
+          {historyState === "ready" && history.items.length > 5 && <Button variant="ghost" size="sm" className="mx-auto mt-2 flex text-xs text-muted-foreground" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? <><ChevronUp className="h-3.5 w-3.5" />최근 5개만 보기</> : <><ChevronDown className="h-3.5 w-3.5" />전체 훈련 기록 보기</>}</Button>}
+        </section>
 
-      {managerOpen && <QuickPhraseManagerDialog items={quickPhrases} onClose={() => setManagerOpen(false)} onCreate={createQuickPhrase} onUpdate={updateQuickPhrase} onDelete={deleteQuickPhrase} />}
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <section aria-labelledby="reason-heading" className="flex items-center justify-between gap-4 rounded-xl bg-muted/[0.08] px-4 py-4 ring-1 ring-border/35">
+            <div className="flex min-w-0 items-center gap-3"><Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" /><div className="min-w-0"><h2 id="reason-heading" className="text-sm font-semibold">매매 근거</h2><p className="mt-0.5 text-xs text-muted-foreground">{phrases.quickPhrasesLoading ? "불러오는 중" : phrases.quickPhrasesError ? "목록을 불러오지 못했습니다." : `${phrases.quickPhrases.length}개 등록됨`}</p></div></div>
+            <div className="flex shrink-0 items-center gap-1">{phrases.quickPhrasesError && <Button variant="ghost" size="sm" onClick={() => void phrases.loadQuickPhrases()}>재시도</Button>}<Button variant="outline" size="sm" onClick={() => setManagerOpen(true)} disabled={phrases.quickPhrasesLoading}>관리</Button></div>
+          </section>
+          <section aria-labelledby="account-heading" className="flex items-center justify-between gap-4 rounded-xl bg-muted/[0.08] px-4 py-4 ring-1 ring-border/35">
+            <div className="min-w-0"><h2 id="account-heading" className="text-sm font-semibold">계정</h2><p className="mt-0.5 truncate text-xs text-muted-foreground">프로필 수정 및 보안 설정은 추후 제공됩니다.</p></div>
+            <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4" />로그아웃</Button>
+          </section>
+        </div>
+      </main>
+
+      {managerOpen && <QuickPhraseManagerDialog items={phrases.quickPhrases} onClose={() => setManagerOpen(false)} onCreate={phrases.createQuickPhrase} onUpdate={phrases.updateQuickPhrase} onDelete={phrases.deleteQuickPhrase} />}
       {detailSessionId !== null && <TrainingHistoryDetailDialog detail={history.detail} loading={history.detailLoading} error={history.detailError} onRetry={() => void history.loadDetail(detailSessionId)} onClose={() => setDetailSessionId(null)} />}
     </div>
   );
 }
 
+function SummaryMetric({ label, value }: { label: string; value: number }) { return <div><dd className="text-lg font-semibold tabular-nums">{value}</dd><dt className="text-[11px] text-muted-foreground">{label}</dt></div>; }
+
 function HistoryRow({ session, onOpen }: { session: TrainingHistorySummaryResponse; onOpen: () => void }) {
   const aiLabel = getSessionAiLabel(session);
-  const completedAt = session.completedAt ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.completedAt)) : "완료 시각 없음";
-  return (
-    <div className="flex items-center justify-between gap-3 py-3">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-medium">{completedAt}</p>{aiLabel && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{aiLabel}</span>}</div>
-        <p className="mt-1 text-xs text-muted-foreground">차트 {session.completedChartCount}/{session.totalChartCount} · 거래 {session.totalTradeCount} · 스냅샷 {session.snapshotCount}</p>
-      </div>
-      <Button size="sm" variant="ghost" className="shrink-0 text-xs" onClick={onOpen}>상세 보기</Button>
-    </div>
-  );
+  return <button type="button" onClick={onOpen} className="group flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:px-5"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-x-2 gap-y-1"><p className="text-sm font-medium">{formatCompletedAt(session.completedAt)}</p>{aiLabel && <span className="rounded-full bg-primary/[0.08] px-2 py-0.5 text-[10px] font-medium text-primary/85">{aiLabel}</span>}</div><p className="mt-1 text-xs tabular-nums text-muted-foreground">차트 {session.completedChartCount}/{session.totalChartCount} <span className="mx-1 text-border">·</span> 거래 {session.totalTradeCount} <span className="mx-1 text-border">·</span> 스냅샷 {session.snapshotCount}</p></div><span className="hidden text-xs text-muted-foreground group-hover:text-foreground sm:inline">상세 보기</span><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" /></button>;
 }
 
-function SettingRow({ title, description, danger = false }: { title: string; description: string; danger?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <div><p className={danger ? "text-sm font-medium text-red-300" : "text-sm font-medium"}>{title}</p><p className="mt-0.5 text-xs text-muted-foreground">{description}</p></div>
-      <span className="shrink-0 rounded-full bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">준비 중</span>
-    </div>
-  );
-}
+function HistoryLoading() { return <div aria-label="훈련 기록 불러오는 중" className="divide-y divide-border/30">{[0, 1, 2].map((item) => <div key={item} className="px-5 py-4"><div className="h-4 w-40 animate-pulse rounded bg-muted/35" /><div className="mt-2 h-3 w-56 max-w-full animate-pulse rounded bg-muted/25" /></div>)}</div>; }
+function HistoryMessage({ message, action }: { message: string; action: ReactNode }) { return <div className="px-4 py-10 text-center"><p className="text-sm text-muted-foreground">{message}</p><div className="mt-4">{action}</div></div>; }
+function formatCompletedAt(value: string | null) { return value ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "완료 시각 없음"; }
