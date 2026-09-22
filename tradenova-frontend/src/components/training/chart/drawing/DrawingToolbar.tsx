@@ -1,4 +1,4 @@
-import { Eraser, Minus, MousePointer2, SquareDashedMousePointer, Trash2, TrendingUp } from "lucide-react";
+import { Eraser, Minus, MousePointer2, Percent, Rows3, SquareDashedMousePointer, Trash2, TrendingUp, Type } from "lucide-react";
 import type { DrawingTool } from "./drawingTypes";
 
 type Props = {
@@ -14,7 +14,12 @@ const tools: Array<{ tool: DrawingTool; label: string; Icon: typeof MousePointer
   { tool: "POINTER", label: "선택", Icon: MousePointer2 },
   { tool: "TREND_LINE", label: "추세선", Icon: TrendingUp },
   { tool: "HORIZONTAL_LINE", label: "수평선", Icon: Minus },
+  { tool: "VERTICAL_LINE", label: "수직선", Icon: Minus },
+  { tool: "RAY", label: "레이", Icon: TrendingUp },
   { tool: "ZONE", label: "영역", Icon: SquareDashedMousePointer },
+  { tool: "FIBONACCI_RETRACEMENT", label: "피보나치", Icon: Percent },
+  { tool: "PARALLEL_CHANNEL", label: "평행 채널", Icon: Rows3 },
+  { tool: "TEXT", label: "텍스트", Icon: Type },
 ];
 
 export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClear, canClear }: Props) {
@@ -23,7 +28,7 @@ export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClea
       {tools.map(({ tool: itemTool, label, Icon }) => (
         <button key={itemTool} type="button" title={label} aria-label={label} aria-pressed={tool === itemTool} onClick={() => onSelectTool(itemTool)}
           className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${tool === itemTool ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}>
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className={`h-3.5 w-3.5 ${itemTool === "VERTICAL_LINE" ? "rotate-90" : ""}`} />
         </button>
       ))}
       <span className="mx-0.5 h-4 w-px bg-border/60" aria-hidden="true" />

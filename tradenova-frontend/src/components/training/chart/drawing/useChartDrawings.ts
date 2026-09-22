@@ -9,6 +9,7 @@ import {
   removeDrawing,
   replaceDrawing,
   resolveDrawingPoint,
+  resolveTextDrawing,
   type ChartDrawing,
   type DrawingPoint,
   type DrawingTool,
@@ -36,6 +37,19 @@ export function useChartDrawings(sessionId: number | null) {
     if (nextTool !== "POINTER") setSelectedDrawing(null);
   }, []);
 
+  const persistDrawing = useCallback((drawing: ChartDrawing) => {
+    setDrawingsByChart((prev) => addDrawing(prev, drawing));
+    setSelectedDrawing({ chartId: drawing.chartId, drawingId: drawing.id });
+    setPendingDrawing(null);
+    setTool("POINTER");
+    trainingApi.createChartDrawing(drawing.chartId, toCreateRequest(drawing)).then((saved) => {
+      setDrawingsByChart(prev => replaceDrawing(prev, drawing.chartId, drawing.id, fromApiDrawing(saved)));
+    }).catch(() => {
+      setDrawingsByChart(prev => removeDrawing(prev, drawing.chartId, drawing.id));
+      setError("드로잉 저장에 실패했습니다.");
+    });
+  }, []);
+
   const addPoint = useCallback((chartId: number, point: DrawingPoint) => {
     if (tool === "POINTER") return;
 
@@ -50,17 +64,15 @@ export function useChartDrawings(sessionId: number | null) {
 
     if (!result.drawing) return;
 
-    const drawing = result.drawing;
-    setDrawingsByChart((prev) => addDrawing(prev, drawing));
-    setSelectedDrawing({ chartId, drawingId: result.drawing.id });
-    setTool("POINTER");
-    trainingApi.createChartDrawing(chartId, toCreateRequest(drawing)).then((saved) => {
-      setDrawingsByChart(prev => replaceDrawing(prev, chartId, drawing.id, fromApiDrawing(saved)));
-    }).catch(() => {
-      setDrawingsByChart(prev => removeDrawing(prev, chartId, drawing.id));
-      setError("드로잉 저장에 실패했습니다.");
-    });
-  }, [pendingDrawing, tool]);
+    persistDrawing(result.drawing);
+  }, [pendingDrawing, persistDrawing, tool]);
+
+  const commitText = useCallback((value: string) => {
+    const drawing = resolveTextDrawing(pendingDrawing, value);
+    if (!drawing) return false;
+    persistDrawing(drawing);
+    return true;
+  }, [pendingDrawing, persistDrawing]);
 
   const deleteSelected = useCallback(() => {
     if (!selectedDrawing) return;
@@ -80,5 +92,5 @@ export function useChartDrawings(sessionId: number | null) {
     trainingApi.clearChartDrawings(chartId).catch(() => { setDrawingsByChart(prev => ({ ...prev, [chartId]: existing })); setError("드로잉 초기화에 실패했습니다."); });
   }, [drawingsByChart]);
 
-  return { drawingsByChart, tool, selectTool, pendingDrawing, addPoint, selectedDrawing, setSelectedDrawing, deleteSelected, clearActiveChart, error, clearError: () => setError(null) };
+  return { drawingsByChart, tool, selectTool, pendingDrawing, addPoint, commitText, selectedDrawing, setSelectedDrawing, deleteSelected, clearActiveChart, error, clearError: () => setError(null) };
 }

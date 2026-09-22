@@ -26,4 +26,8 @@ test("v2 response variants map and round-trip through the shared Seoul helper", 
   assert.equal(toCreateRequest(parallel).anchor3Date, "2026-09-24");
   const text = fromApiDrawing(api({ id: 3, chartId: 7, type: "TEXT", startDate: "2026-09-22", startPrice: 100, textContent: "support" }));
   assert.equal(toCreateRequest(text).textContent, "support");
+  const ray = fromApiDrawing(api({ id: 4, chartId: 7, type: "RAY", startDate: "2026-09-22", startPrice: 100, endDate: "2026-09-23", endPrice: 110 }));
+  assert.deepEqual(toCreateRequest(ray), { type: "RAY", startDate: "2026-09-22", startPrice: 100, endDate: "2026-09-23", endPrice: 110, anchor3Date: null, anchor3Price: null, textContent: null, optionsJson: null });
+  const fibonacci = fromApiDrawing(api({ id: 5, chartId: 7, type: "FIBONACCI_RETRACEMENT", startDate: "2026-09-23", startPrice: 110, endDate: "2026-09-22", endPrice: 100 }));
+  assert.equal(toCreateRequest(fibonacci).optionsJson, null);
 });

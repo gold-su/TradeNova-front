@@ -133,6 +133,8 @@ export default function TrainingSessionPage() {
         pendingDrawing={page.pendingDrawing}
         selectedDrawing={page.selectedDrawing}
         onAddDrawingPoint={page.addDrawingPoint}
+        onCommitDrawingText={page.commitDrawingText}
+        onCancelDrawingDraft={() => page.selectDrawingTool("POINTER")}
         onSelectDrawing={page.setSelectedDrawing}
         onDeleteSelectedDrawing={page.deleteSelectedDrawing}
         onClearChartDrawings={page.clearChartDrawings}

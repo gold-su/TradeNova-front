@@ -68,6 +68,8 @@ type Props = {
   pendingDrawing?: PendingDrawing;
   selectedDrawing?: SelectedDrawing;
   onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText?: (value: string) => boolean;
+  onCancelDrawingDraft?: () => void;
   onSelectDrawing?: (selection: SelectedDrawing) => void;
 };
 
@@ -108,6 +110,8 @@ export default function CandleChart({
   pendingDrawing = null,
   selectedDrawing = null,
   onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
   onSelectDrawing,
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
@@ -864,6 +868,8 @@ export default function CandleChart({
             onAddPoint={(targetChartId, point) =>
               onAddDrawingPoint?.(targetChartId, point)
             }
+            onCommitText={(value) => onCommitDrawingText?.(value) ?? false}
+            onCancelDraft={() => onCancelDrawingDraft?.()}
             onSelectDrawing={(selection) => onSelectDrawing?.(selection)}
           />
         )}

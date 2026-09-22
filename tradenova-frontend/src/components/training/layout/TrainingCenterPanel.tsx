@@ -87,6 +87,8 @@ type Props = {
   pendingDrawing: PendingDrawing;
   selectedDrawing: SelectedDrawing;
   onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText: (value: string) => boolean;
+  onCancelDrawingDraft: () => void;
   onSelectDrawing: (selection: SelectedDrawing) => void;
   onDeleteSelectedDrawing: () => void;
   onClearChartDrawings: (chartId: number | null) => void;
@@ -121,6 +123,8 @@ export function TrainingCenterPanel({
   pendingDrawing,
   selectedDrawing,
   onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
   onSelectDrawing,
   onDeleteSelectedDrawing,
   onClearChartDrawings,
@@ -381,6 +385,8 @@ export function TrainingCenterPanel({
             pendingDrawing={pendingDrawing}
             selectedDrawing={selectedDrawing}
             onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
           />
         ) : (
@@ -401,6 +407,8 @@ export function TrainingCenterPanel({
             pendingDrawing={pendingDrawing}
             selectedDrawing={selectedDrawing}
             onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
           />
         )}

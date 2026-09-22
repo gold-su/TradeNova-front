@@ -49,6 +49,8 @@ type Props = {
   pendingDrawing?: PendingDrawing;
   selectedDrawing?: SelectedDrawing;
   onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText?: (value: string) => boolean;
+  onCancelDrawingDraft?: () => void;
   onSelectDrawing?: (selection: SelectedDrawing) => void;
 };
 
@@ -69,6 +71,8 @@ export function TrainingChartTile({
   pendingDrawing,
   selectedDrawing,
   onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
   onSelectDrawing,
 }: Props) {
   const visible = progress
@@ -158,6 +162,8 @@ export function TrainingChartTile({
             pendingDrawing={pendingDrawing}
             selectedDrawing={selectedDrawing}
             onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
           />
         ) : (

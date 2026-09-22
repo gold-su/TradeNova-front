@@ -445,6 +445,7 @@ export function useTrainingSessionPage() {
     selectDrawingTool: drawings.selectTool,
     pendingDrawing: drawings.pendingDrawing,
     addDrawingPoint: drawings.addPoint,
+    commitDrawingText: drawings.commitText,
     selectedDrawing: drawings.selectedDrawing,
     setSelectedDrawing: drawings.setSelectedDrawing,
     deleteSelectedDrawing: drawings.deleteSelected,

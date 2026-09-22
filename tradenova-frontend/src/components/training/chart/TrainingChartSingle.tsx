@@ -45,6 +45,8 @@ type Props = {
   pendingDrawing: PendingDrawing;
   selectedDrawing: SelectedDrawing;
   onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText: (value: string) => boolean;
+  onCancelDrawingDraft: () => void;
   onSelectDrawing: (selection: SelectedDrawing) => void;
 };
 
@@ -61,6 +63,8 @@ export function TrainingChartSingle({
   pendingDrawing,
   selectedDrawing,
   onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
   onSelectDrawing,
 }: Props) {
   if (!chart) {
@@ -128,6 +132,8 @@ export function TrainingChartSingle({
             pendingDrawing={pendingDrawing}
             selectedDrawing={selectedDrawing}
             onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
           />
         ) : (

@@ -16,6 +16,7 @@ export type ChartDrawing = HorizontalLineDrawing | VerticalLineDrawing | TwoAnch
 export type SelectedDrawing = { chartId: number; drawingId: string } | null;
 export type DrawingDraft = { chartId: number; tool: DrawingType; anchors: DrawingPoint[] };
 export type PendingDrawing = DrawingDraft | null;
+export const MAX_DRAWING_TEXT_LENGTH = 500;
 
 export function requiredAnchorCount(tool: DrawingTool) {
   if (tool === "POINTER") return 0;
@@ -38,3 +39,12 @@ export function replaceDrawing(state: Record<number, ChartDrawing[]>, chartId: n
 export function removeDrawing(state: Record<number, ChartDrawing[]>, chartId: number, drawingId: string) { return { ...state, [chartId]: (state[chartId] ?? []).filter(d => d.id !== drawingId) }; }
 export function clearChartDrawings(state: Record<number, ChartDrawing[]>, chartId: number) { return { ...state, [chartId]: [] }; }
 export function cancelDrawingDraft(): PendingDrawing { return null; }
+export function normalizeDrawingText(value: string) {
+  const text = value.trim();
+  return text.length > 0 && text.length <= MAX_DRAWING_TEXT_LENGTH ? text : null;
+}
+export function resolveTextDrawing(draft: PendingDrawing, value: string, id = createDrawingId()): TextDrawing | null {
+  const text = normalizeDrawingText(value);
+  const anchor = draft?.tool === "TEXT" ? draft.anchors[0] : undefined;
+  return text && draft && anchor ? { id, chartId: draft.chartId, type: "TEXT", anchor, text, options: null } : null;
+}
