@@ -4,8 +4,11 @@ export type ChartDrawingApiResponse = { id: number; chartId: number; type: "HORI
 export type ChartDrawingCreateRequest = Omit<ChartDrawingApiResponse, "id" | "chartId">;
 export type ChartDrawingGroupResponse = { chartId: number; drawings: ChartDrawingApiResponse[] };
 
-function localDateToTime(date: string) { return Date.parse(`${date}T00:00:00Z`); }
-function timeToLocalDate(time: number) { return new Date(time).toISOString().slice(0, 10); }
+// lightweight-charts receives UTC epoch *seconds* from CandleChart, while the
+// backend persists a candle's LocalDate. Keeping this boundary explicit avoids
+// replacing an optimistic seconds anchor with an out-of-range milliseconds one.
+function localDateToTime(date: string) { return Math.floor(Date.parse(`${date}T00:00:00Z`) / 1000); }
+function timeToLocalDate(time: number) { return new Date(time * 1000).toISOString().slice(0, 10); }
 
 export function fromApiDrawing(drawing: ChartDrawingApiResponse): ChartDrawing {
   if (drawing.type === "HORIZONTAL_LINE") return { id: String(drawing.id), chartId: drawing.chartId, type: drawing.type, price: drawing.startPrice };
