@@ -6,7 +6,8 @@ test("persisted trend replacement retains lightweight-charts seconds anchors", (
   const drawing = fromApiDrawing({ id: 123, chartId: 7, type: "TREND_LINE", startDate: "2026-09-22", startPrice: 100, endDate: "2026-09-23", endPrice: 110 });
   assert.equal(drawing.type, "TREND_LINE");
   if (drawing.type !== "TREND_LINE") return;
-  assert.equal(drawing.start.time, 1_790_035_200);
+  // Backend candles use Asia/Seoul midnight, which is 15:00 UTC on the prior day.
+  assert.equal(drawing.start.time, 1_790_002_800);
   assert.equal(toCreateRequest(drawing).startDate, "2026-09-22");
   assert.equal(toCreateRequest(drawing).endDate, "2026-09-23");
 });
