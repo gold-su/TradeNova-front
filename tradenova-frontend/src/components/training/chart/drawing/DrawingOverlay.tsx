@@ -35,7 +35,7 @@ export function DrawingOverlay({
 }: Props) {
   const pointerRef = useRef<DrawingPoint | null>(null);
   const frameRef = useRef<number | null>(null);
-  const [, setPreviewRevision] = useState(0);
+  const [previewPoint, setPreviewPoint] = useState<DrawingPoint | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [, setRevision] = useState(0);
 
@@ -66,12 +66,13 @@ export function DrawingOverlay({
         const y = candleSeries.priceToCoordinate(drawing.price);
         return y == null ? null : { kind: "HORIZONTAL" as const, drawing, y };
       }
+      if (drawing.type !== "TREND_LINE" && drawing.type !== "ZONE") return null;
       const start = toPixel(chart, candleSeries, drawing.start);
       const end = toPixel(chart, candleSeries, drawing.end);
       return start && end ? { kind: "SHAPE" as const, drawing, start, end } : null;
     }).filter(Boolean) as Array<
       | { kind: "HORIZONTAL"; drawing: Extract<ChartDrawing, { type: "HORIZONTAL_LINE" }>; y: number }
-      | { kind: "SHAPE"; drawing: Exclude<ChartDrawing, { type: "HORIZONTAL_LINE" }>; start: PixelPoint; end: PixelPoint }
+      | { kind: "SHAPE"; drawing: Extract<ChartDrawing, { type: "TREND_LINE" | "ZONE" }>; start: PixelPoint; end: PixelPoint }
     >;
   })();
 
@@ -101,11 +102,14 @@ export function DrawingOverlay({
         if (tool === "POINTER") return;
         pointerRef.current = pointFromEvent(event);
         if (frameRef.current != null) return;
-        frameRef.current = requestAnimationFrame(() => { frameRef.current = null; setPreviewRevision(value => value + 1); });
+        frameRef.current = requestAnimationFrame(() => {
+          frameRef.current = null;
+          setPreviewPoint(pointerRef.current);
+        });
       }}
     >
-      {tool === "HORIZONTAL_LINE" && pointerRef.current && (() => { const y = candleSeries.priceToCoordinate(pointerRef.current!.price); return y == null ? null : <line x1={0} y1={y} x2={size.width} y2={y} stroke="#5eead4" strokeOpacity={0.45} strokeDasharray="4 4" />; })()}
-      {pendingDrawing?.chartId === chartId && pointerRef.current && (() => { const start = toPixel(chart, candleSeries, pendingDrawing.start); const end = toPixel(chart, candleSeries, pointerRef.current!); if (!start || !end) return null; return pendingDrawing.tool === "TREND_LINE" ? <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" /> : <rect x={Math.min(start.x,end.x)} y={Math.min(start.y,end.y)} width={Math.abs(end.x-start.x)} height={Math.abs(end.y-start.y)} fill="rgba(94,234,212,0.08)" stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" />; })()}
+      {tool === "HORIZONTAL_LINE" && previewPoint && (() => { const y = candleSeries.priceToCoordinate(previewPoint.price); return y == null ? null : <line x1={0} y1={y} x2={size.width} y2={y} stroke="#5eead4" strokeOpacity={0.45} strokeDasharray="4 4" />; })()}
+      {pendingDrawing?.chartId === chartId && pendingDrawing.anchors[0] && previewPoint && (() => { const start = toPixel(chart, candleSeries, pendingDrawing.anchors[0]); const end = toPixel(chart, candleSeries, previewPoint); if (!start || !end) return null; return pendingDrawing.tool === "TREND_LINE" ? <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" /> : pendingDrawing.tool === "ZONE" ? <rect x={Math.min(start.x,end.x)} y={Math.min(start.y,end.y)} width={Math.abs(end.x-start.x)} height={Math.abs(end.y-start.y)} fill="rgba(94,234,212,0.08)" stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" /> : null; })()}
       {rendered.map((item) => {
         const selected = selectedDrawing?.chartId === chartId && selectedDrawing.drawingId === item.drawing.id;
         const stroke = selected ? "#5eead4" : "#34d399";

@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   addDrawing,
+  cancelDrawingDraft,
   clearChartDrawings,
   removeDrawing,
+  replaceDrawing,
+  requiredAnchorCount,
   resolveDrawingPoint,
   type ChartDrawing,
 } from "../src/components/training/chart/drawing/drawingTypes.ts";
@@ -32,7 +35,7 @@ test("trend and zone tools keep their first domain point until the second click"
     "trend-1",
   );
   assert.equal(trendFirst.drawing, null);
-  assert.deepEqual(trendFirst.pendingDrawing?.start, { time: 10, price: 100 });
+  assert.deepEqual(trendFirst.pendingDrawing?.anchors, [{ time: 10, price: 100 }]);
 
   const trendSecond = resolveDrawingPoint(
     "TREND_LINE",
@@ -98,4 +101,30 @@ test("delete and clear only affect the active chart's drawings", () => {
   const afterClear = clearChartDrawings(drawings, 101);
   assert.deepEqual(afterClear[101], []);
   assert.deepEqual(afterClear[202], [chartTwo]);
+});
+
+test("v2 tools declare their anchor count without exposing new UI behavior", () => {
+  assert.equal(requiredAnchorCount("POINTER"), 0);
+  assert.equal(requiredAnchorCount("HORIZONTAL_LINE"), 1);
+  assert.equal(requiredAnchorCount("VERTICAL_LINE"), 1);
+  assert.equal(requiredAnchorCount("TEXT"), 1);
+  assert.equal(requiredAnchorCount("TREND_LINE"), 2);
+  assert.equal(requiredAnchorCount("RAY"), 2);
+  assert.equal(requiredAnchorCount("ZONE"), 2);
+  assert.equal(requiredAnchorCount("FIBONACCI_RETRACEMENT"), 2);
+  assert.equal(requiredAnchorCount("PARALLEL_CHANNEL"), 3);
+});
+
+test("cancel clears only the draft and optimistic replacement keeps the drawing", () => {
+  const temporary: ChartDrawing = {
+    id: "drawing-temp",
+    chartId: 101,
+    type: "HORIZONTAL_LINE",
+    price: 37200,
+  };
+  const persisted: ChartDrawing = { ...temporary, id: "42" };
+  const drawings = replaceDrawing(addDrawing({}, temporary), 101, temporary.id, persisted);
+
+  assert.equal(cancelDrawingDraft(), null);
+  assert.deepEqual(drawings[101], [persisted]);
 });

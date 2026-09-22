@@ -3,9 +3,11 @@ import { trainingApi } from "@/api/trainingApi";
 import { fromApiDrawing, groupDrawings, toCreateRequest } from "./drawingApiMapper";
 import {
   addDrawing,
+  cancelDrawingDraft,
   clearChartDrawings,
   createDrawingId,
   removeDrawing,
+  replaceDrawing,
   resolveDrawingPoint,
   type ChartDrawing,
   type DrawingPoint,
@@ -30,7 +32,7 @@ export function useChartDrawings(sessionId: number | null) {
 
   const selectTool = useCallback((nextTool: DrawingTool) => {
     setTool(nextTool);
-    setPendingDrawing(null);
+    setPendingDrawing(cancelDrawingDraft());
     if (nextTool !== "POINTER") setSelectedDrawing(null);
   }, []);
 
@@ -53,7 +55,7 @@ export function useChartDrawings(sessionId: number | null) {
     setSelectedDrawing({ chartId, drawingId: result.drawing.id });
     setTool("POINTER");
     trainingApi.createChartDrawing(chartId, toCreateRequest(drawing)).then((saved) => {
-      setDrawingsByChart(prev => ({ ...prev, [chartId]: (prev[chartId] ?? []).map(item => item.id === drawing.id ? fromApiDrawing(saved) : item) }));
+      setDrawingsByChart(prev => replaceDrawing(prev, chartId, drawing.id, fromApiDrawing(saved)));
     }).catch(() => {
       setDrawingsByChart(prev => removeDrawing(prev, chartId, drawing.id));
       setError("드로잉 저장에 실패했습니다.");
