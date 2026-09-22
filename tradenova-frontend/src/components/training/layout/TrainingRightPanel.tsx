@@ -18,6 +18,9 @@ type Props = {
   activeChart: TrainingChartDto | null;
   activeProgress: ProgressResponse | null;
   quickPhrases: QuickPhraseResponse[];
+  createQuickPhrase: (content: string) => Promise<QuickPhraseResponse>;
+  updateQuickPhrase: (id: number, content: string) => Promise<QuickPhraseResponse>;
+  deleteQuickPhrase: (id: number) => Promise<void>;
   events: TrainingEventResponse[];
   snapshots: ReportDocumentResponse[];
   loading: boolean;
@@ -56,6 +59,9 @@ export function TrainingRightPanel({
   activeChart,
   activeProgress,
   quickPhrases,
+  createQuickPhrase,
+  updateQuickPhrase,
+  deleteQuickPhrase,
   events,
   snapshots,
   loading,
@@ -103,6 +109,9 @@ export function TrainingRightPanel({
           tradeForm={tradeForm}
           setTradeForm={setTradeForm}
           quickPhrases={quickPhrases}
+          createQuickPhrase={createQuickPhrase}
+          updateQuickPhrase={updateQuickPhrase}
+          deleteQuickPhrase={deleteQuickPhrase}
           disabled={disabled}
           loading={loading}
           syncNext={syncNext}

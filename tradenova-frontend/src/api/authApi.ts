@@ -80,5 +80,7 @@ export const authApi = {
      */
     logoutLocal: () => {
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userNickname");
     },
 };

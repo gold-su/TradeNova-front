@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type {
-  QuickPhraseResponse,
   ReportDocumentResponse,
   ReportDraftContent,
   TrainingEventResponse,
 } from "@/types/training";
 import { emptyDraft } from "./training.utils";
+import { useQuickPhrases } from "@/hooks/useQuickPhrases";
+
+function apiErrorMessage(error: unknown, fallback: string) {
+  return axios.isAxiosError<{ message?: string }>(error)
+    ? (error.response?.data?.message ?? fallback)
+    : fallback;
+}
 
 /**
  * 훈련 화면의 "리포트/이벤트/스냅샷/빠른문구" 관련 로직을 담당하는 훅
@@ -20,7 +27,13 @@ import { emptyDraft } from "./training.utils";
  */
 export function useTrainingReport(activeChartId: number | null) {
   // ===== 리포트 관련 상태 =====
-  const [quickPhrases, setQuickPhrases] = useState<QuickPhraseResponse[]>([]);
+  const {
+    quickPhrases,
+    loadQuickPhrases,
+    createQuickPhrase,
+    updateQuickPhrase,
+    deleteQuickPhrase,
+  } = useQuickPhrases();
   const [events, setEvents] = useState<TrainingEventResponse[]>([]);
 
   const appendEvent = (event: TrainingEventResponse) => {
@@ -35,17 +48,6 @@ export function useTrainingReport(activeChartId: number | null) {
   const [eventLoading, setEventLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 빠른 문구 목록 로드
-   */
-  const loadQuickPhrases = async () => {
-    try {
-      const data = await reportApi.getQuickPhrases();
-      setQuickPhrases(data);
-    } catch (e) {
-      console.error("quick phrase load failed", e);
-    }
-  };
 
   /**
    * 현재 활성 차트의 draft 로드
@@ -112,8 +114,8 @@ export function useTrainingReport(activeChartId: number | null) {
       await reportApi.upsertDraft(activeChartId, {
         contentJson: draft,
       });
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "드래프트 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "드래프트 저장 실패"));
     } finally {
       setDraftSaving(false);
     }
@@ -135,8 +137,8 @@ export function useTrainingReport(activeChartId: number | null) {
       });
 
       setSnapshots((prev) => [saved, ...prev]);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "스냅샷 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "스냅샷 저장 실패"));
     }
   };
 
@@ -186,8 +188,8 @@ export function useTrainingReport(activeChartId: number | null) {
       }
 
       return saved;
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "시나리오 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "시나리오 저장 실패"));
       return null;
     }
   };
@@ -215,8 +217,8 @@ export function useTrainingReport(activeChartId: number | null) {
       });
 
       appendEvent(event);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "메모 이벤트 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "메모 이벤트 저장 실패"));
     }
   };
 
@@ -229,11 +231,6 @@ export function useTrainingReport(activeChartId: number | null) {
       freeNote: [prev.freeNote ?? "", content].filter(Boolean).join("\n"),
     }));
   };
-
-  // 빠른문구는 최초 1회만 로드
-  useEffect(() => {
-    loadQuickPhrases();
-  }, []);
 
   // active chart가 바뀌면 리포트 관련 데이터도 다시 로드
   useEffect(() => {
@@ -257,6 +254,9 @@ export function useTrainingReport(activeChartId: number | null) {
     setError,
 
     loadQuickPhrases,
+    createQuickPhrase,
+    updateQuickPhrase,
+    deleteQuickPhrase,
     loadDraft,
     loadEvents,
     loadSnapshots,

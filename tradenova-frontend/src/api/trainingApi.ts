@@ -15,6 +15,10 @@ import type {
   TrainingTradeItemResponse,
   SessionSummaryResponse,
   TrainingChartDto,
+  TrainingHistoryDetailResponse,
+  TrainingHistorySummaryResponse,
+  GrowthApiResponse,
+  GrowthPeriod,
 } from "@/types/training";
 
 export const trainingApi = {
@@ -50,6 +54,25 @@ export const trainingApi = {
       .get<SessionSummaryResponse>(
         `/api/training/sessions/${sessionId}/summary`,
       )
+      .then((r) => r.data),
+
+  getTrainingHistory: () =>
+    http
+      .get<TrainingHistorySummaryResponse[]>("/api/training/sessions/history")
+      .then((r) => r.data),
+
+  getTrainingHistoryDetail: (sessionId: number) =>
+    http
+      .get<TrainingHistoryDetailResponse>(
+        `/api/training/sessions/${sessionId}/history`,
+      )
+      .then((r) => r.data),
+
+  getGrowthAnalytics: (period: GrowthPeriod) =>
+    http
+      .get<GrowthApiResponse>("/api/training/growth", {
+        params: period === "ALL" ? undefined : { limit: period === "LAST_10" ? 10 : 30 },
+      })
       .then((r) => r.data),
 
   // ===== Candles =====

@@ -361,6 +361,9 @@ export function useTrainingSessionPage() {
 
     // ===== 리포트 데이터 =====
     quickPhrases: report.quickPhrases,
+    createQuickPhrase: report.createQuickPhrase,
+    updateQuickPhrase: report.updateQuickPhrase,
+    deleteQuickPhrase: report.deleteQuickPhrase,
     events: report.events,
     snapshots: report.snapshots,
     draft: report.draft,

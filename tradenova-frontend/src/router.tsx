@@ -1,5 +1,5 @@
 // src/router.tsx
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -10,9 +10,14 @@ import SignupPage from "@/pages/SignupPage";
 import TrainingSessionPage from "@/pages/training/TrainingSessionPage";
 
 import MyPageLayout from "@/pages/mypage/MyPageLayout";
-import MyProfilePage from "@/pages/mypage/MyProfilePage";
+import MyPageHub from "@/pages/mypage/MyPageHub";
 import MyAccountsPage from "@/pages/mypage/MyAccountsPage";
-import MyReportsPage from "@/pages/mypage/MyReportsPage";
+import TrainingHistoryPage from "@/pages/mypage/TrainingHistoryPage";
+import TrainingHistoryDetailPage from "@/pages/mypage/TrainingHistoryDetailPage";
+import GrowthAnalyticsPage from "@/pages/growth/GrowthAnalyticsPage";
+import CommunityListPage from "@/pages/community/CommunityListPage";
+import CommunityEditorPage from "@/pages/community/CommunityEditorPage";
+import CommunityDetailPage from "@/pages/community/CommunityDetailPage";
 
 export const router = createBrowserRouter([
     //헤더 보이는 영역
@@ -29,6 +34,14 @@ export const router = createBrowserRouter([
                 ),
             },
             {
+                path: "/growth",
+                element: <ProtectedRoute><GrowthAnalyticsPage /></ProtectedRoute>,
+            },
+            { path: "/community", element: <ProtectedRoute><CommunityListPage /></ProtectedRoute> },
+            { path: "/community/new", element: <ProtectedRoute><CommunityEditorPage /></ProtectedRoute> },
+            { path: "/community/:postId", element: <ProtectedRoute><CommunityDetailPage /></ProtectedRoute> },
+            { path: "/community/:id/edit", element: <ProtectedRoute><CommunityEditorPage /></ProtectedRoute> },
+            {
                 path: "/mypage",
                 element: (
                     <ProtectedRoute>
@@ -36,9 +49,12 @@ export const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
                 children: [
-                    { path: "profile", element: <MyProfilePage /> },
+                    { index: true, element: <MyPageHub /> },
+                    { path: "profile", element: <Navigate to="/mypage" replace /> },
                     { path: "accounts", element: <MyAccountsPage /> },
-                    { path: "reports", element: <MyReportsPage /> },
+                    { path: "history", element: <TrainingHistoryPage /> },
+                    { path: "history/:sessionId", element: <TrainingHistoryDetailPage /> },
+                    { path: "reports", element: <Navigate to="/mypage" replace /> },
                 ],
             },
         ],
