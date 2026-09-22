@@ -40,6 +40,7 @@ import {
   shouldResetChartViewport,
 } from "@/components/training/chart/chartLifecycle";
 import { DrawingOverlay } from "./drawing/DrawingOverlay";
+import { DrawingToolbar } from "./drawing/DrawingToolbar";
 import type {
   ChartDrawing,
   DrawingPoint,
@@ -71,6 +72,12 @@ type Props = {
   onCommitDrawingText?: (value: string) => boolean;
   onCancelDrawingDraft?: () => void;
   onSelectDrawing?: (selection: SelectedDrawing) => void;
+  showDrawingToolbar?: boolean;
+  onSelectDrawingTool?: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing?: () => void;
+  canDeleteDrawing?: boolean;
+  onClearDrawings?: () => void;
+  canClearDrawings?: boolean;
 };
 
 function formatTooltipDate(timestamp: number) {
@@ -113,6 +120,12 @@ export default function CandleChart({
   onCommitDrawingText,
   onCancelDrawingDraft,
   onSelectDrawing,
+  showDrawingToolbar = false,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  canDeleteDrawing = false,
+  onClearDrawings,
+  canClearDrawings = false,
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
@@ -856,6 +869,16 @@ export default function CandleChart({
 
       <div className="relative w-full" style={{ height: mainHeight }}>
         <div ref={mainContainerRef} className="h-full w-full" />
+        {showDrawingToolbar && (
+          <DrawingToolbar
+            tool={drawingTool}
+            onSelectTool={(nextTool) => onSelectDrawingTool?.(nextTool)}
+            onDelete={() => onDeleteSelectedDrawing?.()}
+            canDelete={canDeleteDrawing}
+            onClear={() => onClearDrawings?.()}
+            canClear={canClearDrawings}
+          />
+        )}
         {drawingChartReady && (
           <DrawingOverlay
             chart={drawingChart}

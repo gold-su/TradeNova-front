@@ -48,6 +48,9 @@ type Props = {
   onCommitDrawingText: (value: string) => boolean;
   onCancelDrawingDraft: () => void;
   onSelectDrawing: (selection: SelectedDrawing) => void;
+  onSelectDrawingTool: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing: () => void;
+  onClearChartDrawings: (chartId: number | null) => void;
 };
 
 export function TrainingChartSingle({
@@ -66,6 +69,9 @@ export function TrainingChartSingle({
   onCommitDrawingText,
   onCancelDrawingDraft,
   onSelectDrawing,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  onClearChartDrawings,
 }: Props) {
   if (!chart) {
     return (
@@ -135,6 +141,12 @@ export function TrainingChartSingle({
             onCommitDrawingText={onCommitDrawingText}
             onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={selectedDrawing?.chartId === chart.chartId}
+            onClearDrawings={() => onClearChartDrawings(chart.chartId)}
+            canClearDrawings={drawings.length > 0}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

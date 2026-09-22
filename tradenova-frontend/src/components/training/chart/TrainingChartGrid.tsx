@@ -8,6 +8,7 @@ import { TrainingChartTile } from "./TrainingChartTile";
 import type { IndicatorSettings } from "@/types/training";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
+import { shouldShowDrawingRail } from "./drawing/drawingToolbarState";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -29,6 +30,9 @@ type Props = {
   onCommitDrawingText: (value: string) => boolean;
   onCancelDrawingDraft: () => void;
   onSelectDrawing: (selection: SelectedDrawing) => void;
+  onSelectDrawingTool: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing: () => void;
+  onClearChartDrawings: (chartId: number | null) => void;
 };
 
 export function TrainingChartGrid({
@@ -51,6 +55,9 @@ export function TrainingChartGrid({
   onCommitDrawingText,
   onCancelDrawingDraft,
   onSelectDrawing,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  onClearChartDrawings,
 }: Props) {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto pr-1">
@@ -82,6 +89,12 @@ export function TrainingChartGrid({
             onCommitDrawingText={onCommitDrawingText}
             onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar={shouldShowDrawingRail(activeChartId, c.chartId, false)}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={selectedDrawing?.chartId === c.chartId}
+            onClearDrawings={() => onClearChartDrawings(c.chartId)}
+            canClearDrawings={(drawingsByChart[c.chartId]?.length ?? 0) > 0}
           />
         ))}
       </div>

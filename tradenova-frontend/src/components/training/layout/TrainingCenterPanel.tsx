@@ -26,7 +26,6 @@ import {
   Camera,
   X,
 } from "lucide-react";
-import { DrawingToolbar } from "@/components/training/chart/drawing/DrawingToolbar";
 import type {
   ChartDrawing,
   DrawingPoint,
@@ -227,15 +226,6 @@ export function TrainingCenterPanel({
         {/* 툴바 */}
         <div className="mt-2 flex h-9 items-center justify-between">
           <div className="flex items-center gap-1">
-            <DrawingToolbar
-              tool={drawingTool}
-              onSelectTool={onSelectDrawingTool}
-              onDelete={onDeleteSelectedDrawing}
-              canDelete={selectedDrawing?.chartId === activeChartId}
-              onClear={() => onClearChartDrawings(activeChartId)}
-              canClear={activeChartId != null && (drawingsByChart[activeChartId]?.length ?? 0) > 0}
-            />
-
             <button
               type="button"
               onClick={() => {
@@ -388,6 +378,9 @@ export function TrainingCenterPanel({
             onCommitDrawingText={onCommitDrawingText}
             onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            onClearChartDrawings={onClearChartDrawings}
           />
         ) : (
           <TrainingChartSingle
@@ -410,6 +403,9 @@ export function TrainingCenterPanel({
             onCommitDrawingText={onCommitDrawingText}
             onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            onClearChartDrawings={onClearChartDrawings}
           />
         )}
       </div>

@@ -52,6 +52,12 @@ type Props = {
   onCommitDrawingText?: (value: string) => boolean;
   onCancelDrawingDraft?: () => void;
   onSelectDrawing?: (selection: SelectedDrawing) => void;
+  showDrawingToolbar?: boolean;
+  onSelectDrawingTool?: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing?: () => void;
+  canDeleteDrawing?: boolean;
+  onClearDrawings?: () => void;
+  canClearDrawings?: boolean;
 };
 
 export function TrainingChartTile({
@@ -74,6 +80,12 @@ export function TrainingChartTile({
   onCommitDrawingText,
   onCancelDrawingDraft,
   onSelectDrawing,
+  showDrawingToolbar,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  canDeleteDrawing,
+  onClearDrawings,
+  canClearDrawings,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -165,6 +177,12 @@ export function TrainingChartTile({
             onCommitDrawingText={onCommitDrawingText}
             onCancelDrawingDraft={onCancelDrawingDraft}
             onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar={showDrawingToolbar}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={canDeleteDrawing}
+            onClearDrawings={onClearDrawings}
+            canClearDrawings={canClearDrawings}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
