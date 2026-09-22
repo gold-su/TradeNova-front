@@ -153,6 +153,10 @@ export function TrainingCenterPanel({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && drawingTool !== "POINTER") {
+        onSelectDrawingTool("POINTER");
+        return;
+      }
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       const target = event.target as HTMLElement | null;
       if (
@@ -166,7 +170,7 @@ export function TrainingCenterPanel({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onDeleteSelectedDrawing, selectedDrawing]);
+  }, [drawingTool, onDeleteSelectedDrawing, onSelectDrawingTool, selectedDrawing]);
 
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">

@@ -31,7 +31,6 @@ import { useChartDrawings } from "@/components/training/chart/drawing/useChartDr
  * - useTrainingTrade: 거래 모달/BUY/SELL/SELL ALL
  */
 export function useTrainingSessionPage() {
-  const drawings = useChartDrawings();
   // 거래와 차트 진행이 같은 렌더 안에서 재진입하더라도 동시에 실행되지 않게 한다.
   const mutationGuard = useRef(false);
 
@@ -82,6 +81,7 @@ export function useTrainingSessionPage() {
 
   // ===== 세션 핵심 로직 =====
   const core = useTrainingSessionCore(mutationGuard, handleAutoExit);
+  const drawings = useChartDrawings(core.sessionId);
 
   // ===== 리포트 로직 =====
   const report = useTrainingReport(core.activeChartId);

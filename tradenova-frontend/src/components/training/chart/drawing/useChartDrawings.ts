@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { trainingApi } from "@/api/trainingApi";
+import { fromApiDrawing, groupDrawings, toCreateRequest } from "./drawingApiMapper";
 import {
   addDrawing,
   clearChartDrawings,
@@ -12,11 +14,19 @@ import {
   type SelectedDrawing,
 } from "./drawingTypes";
 
-export function useChartDrawings() {
+export function useChartDrawings(sessionId: number | null) {
   const [drawingsByChart, setDrawingsByChart] = useState<Record<number, ChartDrawing[]>>({});
   const [tool, setTool] = useState<DrawingTool>("POINTER");
   const [selectedDrawing, setSelectedDrawing] = useState<SelectedDrawing>(null);
   const [pendingDrawing, setPendingDrawing] = useState<PendingDrawing>(null);
+  const hydratedSessionRef = useRef<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessionId || hydratedSessionRef.current === sessionId) return;
+    hydratedSessionRef.current = sessionId;
+    trainingApi.getSessionDrawings(sessionId).then(groups => setDrawingsByChart(prev => ({ ...prev, ...groupDrawings(groups) }))).catch(() => setError("드로잉을 불러오지 못했습니다."));
+  }, [sessionId]);
 
   const selectTool = useCallback((nextTool: DrawingTool) => {
     setTool(nextTool);
@@ -38,23 +48,35 @@ export function useChartDrawings() {
 
     if (!result.drawing) return;
 
-    setDrawingsByChart((prev) => addDrawing(prev, result.drawing!));
+    const drawing = result.drawing;
+    setDrawingsByChart((prev) => addDrawing(prev, drawing));
     setSelectedDrawing({ chartId, drawingId: result.drawing.id });
     setTool("POINTER");
+    trainingApi.createChartDrawing(chartId, toCreateRequest(drawing)).then((saved) => {
+      setDrawingsByChart(prev => ({ ...prev, [chartId]: (prev[chartId] ?? []).map(item => item.id === drawing.id ? fromApiDrawing(saved) : item) }));
+    }).catch(() => {
+      setDrawingsByChart(prev => removeDrawing(prev, chartId, drawing.id));
+      setError("드로잉 저장에 실패했습니다.");
+    });
   }, [pendingDrawing, tool]);
 
   const deleteSelected = useCallback(() => {
     if (!selectedDrawing) return;
+    const existing = drawingsByChart[selectedDrawing.chartId]?.find(d => d.id === selectedDrawing.drawingId);
     setDrawingsByChart((prev) => removeDrawing(prev, selectedDrawing.chartId, selectedDrawing.drawingId));
     setSelectedDrawing(null);
-  }, [selectedDrawing]);
+    if (!existing || existing.id.startsWith("drawing-")) return;
+    trainingApi.deleteChartDrawing(selectedDrawing.chartId, selectedDrawing.drawingId).catch(() => { setDrawingsByChart(prev => addDrawing(prev, existing)); setError("드로잉 삭제에 실패했습니다."); });
+  }, [drawingsByChart, selectedDrawing]);
 
   const clearActiveChart = useCallback((chartId: number | null) => {
     if (chartId == null) return;
+    const existing = drawingsByChart[chartId] ?? [];
     setDrawingsByChart((prev) => clearChartDrawings(prev, chartId));
     setSelectedDrawing((selected) => selected?.chartId === chartId ? null : selected);
     setPendingDrawing((pending) => pending?.chartId === chartId ? null : pending);
-  }, []);
+    trainingApi.clearChartDrawings(chartId).catch(() => { setDrawingsByChart(prev => ({ ...prev, [chartId]: existing })); setError("드로잉 초기화에 실패했습니다."); });
+  }, [drawingsByChart]);
 
-  return { drawingsByChart, tool, selectTool, pendingDrawing, addPoint, selectedDrawing, setSelectedDrawing, deleteSelected, clearActiveChart };
+  return { drawingsByChart, tool, selectTool, pendingDrawing, addPoint, selectedDrawing, setSelectedDrawing, deleteSelected, clearActiveChart, error, clearError: () => setError(null) };
 }

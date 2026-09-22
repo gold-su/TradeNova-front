@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawingTypes";
 
@@ -33,7 +33,9 @@ export function DrawingOverlay({
   onAddPoint,
   onSelectDrawing,
 }: Props) {
-  void pendingDrawing;
+  const pointerRef = useRef<DrawingPoint | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const [, setPreviewRevision] = useState(0);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [, setRevision] = useState(0);
 
@@ -55,6 +57,7 @@ export function DrawingOverlay({
       observer.disconnect();
     };
   }, [chart]);
+  useEffect(() => () => { if (frameRef.current != null) cancelAnimationFrame(frameRef.current); }, []);
 
   const rendered = (() => {
     if (!chart || !candleSeries) return [];
@@ -94,7 +97,15 @@ export function DrawingOverlay({
         const point = pointFromEvent(event);
         if (point) onAddPoint(chartId, point);
       }}
+      onMouseMove={(event) => {
+        if (tool === "POINTER") return;
+        pointerRef.current = pointFromEvent(event);
+        if (frameRef.current != null) return;
+        frameRef.current = requestAnimationFrame(() => { frameRef.current = null; setPreviewRevision(value => value + 1); });
+      }}
     >
+      {tool === "HORIZONTAL_LINE" && pointerRef.current && (() => { const y = candleSeries.priceToCoordinate(pointerRef.current!.price); return y == null ? null : <line x1={0} y1={y} x2={size.width} y2={y} stroke="#5eead4" strokeOpacity={0.45} strokeDasharray="4 4" />; })()}
+      {pendingDrawing?.chartId === chartId && pointerRef.current && (() => { const start = toPixel(chart, candleSeries, pendingDrawing.start); const end = toPixel(chart, candleSeries, pointerRef.current!); if (!start || !end) return null; return pendingDrawing.tool === "TREND_LINE" ? <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" /> : <rect x={Math.min(start.x,end.x)} y={Math.min(start.y,end.y)} width={Math.abs(end.x-start.x)} height={Math.abs(end.y-start.y)} fill="rgba(94,234,212,0.08)" stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" />; })()}
       {rendered.map((item) => {
         const selected = selectedDrawing?.chartId === chartId && selectedDrawing.drawingId === item.drawing.id;
         const stroke = selected ? "#5eead4" : "#34d399";

@@ -20,6 +20,7 @@ import type {
   GrowthApiResponse,
   GrowthPeriod,
 } from "@/types/training";
+import type { ChartDrawingApiResponse, ChartDrawingCreateRequest, ChartDrawingGroupResponse } from "@/components/training/chart/drawing/drawingApiMapper";
 
 export const trainingApi = {
   // ===== Session =====
@@ -34,6 +35,10 @@ export const trainingApi = {
         `/api/training/sessions/${sessionId}/charts`,
       )
       .then((r) => r.data),
+  getSessionDrawings: (sessionId: number) => http.get<ChartDrawingGroupResponse[]>(`/api/training/sessions/${sessionId}/drawings`).then(r => r.data),
+  createChartDrawing: (chartId: number, body: ChartDrawingCreateRequest) => http.post<ChartDrawingApiResponse>(`/api/training/charts/${chartId}/drawings`, body).then(r => r.data),
+  deleteChartDrawing: (chartId: number, drawingId: string) => http.delete(`/api/training/charts/${chartId}/drawings/${drawingId}`),
+  clearChartDrawings: (chartId: number) => http.delete(`/api/training/charts/${chartId}/drawings`),
 
   getActiveSession: () =>
     http
