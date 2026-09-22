@@ -127,6 +127,15 @@ export default function TrainingSessionPage() {
         setChartIndicators={page.setChartIndicators}
         getIndicatorSettings={page.getIndicatorSettings}
         tradeMarkersByChart={page.tradeMarkersByChart ?? {}}
+        drawingsByChart={page.drawingsByChart}
+        drawingTool={page.drawingTool}
+        onSelectDrawingTool={page.selectDrawingTool}
+        pendingDrawing={page.pendingDrawing}
+        selectedDrawing={page.selectedDrawing}
+        onAddDrawingPoint={page.addDrawingPoint}
+        onSelectDrawing={page.setSelectedDrawing}
+        onDeleteSelectedDrawing={page.deleteSelectedDrawing}
+        onClearChartDrawings={page.clearChartDrawings}
       />
 
       <TrainingRightPanel

@@ -9,6 +9,7 @@ import type {
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
+import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -39,6 +40,12 @@ type Props = {
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool: DrawingTool;
+  pendingDrawing: PendingDrawing;
+  selectedDrawing: SelectedDrawing;
+  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onSelectDrawing: (selection: SelectedDrawing) => void;
 };
 
 export function TrainingChartSingle({
@@ -49,6 +56,12 @@ export function TrainingChartSingle({
   refreshing,
   indicatorSettings,
   tradeMarkers = [],
+  drawings = [],
+  drawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onSelectDrawing,
 }: Props) {
   if (!chart) {
     return (
@@ -110,6 +123,12 @@ export function TrainingChartSingle({
             height={520}
             indicatorSettings={indicatorSettings}
             tradeMarkers={tradeMarkers}
+            drawings={drawings}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onSelectDrawing={onSelectDrawing}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

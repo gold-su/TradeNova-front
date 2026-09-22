@@ -39,6 +39,14 @@ import {
   getChartDataUpdateMode,
   shouldResetChartViewport,
 } from "@/components/training/chart/chartLifecycle";
+import { DrawingOverlay } from "./drawing/DrawingOverlay";
+import type {
+  ChartDrawing,
+  DrawingPoint,
+  DrawingTool,
+  PendingDrawing,
+  SelectedDrawing,
+} from "./drawing/drawingTypes";
 
 export type TradeChartMarker = {
   id: string;
@@ -55,6 +63,12 @@ type Props = {
   height?: number;
   indicatorSettings?: IndicatorSettings;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool?: DrawingTool;
+  pendingDrawing?: PendingDrawing;
+  selectedDrawing?: SelectedDrawing;
+  onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onSelectDrawing?: (selection: SelectedDrawing) => void;
 };
 
 function formatTooltipDate(timestamp: number) {
@@ -89,6 +103,12 @@ export default function CandleChart({
   height = 520,
   indicatorSettings = DEFAULT_INDICATORS,
   tradeMarkers = [],
+  drawings = [],
+  drawingTool = "POINTER",
+  pendingDrawing = null,
+  selectedDrawing = null,
+  onAddDrawingPoint,
+  onSelectDrawing,
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
@@ -126,6 +146,10 @@ export default function CandleChart({
     y: number;
     trade: TradeChartMarker;
   } | null>(null);
+  const [drawingChartReady, setDrawingChartReady] = useState(false);
+  const [drawingChart, setDrawingChart] = useState<IChartApi | null>(null);
+  const [drawingCandleSeries, setDrawingCandleSeries] =
+    useState<ISeriesApi<"Candlestick"> | null>(null);
 
   const showRsi = indicatorSettings.rsi.enabled;
   const showMacd = indicatorSettings.macd.enabled;
@@ -278,6 +302,9 @@ export default function CandleChart({
 
     mainChartRef.current = mainChart;
     mainSeriesRef.current = createMainPriceSeries(mainChart);
+    setDrawingChart(mainChart);
+    setDrawingCandleSeries(mainSeriesRef.current.candleSeries);
+    setDrawingChartReady(true);
 
     tradeMarkersRef.current = createSeriesMarkers(
       mainSeriesRef.current.candleSeries,
@@ -556,6 +583,9 @@ export default function CandleChart({
       prevCandleLengthRef.current = 0;
       previousLastCandleTimeRef.current = null;
       tradeMarkersRef.current = null;
+      setDrawingChart(null);
+      setDrawingCandleSeries(null);
+      setDrawingChartReady(false);
       setTooltip(null);
       setTradeTooltip(null);
     };
@@ -820,11 +850,24 @@ export default function CandleChart({
         )}
       </div>
 
-      <div
-        ref={mainContainerRef}
-        className="w-full"
-        style={{ height: mainHeight }}
-      />
+      <div className="relative w-full" style={{ height: mainHeight }}>
+        <div ref={mainContainerRef} className="h-full w-full" />
+        {drawingChartReady && (
+          <DrawingOverlay
+            chart={drawingChart}
+            candleSeries={drawingCandleSeries}
+            chartId={chartId}
+            drawings={drawings}
+            tool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddPoint={(targetChartId, point) =>
+              onAddDrawingPoint?.(targetChartId, point)
+            }
+            onSelectDrawing={(selection) => onSelectDrawing?.(selection)}
+          />
+        )}
+      </div>
 
       {tooltip && (
         <div

@@ -7,6 +7,7 @@ import type {
 import { TrainingChartTile } from "./TrainingChartTile";
 import type { IndicatorSettings } from "@/types/training";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
+import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -20,6 +21,12 @@ type Props = {
   globalIndicators: IndicatorSettings;
   chartIndicators: Record<number, IndicatorSettings>;
   tradeMarkersByChart: Record<number, TradeChartMarker[]>;
+  drawingsByChart: Record<number, ChartDrawing[]>;
+  drawingTool: DrawingTool;
+  pendingDrawing: PendingDrawing;
+  selectedDrawing: SelectedDrawing;
+  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onSelectDrawing: (selection: SelectedDrawing) => void;
 };
 
 export function TrainingChartGrid({
@@ -34,6 +41,12 @@ export function TrainingChartGrid({
   globalIndicators,
   chartIndicators,
   tradeMarkersByChart = {},
+  drawingsByChart,
+  drawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onSelectDrawing,
 }: Props) {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto pr-1">
@@ -57,6 +70,12 @@ export function TrainingChartGrid({
             indicatorSettings={chartIndicators[c.chartId] ?? globalIndicators}
             hasIndicatorOverride={!!chartIndicators[c.chartId]}
             tradeMarkers={tradeMarkersByChart[c.chartId] ?? []}
+            drawings={drawingsByChart[c.chartId] ?? []}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onSelectDrawing={onSelectDrawing}
           />
         ))}
       </div>

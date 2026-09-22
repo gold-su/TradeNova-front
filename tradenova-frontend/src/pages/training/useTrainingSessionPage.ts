@@ -18,6 +18,7 @@ import {
   finishTrainingAndOpenCompletion,
 } from "./trainingSessionLifecycle";
 import axios from "axios";
+import { useChartDrawings } from "@/components/training/chart/drawing/useChartDrawings";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -30,6 +31,7 @@ import axios from "axios";
  * - useTrainingTrade: 거래 모달/BUY/SELL/SELL ALL
  */
 export function useTrainingSessionPage() {
+  const drawings = useChartDrawings();
   // 거래와 차트 진행이 같은 렌더 안에서 재진입하더라도 동시에 실행되지 않게 한다.
   const mutationGuard = useRef(false);
 
@@ -438,6 +440,15 @@ export function useTrainingSessionPage() {
     saveRiskRule,
 
     tradeMarkersByChart,
+    drawingsByChart: drawings.drawingsByChart,
+    drawingTool: drawings.tool,
+    selectDrawingTool: drawings.selectTool,
+    pendingDrawing: drawings.pendingDrawing,
+    addDrawingPoint: drawings.addPoint,
+    selectedDrawing: drawings.selectedDrawing,
+    setSelectedDrawing: drawings.setSelectedDrawing,
+    deleteSelectedDrawing: drawings.deleteSelected,
+    clearChartDrawings: drawings.clearActiveChart,
     currentPositionQty: core.activeProgress?.positionQty,
     onTradeExecuted: (input: {
       side: "BUY" | "SELL";

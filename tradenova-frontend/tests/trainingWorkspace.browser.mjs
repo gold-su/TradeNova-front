@@ -228,6 +228,26 @@ try {
   await page.getByRole("button", { name: "AI 리뷰 닫기", exact: true }).click();
   await left.getByRole("button", { name: /Chart 1 -/ }).click();
   await right.getByText("아직 작성된 계획이 없습니다.").waitFor();
+
+  await page.getByRole("button", { name: "Single", exact: true }).click();
+  const drawingOverlay = page.getByTestId("drawing-overlay-1");
+  await drawingOverlay.waitFor();
+  await page.getByRole("button", { name: "수평선", exact: true }).click();
+  await drawingOverlay.click({ position: { x: 220, y: 150 } });
+  await page.locator("[data-drawing-id]").first().waitFor();
+  await page.getByRole("button", { name: "추세선", exact: true }).click();
+  await drawingOverlay.click({ position: { x: 140, y: 200 } });
+  await drawingOverlay.click({ position: { x: 360, y: 120 } });
+  await page.getByRole("button", { name: "영역", exact: true }).click();
+  await drawingOverlay.click({ position: { x: 280, y: 220 } });
+  await drawingOverlay.click({ position: { x: 440, y: 140 } });
+  assert.equal(await page.locator("[data-drawing-id]").count(), 3);
+  await page.getByRole("button", { name: "Grid", exact: true }).click();
+  await page.getByRole("button", { name: "Single", exact: true }).click();
+  assert.equal(await page.locator("[data-drawing-id]").count(), 3);
+  await page.getByRole("button", { name: "현재 차트 그리기 전체 초기화" }).click();
+  assert.equal(await page.locator("[data-drawing-id]").count(), 0);
+  await page.getByRole("button", { name: "Grid", exact: true }).click();
   await screenshot("01-default-1080p");
   await right
     .getByRole("button", { name: "+ 첫 계획 작성", exact: true })
