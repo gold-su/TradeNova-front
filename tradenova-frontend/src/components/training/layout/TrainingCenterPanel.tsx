@@ -135,6 +135,13 @@ export function TrainingCenterPanel({
   );
 
   const [visibleError, setVisibleError] = useState<string | null>(null);
+  const [drawingRailCollapsed, setDrawingRailCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (viewMode === "grid" && drawingTool !== "POINTER") {
+      onSelectDrawingTool("POINTER");
+    }
+  }, [drawingTool, onSelectDrawingTool, viewMode]);
 
   useEffect(() => {
     if (selectedDrawing && selectedDrawing.chartId !== activeChartId) {
@@ -156,6 +163,7 @@ export function TrainingCenterPanel({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (viewMode !== "single") return;
       if (event.key === "Escape" && drawingTool !== "POINTER") {
         onSelectDrawingTool("POINTER");
         return;
@@ -173,7 +181,7 @@ export function TrainingCenterPanel({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawingTool, onDeleteSelectedDrawing, onSelectDrawingTool, selectedDrawing]);
+  }, [drawingTool, onDeleteSelectedDrawing, onSelectDrawingTool, selectedDrawing, viewMode]);
 
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">
@@ -371,16 +379,6 @@ export function TrainingCenterPanel({
             chartIndicators={chartIndicators}
             tradeMarkersByChart={tradeMarkersByChart ?? {}}
             drawingsByChart={drawingsByChart}
-            drawingTool={drawingTool}
-            pendingDrawing={pendingDrawing}
-            selectedDrawing={selectedDrawing}
-            onAddDrawingPoint={onAddDrawingPoint}
-            onCommitDrawingText={onCommitDrawingText}
-            onCancelDrawingDraft={onCancelDrawingDraft}
-            onSelectDrawing={onSelectDrawing}
-            onSelectDrawingTool={onSelectDrawingTool}
-            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
-            onClearChartDrawings={onClearChartDrawings}
           />
         ) : (
           <TrainingChartSingle
@@ -406,6 +404,8 @@ export function TrainingCenterPanel({
             onSelectDrawingTool={onSelectDrawingTool}
             onDeleteSelectedDrawing={onDeleteSelectedDrawing}
             onClearChartDrawings={onClearChartDrawings}
+            drawingRailCollapsed={drawingRailCollapsed}
+            onToggleDrawingRail={() => setDrawingRailCollapsed((value) => !value)}
           />
         )}
       </div>

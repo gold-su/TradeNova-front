@@ -22,6 +22,6 @@ export function drawingGroupForTool(tool: DrawingTool): "POINTER" | "LINE" | "AX
   return "POINTER";
 }
 
-export function shouldShowDrawingRail(activeChartId: number | null, chartId: number, single: boolean) {
-  return single || activeChartId === chartId;
+export function shouldShowDrawingRail(single: boolean) {
+  return single;
 }

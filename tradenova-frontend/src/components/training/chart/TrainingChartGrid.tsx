@@ -7,8 +7,7 @@ import type {
 import { TrainingChartTile } from "./TrainingChartTile";
 import type { IndicatorSettings } from "@/types/training";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
-import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
-import { shouldShowDrawingRail } from "./drawing/drawingToolbarState";
+import type { ChartDrawing } from "./drawing/drawingTypes";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -23,16 +22,6 @@ type Props = {
   chartIndicators: Record<number, IndicatorSettings>;
   tradeMarkersByChart: Record<number, TradeChartMarker[]>;
   drawingsByChart: Record<number, ChartDrawing[]>;
-  drawingTool: DrawingTool;
-  pendingDrawing: PendingDrawing;
-  selectedDrawing: SelectedDrawing;
-  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
-  onCommitDrawingText: (value: string) => boolean;
-  onCancelDrawingDraft: () => void;
-  onSelectDrawing: (selection: SelectedDrawing) => void;
-  onSelectDrawingTool: (tool: DrawingTool) => void;
-  onDeleteSelectedDrawing: () => void;
-  onClearChartDrawings: (chartId: number | null) => void;
 };
 
 export function TrainingChartGrid({
@@ -48,16 +37,6 @@ export function TrainingChartGrid({
   chartIndicators,
   tradeMarkersByChart = {},
   drawingsByChart,
-  drawingTool,
-  pendingDrawing,
-  selectedDrawing,
-  onAddDrawingPoint,
-  onCommitDrawingText,
-  onCancelDrawingDraft,
-  onSelectDrawing,
-  onSelectDrawingTool,
-  onDeleteSelectedDrawing,
-  onClearChartDrawings,
 }: Props) {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto pr-1">
@@ -82,19 +61,11 @@ export function TrainingChartGrid({
             hasIndicatorOverride={!!chartIndicators[c.chartId]}
             tradeMarkers={tradeMarkersByChart[c.chartId] ?? []}
             drawings={drawingsByChart[c.chartId] ?? []}
-            drawingTool={drawingTool}
-            pendingDrawing={pendingDrawing}
-            selectedDrawing={selectedDrawing}
-            onAddDrawingPoint={onAddDrawingPoint}
-            onCommitDrawingText={onCommitDrawingText}
-            onCancelDrawingDraft={onCancelDrawingDraft}
-            onSelectDrawing={onSelectDrawing}
-            showDrawingToolbar={shouldShowDrawingRail(activeChartId, c.chartId, false)}
-            onSelectDrawingTool={onSelectDrawingTool}
-            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
-            canDeleteDrawing={selectedDrawing?.chartId === c.chartId}
-            onClearDrawings={() => onClearChartDrawings(c.chartId)}
-            canClearDrawings={(drawingsByChart[c.chartId]?.length ?? 0) > 0}
+            drawingTool="POINTER"
+            pendingDrawing={null}
+            selectedDrawing={null}
+            showDrawingToolbar={false}
+            drawingEditingEnabled={false}
           />
         ))}
       </div>

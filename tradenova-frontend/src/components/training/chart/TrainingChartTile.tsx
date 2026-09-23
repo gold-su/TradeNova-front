@@ -58,6 +58,7 @@ type Props = {
   canDeleteDrawing?: boolean;
   onClearDrawings?: () => void;
   canClearDrawings?: boolean;
+  drawingEditingEnabled?: boolean;
 };
 
 export function TrainingChartTile({
@@ -86,6 +87,7 @@ export function TrainingChartTile({
   canDeleteDrawing,
   onClearDrawings,
   canClearDrawings,
+  drawingEditingEnabled = false,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -183,6 +185,7 @@ export function TrainingChartTile({
             canDeleteDrawing={canDeleteDrawing}
             onClearDrawings={onClearDrawings}
             canClearDrawings={canClearDrawings}
+            drawingEditingEnabled={drawingEditingEnabled}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

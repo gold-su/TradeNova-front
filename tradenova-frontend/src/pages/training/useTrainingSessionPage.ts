@@ -179,7 +179,7 @@ export function useTrainingSessionPage() {
   /**
    * 에러는 core / report 중 먼저 있는 것을 보여준다.
    */
-  const error = core.error ?? report.error;
+  const error = drawings.error ?? core.error ?? report.error;
 
   const onRefreshChart = (chartId: number) => {
     if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {

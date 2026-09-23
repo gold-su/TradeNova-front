@@ -78,6 +78,9 @@ type Props = {
   canDeleteDrawing?: boolean;
   onClearDrawings?: () => void;
   canClearDrawings?: boolean;
+  drawingEditingEnabled?: boolean;
+  drawingRailCollapsed?: boolean;
+  onToggleDrawingRail?: () => void;
 };
 
 function formatTooltipDate(timestamp: number) {
@@ -126,6 +129,9 @@ export default function CandleChart({
   canDeleteDrawing = false,
   onClearDrawings,
   canClearDrawings = false,
+  drawingEditingEnabled = false,
+  drawingRailCollapsed = false,
+  onToggleDrawingRail,
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
@@ -869,7 +875,7 @@ export default function CandleChart({
 
       <div className="relative w-full" style={{ height: mainHeight }}>
         <div ref={mainContainerRef} className="h-full w-full" />
-        {showDrawingToolbar && (
+        {showDrawingToolbar && drawingEditingEnabled && (
           <DrawingToolbar
             tool={drawingTool}
             onSelectTool={(nextTool) => onSelectDrawingTool?.(nextTool)}
@@ -877,6 +883,8 @@ export default function CandleChart({
             canDelete={canDeleteDrawing}
             onClear={() => onClearDrawings?.()}
             canClear={canClearDrawings}
+            collapsed={drawingRailCollapsed}
+            onToggleCollapsed={() => onToggleDrawingRail?.()}
           />
         )}
         {drawingChartReady && (
@@ -894,6 +902,7 @@ export default function CandleChart({
             onCommitText={(value) => onCommitDrawingText?.(value) ?? false}
             onCancelDraft={() => onCancelDrawingDraft?.()}
             onSelectDrawing={(selection) => onSelectDrawing?.(selection)}
+            editingEnabled={drawingEditingEnabled}
           />
         )}
       </div>

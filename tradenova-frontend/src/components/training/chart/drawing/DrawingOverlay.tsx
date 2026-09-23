@@ -15,6 +15,7 @@ type Props = {
   onCommitText: (value: string) => boolean;
   onCancelDraft: () => void;
   onSelectDrawing: (selection: SelectedDrawing) => void;
+  editingEnabled: boolean;
 };
 
 function toPixel(chart: IChartApi, series: ISeriesApi<"Candlestick">, point: DrawingPoint): PixelPoint | null {
@@ -32,7 +33,7 @@ function FibonacciLines({ start, end, startPrice, endPrice, stroke, dashed = fal
   });
 }
 
-export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, pendingDrawing, selectedDrawing, onAddPoint, onCommitText, onCancelDraft, onSelectDrawing }: Props) {
+export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, pendingDrawing, selectedDrawing, onAddPoint, onCommitText, onCancelDraft, onSelectDrawing, editingEnabled }: Props) {
   const pointerRef = useRef<DrawingPoint | null>(null);
   const frameRef = useRef<number | null>(null);
   const [previewPoint, setPreviewPoint] = useState<DrawingPoint | null>(null);
@@ -113,15 +114,15 @@ export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, p
   };
 
   return <>
-    <svg className={`absolute inset-0 z-10 ${tool === "POINTER" ? "pointer-events-none" : "cursor-crosshair"}`} data-testid={`drawing-overlay-${chartId}`} width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`}
-      onClick={(event) => { if (tool === "POINTER" || textDraft) return; const point = pointFromEvent(event); if (point) onAddPoint(chartId, point); }}
-      onMouseMove={(event) => { if (tool === "POINTER" || textDraft) return; pointerRef.current = pointFromEvent(event); if (frameRef.current != null) return; frameRef.current = requestAnimationFrame(() => { frameRef.current = null; setPreviewPoint(pointerRef.current); }); }}>
+    <svg className={`absolute inset-0 z-10 ${!editingEnabled || tool === "POINTER" ? "pointer-events-none" : "cursor-crosshair"}`} data-testid={`drawing-overlay-${chartId}`} width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`}
+      onClick={(event) => { if (!editingEnabled || tool === "POINTER" || textDraft) return; const point = pointFromEvent(event); if (point) onAddPoint(chartId, point); }}
+      onMouseMove={(event) => { if (!editingEnabled || tool === "POINTER" || textDraft) return; pointerRef.current = pointFromEvent(event); if (frameRef.current != null) return; frameRef.current = requestAnimationFrame(() => { frameRef.current = null; setPreviewPoint(pointerRef.current); }); }}>
       {renderPreview()}
       {drawings.map((drawing) => {
         const selected = selectedDrawing?.chartId === chartId && selectedDrawing.drawingId === drawing.id;
         const stroke = selected ? "#5eead4" : "#34d399";
         const click = (event: MouseEvent) => { if (tool === "POINTER") { event.stopPropagation(); onSelectDrawing({ chartId, drawingId: drawing.id }); } };
-        const common = { className: "pointer-events-auto", onClick: click };
+        const common = { className: editingEnabled ? "pointer-events-auto" : "pointer-events-none", onClick: click };
         if (drawing.type === "HORIZONTAL_LINE") { const y = candleSeries.priceToCoordinate(drawing.price); return y == null ? null : <g key={drawing.id} {...common}><line data-drawing-id={drawing.id} x1={0} y1={y} x2={size.width} y2={y} stroke="transparent" strokeWidth={12} /><line x1={0} y1={y} x2={size.width} y2={y} stroke={stroke} strokeWidth={selected ? 2 : 1.5} strokeDasharray="5 4" /><text x={6} y={y - 5} fill={stroke} fontSize="10">{drawing.price.toLocaleString()}</text></g>; }
         if (drawing.type === "VERTICAL_LINE") { const x = chart.timeScale().timeToCoordinate(drawing.time as never); return x == null ? null : <g key={drawing.id} {...common}><line data-drawing-id={drawing.id} x1={x} y1={0} x2={x} y2={size.height} stroke="transparent" strokeWidth={12} /><line x1={x} y1={0} x2={x} y2={size.height} stroke={stroke} strokeWidth={selected ? 2 : 1.5} strokeDasharray="5 4" /></g>; }
         if (drawing.type === "TEXT") { const anchor = toPixel(chart, candleSeries, drawing.anchor); return anchor ? <text key={drawing.id} data-drawing-id={drawing.id} {...common} x={anchor.x + 4} y={anchor.y - 4} fill={stroke} fontSize="12" fontWeight={selected ? 600 : 500}>{drawing.text}</text> : null; }
@@ -137,6 +138,6 @@ export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, p
         return <g key={drawing.id} data-drawing-id={drawing.id} {...common}><polygon points={points} fill="rgba(52,211,153,0.08)" stroke="transparent" /><line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={stroke} strokeWidth={selected ? 2 : 1.25} /><line x1={geometry.parallelStart.x} y1={geometry.parallelStart.y} x2={geometry.parallelEnd.x} y2={geometry.parallelEnd.y} stroke={stroke} strokeWidth={selected ? 2 : 1.25} /></g>;
       })}
     </svg>
-    {textAnchor && <input autoFocus value={textValue} maxLength={MAX_DRAWING_TEXT_LENGTH} aria-label="차트 텍스트 입력" placeholder="텍스트 입력 후 Enter" onChange={(event) => setTextValue(event.target.value)} onKeyDown={onTextKeyDown} onBlur={() => { if (onCommitText(textValue)) setTextValue(""); else { setTextValue(""); onCancelDraft(); } }} className="absolute z-20 h-8 w-48 rounded-md border border-primary/50 bg-background/95 px-2 text-xs text-foreground shadow-lg outline-none focus:ring-1 focus:ring-primary" style={{ left: Math.min(textAnchor.x + 6, Math.max(0, size.width - 198)), top: Math.min(textAnchor.y + 6, Math.max(0, size.height - 38)) }} />}
+    {editingEnabled && textAnchor && <input autoFocus value={textValue} maxLength={MAX_DRAWING_TEXT_LENGTH} aria-label="차트 텍스트 입력" placeholder="텍스트 입력 후 Enter" onChange={(event) => setTextValue(event.target.value)} onKeyDown={onTextKeyDown} onBlur={() => { if (onCommitText(textValue)) setTextValue(""); else { setTextValue(""); onCancelDraft(); } }} className="absolute z-20 h-8 w-48 rounded-md border border-primary/50 bg-background/95 px-2 text-xs text-foreground shadow-lg outline-none focus:ring-1 focus:ring-primary" style={{ left: Math.min(textAnchor.x + 6, Math.max(0, size.width - 198)), top: Math.min(textAnchor.y + 6, Math.max(0, size.height - 38)) }} />}
   </>;
 }

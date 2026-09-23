@@ -19,9 +19,7 @@ test("active group follows the selected tool", () => {
   assert.equal(drawingGroupForTool("POINTER"), "POINTER");
 });
 
-test("grid shows a rail only on the active chart while single always shows it", () => {
-  assert.equal(shouldShowDrawingRail(2, 1, false), false);
-  assert.equal(shouldShowDrawingRail(2, 2, false), true);
-  assert.equal(shouldShowDrawingRail(null, 2, false), false);
-  assert.equal(shouldShowDrawingRail(null, 2, true), true);
+test("grid never shows a drawing rail while single does", () => {
+  assert.equal(shouldShowDrawingRail(false), false);
+  assert.equal(shouldShowDrawingRail(true), true);
 });

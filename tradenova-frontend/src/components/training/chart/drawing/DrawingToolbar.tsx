@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
-import { ChevronsUp, Eraser, Minus, MousePointer2, Percent, Rows3, SquareDashedMousePointer, Trash2, TrendingUp, Type } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsUp, Eraser, Minus, MousePointer2, Percent, Rows3, SquareDashedMousePointer, Trash2, TrendingUp, Type } from "lucide-react";
 import { drawingGroupForTool, reduceDrawingFlyout, type DrawingFlyout } from "./drawingToolbarState";
 import type { DrawingTool } from "./drawingTypes";
 
@@ -10,6 +10,8 @@ type Props = {
   canDelete: boolean;
   onClear: () => void;
   canClear: boolean;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 };
 
 const flyoutTools = {
@@ -25,7 +27,7 @@ const flyoutTools = {
 
 const railButton = "relative inline-flex h-8 w-8 items-center justify-center rounded-md outline-none transition focus-visible:ring-1 focus-visible:ring-primary";
 
-export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClear, canClear }: Props) {
+export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClear, canClear, collapsed, onToggleCollapsed }: Props) {
   const [flyout, setFlyout] = useState<DrawingFlyout>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const activeGroup = drawingGroupForTool(tool);
@@ -58,7 +60,11 @@ export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClea
   const groupButtonClass = (active: boolean) => `${railButton} ${active ? "bg-primary text-primary-foreground shadow-[0_0_0_1px_rgba(94,234,212,0.22)]" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"}`;
 
   return (
-    <div ref={rootRef} role="toolbar" aria-label="차트 그리기 도구" onPointerDown={stopPointer} onClick={stopClick} className="absolute left-1.5 top-1.5 z-30 flex w-10 flex-col items-center gap-0.5 rounded-lg border border-border/50 bg-background/90 p-1 shadow-lg backdrop-blur-sm">
+    <div ref={rootRef} role="toolbar" aria-label="차트 그리기 도구" onPointerDown={stopPointer} onClick={stopClick} className="absolute left-1.5 top-1.5 z-30 flex max-h-[calc(100%-12px)] w-10 flex-col items-center gap-0.5 rounded-lg border border-border/50 bg-background/90 p-1 shadow-lg backdrop-blur-sm">
+      <button type="button" title={collapsed ? "도구 펼치기" : "도구 접기"} aria-label={collapsed ? "도구 펼치기" : "도구 접기"} aria-expanded={!collapsed} onClick={() => { setFlyout(null); onToggleCollapsed(); }} className={`${railButton} shrink-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground`}>
+        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </button>
+      {!collapsed && <>
       <button type="button" title="Pointer" aria-label="Pointer" aria-pressed={tool === "POINTER"} onClick={() => select("POINTER")} className={groupButtonClass(tool === "POINTER")}><MousePointer2 className="h-4 w-4" /></button>
       <button type="button" title="Line" aria-label="Line" aria-expanded={flyout === "LINE"} aria-pressed={activeGroup === "LINE"} onClick={() => setFlyout((state) => reduceDrawingFlyout(state, { type: "TOGGLE", flyout: "LINE" }))} className={groupButtonClass(activeGroup === "LINE")}><TrendingUp className="h-4 w-4" /><span className="absolute bottom-1 right-1 h-0 w-0 border-x-[2px] border-t-[3px] border-x-transparent border-t-current opacity-70" /></button>
       <button type="button" title="Axis" aria-label="Axis" aria-expanded={flyout === "AXIS"} aria-pressed={activeGroup === "AXIS"} onClick={() => setFlyout((state) => reduceDrawingFlyout(state, { type: "TOGGLE", flyout: "AXIS" }))} className={groupButtonClass(activeGroup === "AXIS")}><Minus className="h-4 w-4" /><span className="absolute bottom-1 right-1 h-0 w-0 border-x-[2px] border-t-[3px] border-x-transparent border-t-current opacity-70" /></button>
@@ -80,6 +86,7 @@ export function DrawingToolbar({ tool, onSelectTool, onDelete, canDelete, onClea
           ))}
         </div>
       )}
+      </>}
     </div>
   );
 }

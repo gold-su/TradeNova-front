@@ -35,9 +35,25 @@ export function resolveDrawingPoint(tool: DrawingTool, chartId: number, point: D
   return { drawing: { ...base, type: tool, start: anchors[0], end: anchors[1] }, pendingDrawing: null };
 }
 export function addDrawing(state: Record<number, ChartDrawing[]>, drawing: ChartDrawing) { return { ...state, [drawing.chartId]: [...(state[drawing.chartId] ?? []), drawing] }; }
-export function replaceDrawing(state: Record<number, ChartDrawing[]>, chartId: number, drawingId: string, replacement: ChartDrawing) { return { ...state, [chartId]: (state[chartId] ?? []).map(drawing => drawing.id === drawingId ? replacement : drawing) }; }
+export function replaceDrawing(state: Record<number, ChartDrawing[]>, chartId: number, drawingId: string, replacement: ChartDrawing) {
+  const replaced = (state[chartId] ?? []).map((drawing) => drawing.id === drawingId ? replacement : drawing);
+  return {
+    ...state,
+    [chartId]: replaced.filter((drawing, index) => replaced.findIndex((candidate) => candidate.id === drawing.id) === index),
+  };
+}
 export function removeDrawing(state: Record<number, ChartDrawing[]>, chartId: number, drawingId: string) { return { ...state, [chartId]: (state[chartId] ?? []).filter(d => d.id !== drawingId) }; }
 export function clearChartDrawings(state: Record<number, ChartDrawing[]>, chartId: number) { return { ...state, [chartId]: [] }; }
+export function mergeHydratedDrawings(state: Record<number, ChartDrawing[]>, hydrated: Record<number, ChartDrawing[]>) {
+  const next = { ...state };
+  for (const [chartKey, serverDrawings] of Object.entries(hydrated)) {
+    const chartId = Number(chartKey);
+    const localDrawings = state[chartId] ?? [];
+    const serverIds = new Set(serverDrawings.map((drawing) => drawing.id));
+    next[chartId] = [...serverDrawings, ...localDrawings.filter((drawing) => !serverIds.has(drawing.id))];
+  }
+  return next;
+}
 export function cancelDrawingDraft(): PendingDrawing { return null; }
 export function normalizeDrawingText(value: string) {
   const text = value.trim();

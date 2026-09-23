@@ -51,6 +51,8 @@ type Props = {
   onSelectDrawingTool: (tool: DrawingTool) => void;
   onDeleteSelectedDrawing: () => void;
   onClearChartDrawings: (chartId: number | null) => void;
+  drawingRailCollapsed: boolean;
+  onToggleDrawingRail: () => void;
 };
 
 export function TrainingChartSingle({
@@ -72,6 +74,8 @@ export function TrainingChartSingle({
   onSelectDrawingTool,
   onDeleteSelectedDrawing,
   onClearChartDrawings,
+  drawingRailCollapsed,
+  onToggleDrawingRail,
 }: Props) {
   if (!chart) {
     return (
@@ -147,6 +151,9 @@ export function TrainingChartSingle({
             canDeleteDrawing={selectedDrawing?.chartId === chart.chartId}
             onClearDrawings={() => onClearChartDrawings(chart.chartId)}
             canClearDrawings={drawings.length > 0}
+            drawingEditingEnabled
+            drawingRailCollapsed={drawingRailCollapsed}
+            onToggleDrawingRail={onToggleDrawingRail}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

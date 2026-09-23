@@ -8,6 +8,7 @@ import {
   createDrawingId,
   removeDrawing,
   replaceDrawing,
+  mergeHydratedDrawings,
   resolveDrawingPoint,
   resolveTextDrawing,
   type ChartDrawing,
@@ -28,7 +29,7 @@ export function useChartDrawings(sessionId: number | null) {
   useEffect(() => {
     if (!sessionId || hydratedSessionRef.current === sessionId) return;
     hydratedSessionRef.current = sessionId;
-    trainingApi.getSessionDrawings(sessionId).then(groups => setDrawingsByChart(prev => ({ ...prev, ...groupDrawings(groups) }))).catch(() => setError("드로잉을 불러오지 못했습니다."));
+    trainingApi.getSessionDrawings(sessionId).then(groups => setDrawingsByChart(prev => mergeHydratedDrawings(prev, groupDrawings(groups)))).catch(() => setError("드로잉을 불러오지 못했습니다."));
   }, [sessionId]);
 
   const selectTool = useCallback((nextTool: DrawingTool) => {
@@ -43,7 +44,11 @@ export function useChartDrawings(sessionId: number | null) {
     setPendingDrawing(null);
     setTool("POINTER");
     trainingApi.createChartDrawing(drawing.chartId, toCreateRequest(drawing)).then((saved) => {
-      setDrawingsByChart(prev => replaceDrawing(prev, drawing.chartId, drawing.id, fromApiDrawing(saved)));
+      const persisted = fromApiDrawing(saved);
+      setDrawingsByChart(prev => replaceDrawing(prev, drawing.chartId, drawing.id, persisted));
+      setSelectedDrawing((selected) => selected?.chartId === drawing.chartId && selected.drawingId === drawing.id
+        ? { chartId: persisted.chartId, drawingId: persisted.id }
+        : selected);
     }).catch(() => {
       setDrawingsByChart(prev => removeDrawing(prev, drawing.chartId, drawing.id));
       setError("드로잉 저장에 실패했습니다.");

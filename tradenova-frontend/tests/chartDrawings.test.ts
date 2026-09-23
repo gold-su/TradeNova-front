@@ -6,6 +6,7 @@ import {
   clearChartDrawings,
   removeDrawing,
   replaceDrawing,
+  mergeHydratedDrawings,
   requiredAnchorCount,
   resolveDrawingPoint,
   resolveTextDrawing,
@@ -180,4 +181,36 @@ test("optimistic replacement and rollback work for every advanced drawing union"
   });
   assert.deepEqual(state[1].map((drawing) => drawing.id), ["1", "2", "3", "4", "5"]);
   assert.equal(removeDrawing(state, 1, "3")[1].some((drawing) => drawing.id === "3"), false);
+});
+
+test("late session hydration cannot erase an optimistic or newly persisted drawing", () => {
+  const optimistic: ChartDrawing = {
+    id: "drawing-pending",
+    chartId: 101,
+    type: "VERTICAL_LINE",
+    time: 10,
+  };
+  const existing: ChartDrawing = {
+    id: "7",
+    chartId: 101,
+    type: "HORIZONTAL_LINE",
+    price: 100,
+  };
+
+  const merged = mergeHydratedDrawings(
+    addDrawing({}, optimistic),
+    { 101: [existing] },
+  );
+  assert.deepEqual(merged[101], [existing, optimistic]);
+
+  const persisted = { ...optimistic, id: "8" };
+  const replaced = replaceDrawing(merged, 101, optimistic.id, persisted);
+  assert.deepEqual(replaced[101], [existing, persisted]);
+
+  const hydrationWonRace = mergeHydratedDrawings(
+    addDrawing({}, optimistic),
+    { 101: [persisted] },
+  );
+  const deduplicated = replaceDrawing(hydrationWonRace, 101, optimistic.id, persisted);
+  assert.deepEqual(deduplicated[101], [persisted]);
 });
