@@ -18,6 +18,7 @@ import {
   finishTrainingAndOpenCompletion,
 } from "./trainingSessionLifecycle";
 import axios from "axios";
+import { useChartDrawings } from "@/components/training/chart/drawing/useChartDrawings";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -80,6 +81,7 @@ export function useTrainingSessionPage() {
 
   // ===== 세션 핵심 로직 =====
   const core = useTrainingSessionCore(mutationGuard, handleAutoExit);
+  const drawings = useChartDrawings(core.sessionId);
 
   // ===== 리포트 로직 =====
   const report = useTrainingReport(core.activeChartId);
@@ -177,7 +179,7 @@ export function useTrainingSessionPage() {
   /**
    * 에러는 core / report 중 먼저 있는 것을 보여준다.
    */
-  const error = core.error ?? report.error;
+  const error = drawings.error ?? core.error ?? report.error;
 
   const onRefreshChart = (chartId: number) => {
     if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {
@@ -438,6 +440,16 @@ export function useTrainingSessionPage() {
     saveRiskRule,
 
     tradeMarkersByChart,
+    drawingsByChart: drawings.drawingsByChart,
+    drawingTool: drawings.tool,
+    selectDrawingTool: drawings.selectTool,
+    pendingDrawing: drawings.pendingDrawing,
+    addDrawingPoint: drawings.addPoint,
+    commitDrawingText: drawings.commitText,
+    selectedDrawing: drawings.selectedDrawing,
+    setSelectedDrawing: drawings.setSelectedDrawing,
+    deleteSelectedDrawing: drawings.deleteSelected,
+    clearChartDrawings: drawings.clearActiveChart,
     currentPositionQty: core.activeProgress?.positionQty,
     onTradeExecuted: (input: {
       side: "BUY" | "SELL";

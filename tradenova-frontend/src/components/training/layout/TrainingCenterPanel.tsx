@@ -20,13 +20,19 @@ import { IndicatorDrawer } from "@/components/training/chart/indicator/Indicator
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
 import {
-  PencilLine,
   Activity,
   Building2,
   Newspaper,
   Camera,
   X,
 } from "lucide-react";
+import type {
+  ChartDrawing,
+  DrawingPoint,
+  DrawingTool,
+  PendingDrawing,
+  SelectedDrawing,
+} from "@/components/training/chart/drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -74,6 +80,17 @@ type Props = {
   >;
   getIndicatorSettings: (chartId: number | null) => IndicatorSettings;
   tradeMarkersByChart: Record<number, TradeChartMarker[]>;
+  drawingsByChart: Record<number, ChartDrawing[]>;
+  drawingTool: DrawingTool;
+  onSelectDrawingTool: (tool: DrawingTool) => void;
+  pendingDrawing: PendingDrawing;
+  selectedDrawing: SelectedDrawing;
+  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText: (value: string) => boolean;
+  onCancelDrawingDraft: () => void;
+  onSelectDrawing: (selection: SelectedDrawing) => void;
+  onDeleteSelectedDrawing: () => void;
+  onClearChartDrawings: (chartId: number | null) => void;
 };
 
 export function TrainingCenterPanel({
@@ -99,6 +116,17 @@ export function TrainingCenterPanel({
   getIndicatorSettings,
   activeProgress,
   tradeMarkersByChart = {},
+  drawingsByChart,
+  drawingTool,
+  onSelectDrawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  onDeleteSelectedDrawing,
+  onClearChartDrawings,
 }: Props) {
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 
@@ -107,6 +135,19 @@ export function TrainingCenterPanel({
   );
 
   const [visibleError, setVisibleError] = useState<string | null>(null);
+  const [drawingRailCollapsed, setDrawingRailCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (viewMode === "grid" && drawingTool !== "POINTER") {
+      onSelectDrawingTool("POINTER");
+    }
+  }, [drawingTool, onSelectDrawingTool, viewMode]);
+
+  useEffect(() => {
+    if (selectedDrawing && selectedDrawing.chartId !== activeChartId) {
+      onSelectDrawing(null);
+    }
+  }, [activeChartId, onSelectDrawing, selectedDrawing]);
 
   useEffect(() => {
     if (!error) return;
@@ -119,6 +160,28 @@ export function TrainingCenterPanel({
 
     return () => window.clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (viewMode !== "single") return;
+      if (event.key === "Escape" && drawingTool !== "POINTER") {
+        onSelectDrawingTool("POINTER");
+        return;
+      }
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.matches("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+      if (!selectedDrawing) return;
+      event.preventDefault();
+      onDeleteSelectedDrawing();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawingTool, onDeleteSelectedDrawing, onSelectDrawingTool, selectedDrawing, viewMode]);
 
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">
@@ -171,14 +234,6 @@ export function TrainingCenterPanel({
         {/* 툴바 */}
         <div className="mt-2 flex h-9 items-center justify-between">
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <PencilLine className="h-3.5 w-3.5" />
-              그리기
-            </button>
-
             <button
               type="button"
               onClick={() => {
@@ -323,6 +378,7 @@ export function TrainingCenterPanel({
             globalIndicators={globalIndicators}
             chartIndicators={chartIndicators}
             tradeMarkersByChart={tradeMarkersByChart ?? {}}
+            drawingsByChart={drawingsByChart}
           />
         ) : (
           <TrainingChartSingle
@@ -337,6 +393,19 @@ export function TrainingCenterPanel({
             tradeMarkers={
               activeChartId ? (tradeMarkersByChart[activeChartId] ?? []) : []
             }
+            drawings={activeChartId ? (drawingsByChart[activeChartId] ?? []) : []}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
+            onSelectDrawing={onSelectDrawing}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            onClearChartDrawings={onClearChartDrawings}
+            drawingRailCollapsed={drawingRailCollapsed}
+            onToggleDrawingRail={() => setDrawingRailCollapsed((value) => !value)}
           />
         )}
       </div>

@@ -9,6 +9,7 @@ import type {
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
+import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -39,6 +40,19 @@ type Props = {
   refreshing: boolean;
   indicatorSettings: IndicatorSettings;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool: DrawingTool;
+  pendingDrawing: PendingDrawing;
+  selectedDrawing: SelectedDrawing;
+  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText: (value: string) => boolean;
+  onCancelDrawingDraft: () => void;
+  onSelectDrawing: (selection: SelectedDrawing) => void;
+  onSelectDrawingTool: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing: () => void;
+  onClearChartDrawings: (chartId: number | null) => void;
+  drawingRailCollapsed: boolean;
+  onToggleDrawingRail: () => void;
 };
 
 export function TrainingChartSingle({
@@ -49,6 +63,19 @@ export function TrainingChartSingle({
   refreshing,
   indicatorSettings,
   tradeMarkers = [],
+  drawings = [],
+  drawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  onClearChartDrawings,
+  drawingRailCollapsed,
+  onToggleDrawingRail,
 }: Props) {
   if (!chart) {
     return (
@@ -110,6 +137,23 @@ export function TrainingChartSingle({
             height={520}
             indicatorSettings={indicatorSettings}
             tradeMarkers={tradeMarkers}
+            drawings={drawings}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
+            onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={selectedDrawing?.chartId === chart.chartId}
+            onClearDrawings={() => onClearChartDrawings(chart.chartId)}
+            canClearDrawings={drawings.length > 0}
+            drawingEditingEnabled
+            drawingRailCollapsed={drawingRailCollapsed}
+            onToggleDrawingRail={onToggleDrawingRail}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

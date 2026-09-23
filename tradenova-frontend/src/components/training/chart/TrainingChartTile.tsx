@@ -9,6 +9,7 @@ import type {
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
+import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -43,6 +44,21 @@ type Props = {
   indicatorSettings: IndicatorSettings;
   hasIndicatorOverride?: boolean;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool?: DrawingTool;
+  pendingDrawing?: PendingDrawing;
+  selectedDrawing?: SelectedDrawing;
+  onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText?: (value: string) => boolean;
+  onCancelDrawingDraft?: () => void;
+  onSelectDrawing?: (selection: SelectedDrawing) => void;
+  showDrawingToolbar?: boolean;
+  onSelectDrawingTool?: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing?: () => void;
+  canDeleteDrawing?: boolean;
+  onClearDrawings?: () => void;
+  canClearDrawings?: boolean;
+  drawingEditingEnabled?: boolean;
 };
 
 export function TrainingChartTile({
@@ -57,6 +73,21 @@ export function TrainingChartTile({
   indicatorSettings,
   hasIndicatorOverride,
   tradeMarkers = [],
+  drawings = [],
+  drawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  showDrawingToolbar,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  canDeleteDrawing,
+  onClearDrawings,
+  canClearDrawings,
+  drawingEditingEnabled = false,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
@@ -140,6 +171,21 @@ export function TrainingChartTile({
             height={chartHeight}
             indicatorSettings={indicatorSettings}
             tradeMarkers={tradeMarkers}
+            drawings={drawings}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
+            onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar={showDrawingToolbar}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={canDeleteDrawing}
+            onClearDrawings={onClearDrawings}
+            canClearDrawings={canClearDrawings}
+            drawingEditingEnabled={drawingEditingEnabled}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
