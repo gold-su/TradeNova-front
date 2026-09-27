@@ -136,6 +136,7 @@ export function TrainingChartSingle({
             candles={candles}
             height={520}
             indicatorSettings={indicatorSettings}
+            indicatorDisplayMode="FULL"
             tradeMarkers={tradeMarkers}
             drawings={drawings}
             drawingTool={drawingTool}

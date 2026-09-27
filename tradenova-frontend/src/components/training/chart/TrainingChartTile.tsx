@@ -95,11 +95,7 @@ export function TrainingChartTile({
 
   const { current, total } = getTrainingProgressDisplay(chart, progress);
 
-  const subPaneCount =
-    Number(indicatorSettings.rsi.enabled) +
-    Number(indicatorSettings.macd.enabled);
-
-  const chartHeight = subPaneCount > 0 ? 250 + subPaneCount * 86 : 245;
+  const chartHeight = 245;
 
   return (
     <div
@@ -170,6 +166,7 @@ export function TrainingChartTile({
             candles={visible}
             height={chartHeight}
             indicatorSettings={indicatorSettings}
+            indicatorDisplayMode="COMPACT"
             tradeMarkers={tradeMarkers}
             drawings={drawings}
             drawingTool={drawingTool}
