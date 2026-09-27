@@ -8,6 +8,10 @@ import {
 } from "lightweight-charts";
 import type { Candle, IndicatorSettings } from "@/types/training";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
+import {
+  isIndicatorVisible,
+  type IndicatorDisplayMode,
+} from "@/components/training/chart/indicator/indicatorDisplayPolicy";
 import { calculateBollinger } from "@/lib/chart/indicators/bollinger";
 import {
   createMainPriceSeries,
@@ -63,6 +67,7 @@ type Props = {
   candles: Candle[];
   height?: number;
   indicatorSettings?: IndicatorSettings;
+  indicatorDisplayMode?: IndicatorDisplayMode;
   tradeMarkers?: TradeChartMarker[];
   drawings?: ChartDrawing[];
   drawingTool?: DrawingTool;
@@ -114,6 +119,7 @@ export default function CandleChart({
   candles,
   height = 520,
   indicatorSettings = DEFAULT_INDICATORS,
+  indicatorDisplayMode = "FULL",
   tradeMarkers = [],
   drawings = [],
   drawingTool = "POINTER",
@@ -174,8 +180,8 @@ export default function CandleChart({
   const [drawingCandleSeries, setDrawingCandleSeries] =
     useState<ISeriesApi<"Candlestick"> | null>(null);
 
-  const showRsi = indicatorSettings.rsi.enabled;
-  const showMacd = indicatorSettings.macd.enabled;
+  const showRsi = isIndicatorVisible(indicatorSettings, "rsi", indicatorDisplayMode);
+  const showMacd = isIndicatorVisible(indicatorSettings, "macd", indicatorDisplayMode);
 
   const subPaneCount = Number(showRsi) + Number(showMacd);
   const subPaneHeight = subPaneCount > 0 ? 90 : 0;

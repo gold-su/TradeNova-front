@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IndicatorSettings } from "@/types/training";
 import {
   INDICATOR_META,
@@ -6,6 +6,11 @@ import {
 } from "@/components/training/chart/indicator/indicatorMeta";
 import { IndicatorConfigPanel } from "@/components/training/chart/indicator/IndicatorConfigPanel";
 import { Search, Settings } from "lucide-react";
+import {
+  applyIndicatorPreset,
+  INDICATOR_PRESETS,
+  type IndicatorPresetKey,
+} from "./indicatorPresets";
 
 type IndicatorScope = "GLOBAL" | "CHART";
 
@@ -50,6 +55,19 @@ export function IndicatorDrawer({
 
   //검색
   const [keyword, setKeyword] = useState("");
+  const [presetFeedback, setPresetFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (presetFeedback == null) return;
+
+    const timeoutId = window.setTimeout(() => setPresetFeedback(null), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [presetFeedback]);
+
+  const handlePreset = (preset: IndicatorPresetKey, label: string) => {
+    onChange(applyIndicatorPreset(settings, preset));
+    setPresetFeedback(`${label} 프리셋을 적용했습니다.`);
+  };
 
   const getChecked = (key: IndicatorKey) => {
     switch (key) {
@@ -270,6 +288,38 @@ export function IndicatorDrawer({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
+            <section className="mb-4 rounded-lg border border-border/60 bg-background/30 p-2.5">
+              <div className="mb-2 flex min-h-4 items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-foreground/80">
+                  빠른 설정
+                </span>
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className="text-[10px] text-primary"
+                >
+                  {presetFeedback}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5">
+                {INDICATOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    onClick={() => handlePreset(preset.key, preset.label)}
+                    className="rounded-md border border-border/60 bg-background/40 px-1 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/70"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-2 text-[10px] leading-4 text-muted-foreground/75">
+                RSI와 MACD는 단일 차트에서 표시됩니다.
+              </p>
+            </section>
+
             <div className="relative mb-4">
               <Search
                 size={15}
