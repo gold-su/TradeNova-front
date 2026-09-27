@@ -2,11 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   FIBONACCI_LEVELS,
+  getExtendedLineEndpoints,
   getFibonacciLevels,
   getParallelChannelGeometry,
   getRayEndpoint,
   normalizeZoneRect,
 } from "../src/components/training/chart/drawing/drawingGeometry.ts";
+
+test("extended line reaches both chart edges and handles a near-vertical line", () => {
+  assert.deepEqual(getExtendedLineEndpoints({ x: 20, y: 30 }, { x: 40, y: 50 }, 100, 80), {
+    start: { x: 0, y: 10 }, end: { x: 100, y: 110 },
+  });
+  assert.deepEqual(getExtendedLineEndpoints({ x: 25, y: 10 }, { x: 25.0005, y: 50 }, 100, 80), {
+    start: { x: 25, y: 0 }, end: { x: 25, y: 80 },
+  });
+});
 
 test("ray extends in its anchor direction and rejects a vertical direction", () => {
   assert.deepEqual(getRayEndpoint({ x: 10, y: 10 }, { x: 20, y: 20 }, 100), { x: 100, y: 100 });

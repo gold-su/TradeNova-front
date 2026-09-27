@@ -33,6 +33,7 @@ import type {
   PendingDrawing,
   SelectedDrawing,
 } from "@/components/training/chart/drawing/drawingTypes";
+import { drawingEscapeAction } from "@/components/training/chart/drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -165,7 +166,9 @@ export function TrainingCenterPanel({
     const onKeyDown = (event: KeyboardEvent) => {
       if (viewMode !== "single") return;
       if (event.key === "Escape" && drawingTool !== "POINTER") {
-        onSelectDrawingTool("POINTER");
+        const action = drawingEscapeAction(drawingTool, pendingDrawing);
+        if (action === "CANCEL_DRAFT") onCancelDrawingDraft();
+        if (action === "SELECT_POINTER") onSelectDrawingTool("POINTER");
         return;
       }
       if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -181,7 +184,7 @@ export function TrainingCenterPanel({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawingTool, onDeleteSelectedDrawing, onSelectDrawingTool, selectedDrawing, viewMode]);
+  }, [drawingTool, onCancelDrawingDraft, onDeleteSelectedDrawing, onSelectDrawingTool, pendingDrawing, selectedDrawing, viewMode]);
 
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">

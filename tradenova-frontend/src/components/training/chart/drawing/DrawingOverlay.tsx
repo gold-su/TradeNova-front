@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { IChartApi, ISeriesApi } from "lightweight-charts";
-import { getFibonacciLevels, getParallelChannelGeometry, getRayEndpoint, normalizeZoneRect, type PixelPoint } from "./drawingGeometry";
+import { getExtendedLineEndpoints, getFibonacciLevels, getParallelChannelGeometry, getRayEndpoint, normalizeZoneRect, type PixelPoint } from "./drawingGeometry";
 import { MAX_DRAWING_TEXT_LENGTH, type ChartDrawing, type DrawingPoint, type DrawingTool, type PendingDrawing, type SelectedDrawing } from "./drawingTypes";
 
 type Props = {
@@ -94,6 +94,10 @@ export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, p
       const rayEnd = getRayEndpoint(start, end, size.width);
       return rayEnd ? <line x1={start.x} y1={start.y} x2={rayEnd.x} y2={rayEnd.y} stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" /> : null;
     }
+    if (draft.tool === "EXTENDED_LINE") {
+      const line = getExtendedLineEndpoints(start, end, size.width, size.height);
+      return <line x1={line.start.x} y1={line.start.y} x2={line.end.x} y2={line.end.y} stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" />;
+    }
     if (draft.tool === "ZONE") return <rect {...normalizeZoneRect(start, end)} fill="rgba(94,234,212,0.08)" stroke="#5eead4" strokeOpacity={0.5} strokeDasharray="5 4" />;
     if (draft.tool === "FIBONACCI_RETRACEMENT") return <FibonacciLines start={start} end={end} startPrice={draft.anchors[0].price} endPrice={endPoint.price} stroke="#5eead4" dashed />;
     if (draft.tool === "PARALLEL_CHANNEL") {
@@ -130,6 +134,7 @@ export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, p
         if (!start || !end) return null;
         if (drawing.type === "TREND_LINE") return <g key={drawing.id} {...common}><line data-drawing-id={drawing.id} x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="transparent" strokeWidth={12} /><line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={stroke} strokeWidth={selected ? 2 : 1.5} /></g>;
         if (drawing.type === "RAY") { const rayEnd = getRayEndpoint(start, end, size.width); return rayEnd ? <g key={drawing.id} {...common}><line data-drawing-id={drawing.id} x1={start.x} y1={start.y} x2={rayEnd.x} y2={rayEnd.y} stroke="transparent" strokeWidth={12} /><line x1={start.x} y1={start.y} x2={rayEnd.x} y2={rayEnd.y} stroke={stroke} strokeWidth={selected ? 2 : 1.5} /></g> : null; }
+        if (drawing.type === "EXTENDED_LINE") { const line = getExtendedLineEndpoints(start, end, size.width, size.height); return <g key={drawing.id} {...common}><line data-drawing-id={drawing.id} x1={line.start.x} y1={line.start.y} x2={line.end.x} y2={line.end.y} stroke="transparent" strokeWidth={12} /><line x1={line.start.x} y1={line.start.y} x2={line.end.x} y2={line.end.y} stroke={stroke} strokeWidth={selected ? 2 : 1.5} /></g>; }
         if (drawing.type === "ZONE") return <rect key={drawing.id} data-drawing-id={drawing.id} {...common} {...normalizeZoneRect(start, end)} fill="rgba(52,211,153,0.10)" stroke={stroke} strokeWidth={selected ? 2 : 1.25} />;
         if (drawing.type === "FIBONACCI_RETRACEMENT") return <g key={drawing.id} data-drawing-id={drawing.id} {...common}><FibonacciLines start={start} end={end} startPrice={drawing.start.price} endPrice={drawing.end.price} stroke={stroke} /></g>;
         const anchor3 = toPixel(chart, candleSeries, drawing.anchor3); const geometry = anchor3 && getParallelChannelGeometry(start, end, anchor3);
