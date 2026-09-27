@@ -1,12 +1,12 @@
 import type { UTCTimestamp } from "lightweight-charts";
 
-export type DrawingType = "HORIZONTAL_LINE" | "VERTICAL_LINE" | "TREND_LINE" | "RAY" | "ZONE" | "PARALLEL_CHANNEL" | "FIBONACCI_RETRACEMENT" | "TEXT";
+export type DrawingType = "HORIZONTAL_LINE" | "VERTICAL_LINE" | "TREND_LINE" | "RAY" | "EXTENDED_LINE" | "ZONE" | "PARALLEL_CHANNEL" | "FIBONACCI_RETRACEMENT" | "TEXT";
 export type DrawingTool = "POINTER" | DrawingType;
 export type DrawingPoint = { time: UTCTimestamp; price: number };
 type DrawingBase = { id: string; chartId: number };
 export type HorizontalLineDrawing = DrawingBase & { type: "HORIZONTAL_LINE"; price: number };
 export type VerticalLineDrawing = DrawingBase & { type: "VERTICAL_LINE"; time: UTCTimestamp };
-type TwoAnchorDrawingType = "TREND_LINE" | "RAY" | "ZONE" | "FIBONACCI_RETRACEMENT";
+type TwoAnchorDrawingType = "TREND_LINE" | "RAY" | "EXTENDED_LINE" | "ZONE" | "FIBONACCI_RETRACEMENT";
 export type TwoAnchorDrawing<T extends TwoAnchorDrawingType = TwoAnchorDrawingType> = T extends TwoAnchorDrawingType
   ? DrawingBase & { type: T; start: DrawingPoint; end: DrawingPoint }
   : never;
@@ -55,6 +55,10 @@ export function mergeHydratedDrawings(state: Record<number, ChartDrawing[]>, hyd
   return next;
 }
 export function cancelDrawingDraft(): PendingDrawing { return null; }
+export function drawingEscapeAction(tool: DrawingTool, draft: PendingDrawing): "CANCEL_DRAFT" | "SELECT_POINTER" | "NONE" {
+  if (draft) return "CANCEL_DRAFT";
+  return tool === "POINTER" ? "NONE" : "SELECT_POINTER";
+}
 export function normalizeDrawingText(value: string) {
   const text = value.trim();
   return text.length > 0 && text.length <= MAX_DRAWING_TEXT_LENGTH ? text : null;

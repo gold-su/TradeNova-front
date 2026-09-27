@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   addDrawing,
   cancelDrawingDraft,
+  drawingEscapeAction,
   clearChartDrawings,
   removeDrawing,
   replaceDrawing,
@@ -112,6 +113,7 @@ test("v2 tools declare their anchor count without exposing new UI behavior", () 
   assert.equal(requiredAnchorCount("TEXT"), 1);
   assert.equal(requiredAnchorCount("TREND_LINE"), 2);
   assert.equal(requiredAnchorCount("RAY"), 2);
+  assert.equal(requiredAnchorCount("EXTENDED_LINE"), 2);
   assert.equal(requiredAnchorCount("ZONE"), 2);
   assert.equal(requiredAnchorCount("FIBONACCI_RETRACEMENT"), 2);
   assert.equal(requiredAnchorCount("PARALLEL_CHANNEL"), 3);
@@ -137,7 +139,7 @@ test("advanced tools commit at their required anchor count", () => {
   const point3 = { time: 30, price: 120 } as const;
 
   assert.equal(resolveDrawingPoint("VERTICAL_LINE", 1, point1, null, "v").drawing?.type, "VERTICAL_LINE");
-  for (const tool of ["RAY", "FIBONACCI_RETRACEMENT"] as const) {
+  for (const tool of ["RAY", "EXTENDED_LINE", "FIBONACCI_RETRACEMENT"] as const) {
     const first = resolveDrawingPoint(tool, 1, point1, null, tool);
     assert.equal(first.drawing, null);
     assert.equal(resolveDrawingPoint(tool, 1, point2, first.pendingDrawing, tool).drawing?.type, tool);
@@ -146,6 +148,24 @@ test("advanced tools commit at their required anchor count", () => {
   const second = resolveDrawingPoint("PARALLEL_CHANNEL", 1, point2, first.pendingDrawing, "parallel");
   assert.equal(second.drawing, null);
   assert.equal(resolveDrawingPoint("PARALLEL_CHANNEL", 1, point3, second.pendingDrawing, "parallel").drawing?.type, "PARALLEL_CHANNEL");
+});
+
+test("escape cancels the current draft before leaving the active tool", () => {
+  const draft = resolveDrawingPoint("TREND_LINE", 1, { time: 10, price: 100 }, null, "trend").pendingDrawing;
+  assert.equal(drawingEscapeAction("TREND_LINE", draft), "CANCEL_DRAFT");
+  assert.equal(drawingEscapeAction("TREND_LINE", null), "SELECT_POINTER");
+  assert.equal(drawingEscapeAction("POINTER", null), "NONE");
+});
+
+test("two-anchor tools can create repeatedly without changing the selected tool", () => {
+  const tool = "EXTENDED_LINE" as const;
+  const firstDraft = resolveDrawingPoint(tool, 1, { time: 10, price: 100 }, null, "extended-1").pendingDrawing;
+  const first = resolveDrawingPoint(tool, 1, { time: 20, price: 110 }, firstDraft, "extended-1");
+  assert.equal(first.drawing?.type, tool);
+  assert.equal(first.pendingDrawing, null);
+  const secondDraft = resolveDrawingPoint(tool, 1, { time: 30, price: 120 }, first.pendingDrawing, "extended-2").pendingDrawing;
+  const second = resolveDrawingPoint(tool, 1, { time: 40, price: 130 }, secondDraft, "extended-2");
+  assert.equal(second.drawing?.type, tool);
 });
 
 test("text trims content and rejects empty or oversized values", () => {
@@ -169,6 +189,7 @@ test("optimistic replacement and rollback work for every advanced drawing union"
   const drawings: ChartDrawing[] = [
     { id: "temp-v", chartId: 1, type: "VERTICAL_LINE", time: point.time },
     { id: "temp-r", chartId: 1, type: "RAY", start: point, end: next },
+    { id: "temp-e", chartId: 1, type: "EXTENDED_LINE", start: point, end: next },
     { id: "temp-f", chartId: 1, type: "FIBONACCI_RETRACEMENT", start: point, end: next },
     { id: "temp-p", chartId: 1, type: "PARALLEL_CHANNEL", start: point, end: next, anchor3: third },
     { id: "temp-t", chartId: 1, type: "TEXT", anchor: point, text: "note", options: null },
@@ -179,7 +200,7 @@ test("optimistic replacement and rollback work for every advanced drawing union"
   drawings.forEach((drawing, index) => {
     state = replaceDrawing(state, 1, drawing.id, { ...drawing, id: String(index + 1) });
   });
-  assert.deepEqual(state[1].map((drawing) => drawing.id), ["1", "2", "3", "4", "5"]);
+  assert.deepEqual(state[1].map((drawing) => drawing.id), ["1", "2", "3", "4", "5", "6"]);
   assert.equal(removeDrawing(state, 1, "3")[1].some((drawing) => drawing.id === "3"), false);
 });
 

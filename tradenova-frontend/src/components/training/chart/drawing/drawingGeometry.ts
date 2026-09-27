@@ -20,6 +20,19 @@ export function getRayEndpoint(start: PixelPoint, direction: PixelPoint, chartWi
   return { x: boundaryX, y: start.y + dy * scale };
 }
 
+export function getExtendedLineEndpoints(start: PixelPoint, end: PixelPoint, chartWidth: number, chartHeight: number) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (Math.abs(dx) < 0.001) {
+    return { start: { x: start.x, y: 0 }, end: { x: start.x, y: chartHeight } };
+  }
+  const slope = dy / dx;
+  return {
+    start: { x: 0, y: start.y + slope * (0 - start.x) },
+    end: { x: chartWidth, y: start.y + slope * (chartWidth - start.x) },
+  };
+}
+
 export function getParallelChannelGeometry(start: PixelPoint, end: PixelPoint, anchor3: PixelPoint) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
