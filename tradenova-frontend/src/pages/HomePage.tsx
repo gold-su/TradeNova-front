@@ -107,7 +107,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-10 lg:py-28">
+      <section id="service-intro" className="scroll-mt-20 mx-auto max-w-6xl px-5 py-20 sm:px-10 lg:py-28">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">THE PROBLEM</p><h2 className="mt-4 break-keep text-3xl font-semibold tracking-tight sm:text-4xl">차트를 공부하는 것과,<br />실제로 판단하는 것은 다릅니다.</h2></div>
           <ul className="divide-y divide-border/60 border-y border-border/60">
@@ -144,7 +144,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-border/60 bg-card/30">
+      <section id="faq" className="scroll-mt-20 border-t border-border/60 bg-card/30">
         <div className="mx-auto max-w-4xl px-5 py-20 sm:px-10 lg:py-24">
           <p className="text-center text-xs font-semibold tracking-[0.17em] text-primary">FAQ</p><h2 className="mt-4 text-center text-3xl font-semibold tracking-tight">궁금한 점을 먼저 답해드릴게요</h2>
           <div className="mt-10 divide-y divide-border/60 border-y border-border/60">{faqs.map(({ question, answer }) => <details key={question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium marker:hidden">{question}<span className="text-primary transition group-open:rotate-45" aria-hidden="true">＋</span></summary><p className="mt-3 max-w-3xl break-keep text-sm leading-7 text-muted-foreground">{answer}</p></details>)}</div>

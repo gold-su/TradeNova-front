@@ -1,105 +1,83 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { LogOut, Menu, X } from "lucide-react";
+import { authApi } from "@/api/authApi";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { UserRound } from "lucide-react";
+import { clearAuthSession, hasValidAccessToken, subscribeToAuthSession } from "@/lib/authSession";
+
+const publicLinks = [
+  { to: "/#service-intro", label: "서비스 소개" },
+  { to: "/#how-it-works", label: "훈련 방식" },
+  { to: "/#faq", label: "FAQ" },
+];
+
+const memberLinks = [
+  { to: "/#service-intro", label: "서비스 소개" },
+  { to: "/training", label: "훈련 시작" },
+  { to: "/growth", label: "성장" },
+  { to: "/mypage", label: "마이페이지" },
+];
 
 export function AppHeader() {
-    const [open, setOpen] = useState(false);
-    const isAuthenticated = Boolean(localStorage.getItem("accessToken"));
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => hasValidAccessToken(localStorage));
 
-    return (
-        <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
-            <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-                {/* Left: logo + mobile menu */}
-                <div className="flex items-center gap-2">
-                    <button
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/60 bg-background/40 hover:bg-accent md:hidden"
-                        aria-label="Open menu"
-                        onClick={() => setOpen((v) => !v)}
-                    >
-                        <span className="text-lg">☰</span>
-                    </button>
+  useEffect(() => {
+    const sync = () => {
+      const valid = hasValidAccessToken(localStorage);
+      setIsAuthenticated(valid);
+      if (!valid && localStorage.getItem("accessToken")) clearAuthSession();
+    };
+    sync();
+    return subscribeToAuthSession(sync);
+  }, []);
 
-                    <Link to="/" className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-md bg-primary/20 ring-1 ring-primary/30" />
-                        <span className="font-semibold tracking-tight">TradeNova</span>
-                    </Link>
-                </div>
+  const logout = () => {
+    authApi.logoutLocal();
+    setOpen(false);
+    navigate("/", { replace: true });
+  };
 
-                {/* Middle: search + nav */}
-                <div className="hidden flex-1 items-center gap-3 md:flex">
-                    <div className="relative w-[320px] lg:w-[380px]">
-                        <Input
-                            placeholder="Search (Ctrl+K)"
-                            className="h-9 bg-background/40"
-                        />
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            ⌘K
-                        </span>
-                    </div>
+  const links = isAuthenticated ? memberLinks : publicLinks;
 
-                    <nav className="ml-2 flex items-center gap-6 text-sm text-muted-foreground">
-                        <Link className="hover:text-foreground" to="/products">Products</Link>
-                        <Link className="hover:text-foreground" to="/guide">Guide</Link>
-                        <Link className="hover:text-foreground" to="/pricing">Pricing</Link>
-                        <Link className="hover:text-foreground" to="/community">Community</Link>
-                    </nav>
-                </div>
-
-                {/* Right: locale + auth */}
-                <div className="ml-auto flex items-center gap-2">
-                    <button
-                        className="hidden h-9 items-center gap-2 rounded-md border border-border/60 px-3 text-sm text-muted-foreground hover:bg-accent md:inline-flex"
-                        aria-label="Language"
-                    >
-                        🌐 <span>EN</span>
-                    </button>
-
-                    {isAuthenticated ? (
-                        <><Button variant="ghost" asChild className="hidden rounded-full px-3 sm:inline-flex"><Link to="/growth">성장 분석</Link></Button><Button variant="ghost" asChild className="rounded-full px-3"><Link to="/mypage" aria-label="마이페이지"><UserRound className="h-4 w-4" /><span className="hidden sm:inline">마이페이지</span></Link></Button></>
-                    ) : (
-                        <>
-                            <Button variant="ghost" asChild className="hidden md:inline-flex">
-                                <Link to="/login">Log in</Link>
-                            </Button>
-                            <Button asChild className={cn("rounded-full px-5")}>
-                                <Link to="/signup">Get started</Link>
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            {/* Mobile dropdown */}
-            {open && (
-                <div className="border-t border-border/60 bg-background/80 px-4 py-3 md:hidden">
-                    <div className="mb-3">
-                        <Input placeholder="Search" className="h-9 bg-background/40" />
-                    </div>
-                    <div className="grid gap-2 text-sm">
-                        <Link to="/products" onClick={() => setOpen(false)}>Products</Link>
-                        <Link to="/guide" onClick={() => setOpen(false)}>Guide</Link>
-                        <Link to="/pricing" onClick={() => setOpen(false)}>Pricing</Link>
-                        <Link to="/community" onClick={() => setOpen(false)}>Community</Link>
-                        <div className="mt-2 flex gap-2">
-                            {isAuthenticated ? (
-                                <><Button variant="outline" asChild className="flex-1"><Link to="/growth" onClick={() => setOpen(false)}>성장 분석</Link></Button><Button asChild className="flex-1"><Link to="/mypage" onClick={() => setOpen(false)}>마이페이지</Link></Button></>
-                            ) : (
-                                <>
-                                    <Button variant="outline" asChild className="flex-1">
-                                        <Link to="/login">Log in</Link>
-                                    </Button>
-                                    <Button asChild className="flex-1">
-                                        <Link to="/signup">Get started</Link>
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+        <Link to="/" className="font-semibold tracking-tight" aria-label="TradeNova 홈">TradeNova</Link>
+        <nav className="ml-8 hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label="주요 메뉴">
+          {links.map((link) => <Link key={link.to} className="transition hover:text-foreground" to={link.to}>{link.label}</Link>)}
+        </nav>
+        <div className="ml-auto hidden items-center gap-2 md:flex">
+          {isAuthenticated ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4" />로그아웃</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild><Link to="/login">로그인</Link></Button>
+              <Button size="sm" className="rounded-full px-4" asChild><Link to="/#beta-apply">무료 베타 신청</Link></Button>
+            </>
+          )}
+        </div>
+        <button type="button" className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/60 md:hidden" aria-label={open ? "메뉴 닫기" : "메뉴 열기"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+          {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </button>
+      </div>
+      {open && (
+        <nav className="border-t border-border/60 bg-background px-4 py-4 md:hidden" aria-label="모바일 메뉴">
+          <div className="grid gap-1">
+            {links.map((link) => <Link key={link.to} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" to={link.to} onClick={() => setOpen(false)}>{link.label}</Link>)}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
+            {isAuthenticated ? (
+              <><Button variant="outline" asChild><Link to="/mypage" onClick={() => setOpen(false)}>마이페이지</Link></Button><Button variant="outline" onClick={logout}>로그아웃</Button></>
+            ) : (
+              <><Button variant="outline" asChild><Link to="/login" onClick={() => setOpen(false)}>로그인</Link></Button><Button asChild><Link to="/#beta-apply" onClick={() => setOpen(false)}>베타 신청</Link></Button></>
             )}
-        </header>
-    );
+          </div>
+        </nav>
+      )}
+    </header>
+  );
 }

@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { waitlistApi, WaitlistUnavailableError } from "@/api/waitlistApi";
+import { DuplicateWaitlistEmailError, waitlistApi } from "@/api/waitlistApi";
 import type {
   InvestmentChallenge,
   InvestmentExperience,
@@ -79,14 +79,14 @@ export function BetaWaitlistForm() {
       trackLandingEvent("beta_form_success", { experience, challenge, intent });
     } catch (error) {
       setStatus("error");
-      const unavailable = error instanceof WaitlistUnavailableError;
+      const duplicate = error instanceof DuplicateWaitlistEmailError;
       setMessage(
-        unavailable
-          ? "현재 베타 신청 접수를 준비 중입니다. 잠시 후 다시 시도해주세요."
+        duplicate
+          ? "이미 베타 신청이 완료된 이메일입니다."
           : "신청을 접수하지 못했습니다. 잠시 후 다시 시도해주세요.",
       );
       trackLandingEvent("beta_form_error", {
-        reason: unavailable ? "endpoint_unavailable" : "request_failed",
+        reason: duplicate ? "duplicate_email" : "request_failed",
       });
     }
   };

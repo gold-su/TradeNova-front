@@ -1,4 +1,6 @@
 import type { CampaignAttribution } from "@/lib/landing/analytics";
+import axios from "axios";
+import http from "./http";
 
 export type InvestmentExperience =
   | "NONE"
@@ -24,26 +26,23 @@ export type BetaApplication = {
   attribution: CampaignAttribution;
 };
 
-export class WaitlistUnavailableError extends Error {
+export class DuplicateWaitlistEmailError extends Error {
   constructor() {
-    super("Waitlist endpoint is not configured");
-    this.name = "WaitlistUnavailableError";
+    super("Email already joined the beta waitlist");
+    this.name = "DuplicateWaitlistEmailError";
   }
 }
 
 export const waitlistApi = {
   submit: async (application: BetaApplication) => {
-    const endpoint = import.meta.env.VITE_WAITLIST_API_URL?.trim();
-    if (!endpoint) throw new WaitlistUnavailableError();
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(application),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Waitlist request failed: ${response.status}`);
+    try {
+      const endpoint = import.meta.env.VITE_WAITLIST_API_URL?.trim() || "/api/waitlist";
+      await http.post(endpoint, application);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 409 && error.response.data?.error === "WAITLIST_EMAIL_ALREADY_EXISTS") {
+        throw new DuplicateWaitlistEmailError();
+      }
+      throw error;
     }
   },
 };

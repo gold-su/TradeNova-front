@@ -10,6 +10,7 @@ import type {
     CheckEmailRequest,
     CheckNicknameRequest,
 } from "../types/auth";
+import { clearAuthSession } from "@/lib/authSession";
 
 /**
  * authApi
@@ -79,8 +80,6 @@ export const authApi = {
      * - 나중에 refresh token/httpOnly-cookie 쓰면 서버 로그아웃이 필요해짐
      */
     logoutLocal: () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userNickname");
+        clearAuthSession();
     },
 };
