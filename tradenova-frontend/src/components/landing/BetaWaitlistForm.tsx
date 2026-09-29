@@ -91,7 +91,7 @@ export function BetaWaitlistForm() {
       setStatus("success");
       setMessage(
         smsOptIn
-          ? "신청이 접수되었습니다. 베타 오픈 소식을 이메일과 문자로 알려드릴게요."
+          ? "베타 신청이 완료되었습니다. 오픈 안내는 이메일로 전달되며, 문자 알림을 신청한 경우 문자로도 안내드릴 예정입니다."
           : "신청이 접수되었습니다. 베타 오픈 소식을 이메일로 알려드릴게요.",
       );
       trackLandingEvent("beta_form_success", { experience, challenge, intent });

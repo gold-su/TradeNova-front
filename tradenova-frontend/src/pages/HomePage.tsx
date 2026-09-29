@@ -19,11 +19,11 @@ const differences = [
 ];
 
 const faqs = [
-  { question: "실제 주식 데이터인가요?", answer: "실제 과거 시장 데이터를 기반으로 훈련하는 것을 목표로 합니다. 현재 국내주식 시장데이터의 상업적 이용 계약을 검토 중이며, 베타 제공 범위는 최종 라이선스 조건에 따라 확정됩니다." },
-  { question: "투자 추천 서비스인가요?", answer: "아닙니다. TradeNova는 종목을 추천하거나 매매를 지시하는 서비스가 아니라, 사용자가 자신의 투자 판단 과정을 훈련하고 복기하는 서비스입니다." },
-  { question: "돈을 실제로 투자하나요?", answer: "아닙니다. 과거 차트를 진행하며 가상으로 BUY, SELL, WAIT를 선택합니다. 실제 주문이나 자동매매는 일어나지 않습니다." },
-  { question: "AI는 무엇을 분석하나요?", answer: "사전에 세운 계획, 거래 시점의 행동과 근거, 당시 차트의 기술적 사실, 실제 실행 기록을 연결해 판단 과정을 복기합니다." },
-  { question: "베타는 언제 시작하나요?", answer: "시장데이터 라이선스 조건과 베타 운영 범위를 확정한 뒤 신청자에게 먼저 안내할 예정입니다." },
+  { question: "실제 주식 데이터인가요?", answer: "실제 과거 시장 데이터를 기반으로 훈련하는 것을 목표로 합니다. 베타 제공 범위는 시장데이터 라이선스 조건에 따라 확정됩니다." },
+  { question: "투자 추천 서비스인가요?", answer: "아닙니다. TradeNova는 종목 추천이나 투자 자문이 아니라, 사용자의 투자 판단 과정을 훈련하고 복기하는 서비스입니다." },
+  { question: "돈을 실제로 투자하나요?", answer: "아닙니다. 과거 차트를 기반으로 가상으로 판단하고 훈련하며, 실제 주문이나 자동매매는 발생하지 않습니다." },
+  { question: "AI는 무엇을 분석하나요?", answer: "사전에 세운 계획, 거래 시점의 행동과 근거, 실제 실행 기록을 연결해 판단 과정을 복기합니다." },
+  { question: "베타는 언제 시작하나요?", answer: "시장데이터 라이선스 조건과 베타 운영 범위가 확정되면 신청자에게 우선 안내할 예정입니다." },
 ];
 
 function scrollToSection(id: string) {
@@ -95,11 +95,11 @@ export default function HomePage() {
         <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1440px] items-center gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(520px,1.1fr)] lg:px-14 lg:py-16 xl:gap-20 xl:px-16">
           <div className="max-w-[650px]">
             <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary"><span className="h-px w-7 bg-primary/70" aria-hidden="true" />DECISION TRAINING</p>
-            <h1 className="break-keep text-[clamp(2.45rem,5.1vw,4.9rem)] font-semibold leading-[1.08] tracking-[-0.045em]">종목명을 숨기면,<br /><span className="text-primary">당신은 진짜 차트만 보고</span><br />판단할 수 있을까요?</h1>
-            <p className="mt-7 max-w-[590px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">실제 과거 시장에서 투자 판단을 훈련하고,<br className="hidden sm:block" /> AI와 함께 내 판단 과정과 매매 습관을 복기하세요.</p>
+            <h1 className="break-keep text-[clamp(2.2rem,4.7vw,4.5rem)] font-semibold leading-[1.1] tracking-[-0.045em]">투자는 예측이 아니라 판단입니다.<br /><span className="text-primary">TradeNova는 그 판단을 훈련합니다.</span></h1>
+            <p className="mt-7 max-w-[610px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">실제 과거 시장에서 매수·매도·관망을 연습하고,<br className="hidden sm:block" /> AI Review로 내 판단 과정과 매매 습관을 복기하세요.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-11 px-6" onClick={() => openBetaForm("hero")}>무료 베타 신청하기 <ArrowRight aria-hidden="true" /></Button>
-              <Button size="lg" variant="outline" className="h-11 bg-transparent px-6" onClick={() => scrollToSection("how-it-works")}>어떻게 훈련하나요? <ArrowDown aria-hidden="true" /></Button>
+              <Button size="lg" variant="outline" className="h-11 bg-transparent px-6" onClick={() => scrollToSection("how-it-works")}>훈련 방식 보기 <ArrowDown aria-hidden="true" /></Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">투자 추천이나 자동매매가 아닌, 판단 훈련을 위한 서비스입니다.</p>
           </div>
@@ -107,47 +107,47 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="service-intro" className="scroll-mt-20 mx-auto max-w-6xl px-5 py-20 sm:px-10 lg:py-28">
+      <section id="service-intro" className="scroll-mt-20 mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-          <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">THE PROBLEM</p><h2 className="mt-4 break-keep text-3xl font-semibold tracking-tight sm:text-4xl">차트를 공부하는 것과,<br />실제로 판단하는 것은 다릅니다.</h2></div>
+          <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">THE PROBLEM</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">차트 지식과 실제 판단 실력은<br className="hidden sm:block" /> 같지 않습니다.</h2></div>
           <ul className="divide-y divide-border/60 border-y border-border/60">
-            {["결과를 알고 보는 차트는 쉽습니다.", "모의투자는 수익률은 보여줘도 판단 과정은 잘 남기지 않습니다.", "계획을 세워도 실제 판단에서는 쉽게 바뀝니다."].map((item) => <li key={item} className="flex gap-3 py-4 text-sm leading-6 text-muted-foreground sm:text-base"><Check className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden="true" /> {item}</li>)}
+            {["결과를 알고 보는 차트는 쉽습니다.", "수익률만으로는 판단 과정을 알 수 없습니다.", "계획은 세워도, 실제 판단에서는 쉽게 흔들립니다."].map((item) => <li key={item} className="flex gap-3 py-4 text-sm leading-6 text-muted-foreground sm:text-base"><Check className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden="true" /> {item}</li>)}
           </ul>
         </div>
       </section>
 
       <section id="how-it-works" ref={howRef} className="scroll-mt-20 border-y border-border/60 bg-card/35">
-        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-10 lg:py-24">
-          <div className="max-w-xl"><p className="text-xs font-semibold tracking-[0.17em] text-primary">HOW IT WORKS</p><h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">판단부터 복기까지, 한 번의 훈련으로</h2></div>
-          <ol className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border/70 bg-border/70 md:grid-cols-5">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
+          <div className="max-w-2xl"><p className="text-xs font-semibold tracking-[0.17em] text-primary">HOW IT WORKS</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">판단에서 복기까지, 5단계 훈련</h2></div>
+          <ol className="mt-10 grid gap-px overflow-hidden rounded-xl border border-border/70 bg-border/70 md:grid-cols-5">
             {steps.map(({ step, name, detail, icon: Icon }) => <li key={step} className="bg-background p-5 md:min-h-56"><div className="flex items-center justify-between"><span className="text-xs font-semibold tabular-nums text-primary">{step}</span><Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" /></div><h3 className="mt-10 text-sm font-semibold tracking-[0.12em]">{name}</h3><p className="mt-3 break-keep text-sm leading-6 text-muted-foreground">{detail}</p></li>)}
           </ol>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-10 lg:py-28">
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
         <div className="text-center"><p className="text-xs font-semibold tracking-[0.17em] text-primary">WHY TRADENOVA</p><h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">수익률표에서 놓치는 것을 훈련합니다</h2></div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">{differences.map(({ title, detail, icon: Icon }) => <article key={title} className="rounded-xl border border-border/70 bg-card/55 p-6"><Icon className="h-5 w-5 text-primary" aria-hidden="true" /><h3 className="mt-6 text-lg font-semibold">{title}</h3><p className="mt-3 break-keep text-sm leading-6 text-muted-foreground">{detail}</p></article>)}</div>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">{differences.map(({ title, detail, icon: Icon }) => <article key={title} className="rounded-xl border border-border/70 bg-card/55 p-6"><Icon className="h-5 w-5 text-primary" aria-hidden="true" /><h3 className="mt-6 text-lg font-semibold">{title}</h3><p className="mt-3 break-keep text-sm leading-6 text-muted-foreground">{detail}</p></article>)}</div>
       </section>
 
-      <section className="border-y border-border/60 bg-card/35">
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:py-24">
-          <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">PRODUCT FLOW</p><h2 className="mt-4 break-keep text-3xl font-semibold tracking-tight sm:text-4xl">차트를 보고, 계획하고,<br />행동한 뒤 복기합니다</h2><p className="mt-5 break-keep text-sm leading-7 text-muted-foreground sm:text-base">Blind Chart에서 시작해 BUY·SELL·WAIT를 선택하고, NEXT로 시장을 진행합니다. 훈련이 끝나면 종목을 공개하고 AI Review로 계획과 행동을 연결해 봅니다.</p></div>
+      <section id="product-preview" className="scroll-mt-20 border-y border-border/60 bg-card/35">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:py-20">
+          <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">PRODUCT FLOW</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">판단은 순간이지만,<br />성장은 복기에서 시작됩니다.</h2><p className="mt-5 break-keep text-sm leading-7 text-muted-foreground sm:text-base">Blind Chart에서 판단하고 계획을 세운 뒤, NEXT로 시장을 진행하며 실제 행동을 기록합니다. 훈련 종료 후 AI Review로 계획과 행동의 차이를 복기합니다.</p></div>
           <ProductPreview />
         </div>
       </section>
 
       <section id="beta-apply" className="scroll-mt-20">
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-28">
-          <div className="lg:sticky lg:top-24 lg:self-start"><p className="text-xs font-semibold tracking-[0.17em] text-primary">PRIVATE BETA</p><h2 className="mt-4 break-keep text-3xl font-semibold tracking-tight sm:text-4xl">TradeNova의 첫 훈련에<br />참여해보세요</h2><p className="mt-5 max-w-lg break-keep text-sm leading-7 text-muted-foreground sm:text-base">아직 결제는 받지 않습니다. 베타 범위가 확정되면 신청자에게 먼저 안내하고, 제품을 직접 사용한 의견을 듣겠습니다.</p><div className="mt-8 space-y-3 text-sm text-muted-foreground">{["무료 베타 오픈 소식 우선 안내", "최소한의 질문으로 참여 의향 확인", "시장데이터 라이선스 범위 확정 후 제공"].map((item) => <p key={item} className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />{item}</p>)}</div></div>
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
+          <div className="lg:sticky lg:top-24 lg:self-start"><p className="text-xs font-semibold tracking-[0.17em] text-primary">PRIVATE BETA</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">TradeNova의 첫 훈련에 참여해보세요</h2><p className="mt-5 max-w-lg break-keep text-sm leading-7 text-muted-foreground sm:text-base">아직 결제는 받지 않습니다. 베타 참여자는 실제 훈련 흐름을 먼저 경험하고, 제품 개선을 위한 의견을 남길 수 있습니다.</p><div className="mt-7 space-y-3 text-sm text-muted-foreground">{["무료 베타 오픈 소식 우선 안내", "실제 사용 피드백 반영 기회", "시장데이터 제공 범위는 라이선스 확정 후 안내"].map((item) => <p key={item} className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />{item}</p>)}</div></div>
           <div className="rounded-xl border border-border/70 bg-card/70 p-5 sm:p-7"><BetaWaitlistForm /></div>
         </div>
       </section>
 
       <section id="faq" className="scroll-mt-20 border-t border-border/60 bg-card/30">
-        <div className="mx-auto max-w-4xl px-5 py-20 sm:px-10 lg:py-24">
-          <p className="text-center text-xs font-semibold tracking-[0.17em] text-primary">FAQ</p><h2 className="mt-4 text-center text-3xl font-semibold tracking-tight">궁금한 점을 먼저 답해드릴게요</h2>
-          <div className="mt-10 divide-y divide-border/60 border-y border-border/60">{faqs.map(({ question, answer }) => <details key={question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium marker:hidden">{question}<span className="text-primary transition group-open:rotate-45" aria-hidden="true">＋</span></summary><p className="mt-3 max-w-3xl break-keep text-sm leading-7 text-muted-foreground">{answer}</p></details>)}</div>
+        <div className="mx-auto max-w-4xl px-5 py-16 sm:px-10 lg:py-20">
+          <p className="text-center text-xs font-semibold tracking-[0.17em] text-primary">FAQ</p><h2 className="mt-4 break-keep text-center text-3xl font-semibold leading-tight tracking-tight">궁금한 점을 먼저 답해드릴게요</h2>
+          <div className="mt-8 divide-y divide-border/60 border-y border-border/60">{faqs.map(({ question, answer }) => <details key={question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium marker:hidden">{question}<span className="text-primary transition group-open:rotate-45" aria-hidden="true">＋</span></summary><p className="mt-3 max-w-3xl break-keep text-sm leading-7 text-muted-foreground">{answer}</p></details>)}</div>
         </div>
       </section>
 

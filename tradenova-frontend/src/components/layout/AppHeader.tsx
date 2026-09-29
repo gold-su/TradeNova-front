@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { authApi } from "@/api/authApi";
 import { Button } from "@/components/ui/button";
 import { clearAuthSession, hasValidAccessToken, subscribeToAuthSession } from "@/lib/authSession";
 
 const publicLinks = [
-  { to: "/#service-intro", label: "서비스 소개" },
+  { to: "/#service-intro", label: "제품 소개" },
   { to: "/#how-it-works", label: "훈련 방식" },
+  { to: "/#product-preview", label: "예시 화면" },
   { to: "/#faq", label: "FAQ" },
 ];
 
 const memberLinks = [
-  { to: "/#service-intro", label: "서비스 소개" },
-  { to: "/training", label: "훈련 시작" },
-  { to: "/growth", label: "성장" },
+  { to: "/#service-intro", label: "제품 소개" },
+  { to: "/growth", label: "성장 리포트" },
   { to: "/mypage", label: "마이페이지" },
 ];
 
@@ -51,7 +51,18 @@ export function AppHeader() {
         <div className="ml-auto hidden items-center gap-2 md:flex">
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4" />로그아웃</Button>
+              <Button size="sm" className="rounded-full px-4" asChild><Link to="/training">훈련 시작</Link></Button>
+              <details className="group relative">
+                <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground marker:hidden" aria-label="사용자 메뉴">
+                  <UserRound className="h-4 w-4" aria-hidden="true" />
+                  <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <div className="absolute right-0 top-11 w-36 rounded-lg border border-border/70 bg-popover p-1.5 shadow-lg">
+                  <button type="button" className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onClick={logout}>
+                    <LogOut className="h-4 w-4" aria-hidden="true" />로그아웃
+                  </button>
+                </div>
+              </details>
             </>
           ) : (
             <>
@@ -71,7 +82,7 @@ export function AppHeader() {
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
             {isAuthenticated ? (
-              <><Button variant="outline" asChild><Link to="/mypage" onClick={() => setOpen(false)}>마이페이지</Link></Button><Button variant="outline" onClick={logout}>로그아웃</Button></>
+              <><Button asChild><Link to="/training" onClick={() => setOpen(false)}>훈련 시작</Link></Button><Button variant="outline" onClick={logout}>로그아웃</Button></>
             ) : (
               <><Button variant="outline" asChild><Link to="/login" onClick={() => setOpen(false)}>로그인</Link></Button><Button asChild><Link to="/#beta-apply" onClick={() => setOpen(false)}>베타 신청</Link></Button></>
             )}
