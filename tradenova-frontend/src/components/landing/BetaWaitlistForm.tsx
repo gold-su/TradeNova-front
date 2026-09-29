@@ -1,6 +1,10 @@
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { DuplicateWaitlistEmailError, waitlistApi } from "@/api/waitlistApi";
+import {
+  createBetaApplication,
+  DuplicateWaitlistEmailError,
+  waitlistApi,
+} from "@/api/waitlistApi";
 import type {
   InvestmentChallenge,
   InvestmentExperience,
@@ -20,6 +24,7 @@ import {
   getCampaignAttribution,
   trackLandingEvent,
 } from "@/lib/landing/analytics";
+import { isValidKoreanMobileNumber } from "@/lib/landing/waitlistSms";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -45,6 +50,8 @@ export function BetaWaitlistForm() {
   const [experience, setExperience] = useState<InvestmentExperience | "">("");
   const [challenge, setChallenge] = useState<InvestmentChallenge | "">("");
   const [intent, setIntent] = useState<ParticipationIntent | "">("");
+  const [smsOptIn, setSmsOptIn] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [status, setStatus] = useState<FormStatus>("idle");
   const [message, setMessage] = useState("");
 
@@ -61,21 +68,32 @@ export function BetaWaitlistForm() {
       setMessage("모든 항목을 선택해주세요.");
       return;
     }
+    if (smsOptIn && !isValidKoreanMobileNumber(phoneNumber)) {
+      setStatus("error");
+      setMessage("010으로 시작하는 휴대폰 번호를 확인해주세요.");
+      return;
+    }
 
     setStatus("submitting");
     setMessage("");
     trackLandingEvent("beta_form_submit", { experience, challenge, intent });
 
     try {
-      await waitlistApi.submit({
+      await waitlistApi.submit(createBetaApplication({
         email: email.trim(),
         investmentExperience: experience,
         primaryChallenge: challenge,
         participationIntent: intent,
+        smsOptIn,
+        phoneNumber,
         attribution: getCampaignAttribution(),
-      });
+      }));
       setStatus("success");
-      setMessage("신청이 접수되었습니다. 베타 오픈 소식을 이메일로 알려드릴게요.");
+      setMessage(
+        smsOptIn
+          ? "신청이 접수되었습니다. 베타 오픈 소식을 이메일과 문자로 알려드릴게요."
+          : "신청이 접수되었습니다. 베타 오픈 소식을 이메일로 알려드릴게요.",
+      );
       trackLandingEvent("beta_form_success", { experience, challenge, intent });
     } catch (error) {
       setStatus("error");
@@ -152,6 +170,44 @@ export function BetaWaitlistForm() {
           ))}
         </div>
       </fieldset>
+
+      <div className="space-y-3 rounded-lg border border-border/70 bg-background/40 px-4 py-3">
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={smsOptIn}
+            onChange={(event) => {
+              markStarted();
+              const checked = event.target.checked;
+              setSmsOptIn(checked);
+              if (!checked) setPhoneNumber("");
+            }}
+            className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+          />
+          <span>
+            <span className="font-medium text-foreground">베타 오픈 시 문자로도 알려주세요</span>
+            <span className="mt-1 block text-xs text-muted-foreground">베타 오픈 안내 목적으로만 사용됩니다.</span>
+          </span>
+        </label>
+
+        {smsOptIn && (
+          <div className="space-y-2 pl-7">
+            <Label htmlFor="beta-phone">휴대폰 번호</Label>
+            <Input
+              id="beta-phone"
+              type="tel"
+              required
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(event.target.value)}
+              placeholder="010-1234-5678"
+              pattern="010-?[0-9]{4}-?[0-9]{4}"
+              className="h-10 bg-background/70"
+            />
+          </div>
+        )}
+      </div>
 
       <Button type="submit" size="lg" className="h-11 w-full" disabled={status === "submitting"}>
         {status === "submitting" ? "신청 중..." : "무료 베타 신청하기"}

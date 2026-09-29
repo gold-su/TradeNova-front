@@ -4,6 +4,7 @@ import {
   hasCampaignAttribution,
   LANDING_EVENT_NAMES,
   parseCampaignAttribution,
+  sanitizeAnalyticsProperties,
 } from "../src/lib/landing/analytics.ts";
 
 test("landing attribution maps supported UTM parameters", () => {
@@ -41,4 +42,15 @@ test("conversion event contract includes the complete landing funnel", () => {
     "beta_form_success",
     "beta_form_error",
   ]);
+});
+
+test("analytics properties exclude email and phone number", () => {
+  assert.deepEqual(
+    sanitizeAnalyticsProperties({
+      email: "person@example.com",
+      phoneNumber: "01012345678",
+      experience: "NONE",
+    }),
+    { experience: "NONE" },
+  );
 });

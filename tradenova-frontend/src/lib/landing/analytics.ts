@@ -37,6 +37,13 @@ export function hasCampaignAttribution(attribution: CampaignAttribution) {
   return Object.values(attribution).some(Boolean);
 }
 
+export function sanitizeAnalyticsProperties(properties: Record<string, unknown>) {
+  const safeProperties = { ...properties };
+  delete safeProperties.email;
+  delete safeProperties.phoneNumber;
+  return safeProperties;
+}
+
 export function getCampaignAttribution(): CampaignAttribution {
   const current = parseCampaignAttribution(window.location.search);
   if (hasCampaignAttribution(current)) {
@@ -62,7 +69,7 @@ export function trackLandingEvent(
   const detail: AnalyticsPayload & { event: LandingEventName } = {
     event,
     ...getCampaignAttribution(),
-    ...properties,
+    ...sanitizeAnalyticsProperties(properties),
   };
 
   window.dispatchEvent(new CustomEvent("tradenova:analytics", { detail }));

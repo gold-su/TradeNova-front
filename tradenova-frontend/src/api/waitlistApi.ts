@@ -1,4 +1,5 @@
 import type { CampaignAttribution } from "@/lib/landing/analytics";
+import { normalizeSmsSubscription } from "@/lib/landing/waitlistSms";
 import axios from "axios";
 import http from "./http";
 
@@ -23,8 +24,19 @@ export type BetaApplication = {
   investmentExperience: InvestmentExperience;
   primaryChallenge: InvestmentChallenge;
   participationIntent: ParticipationIntent;
+  smsOptIn: boolean;
+  phoneNumber: string | null;
   attribution: CampaignAttribution;
 };
+
+export function createBetaApplication(
+  application: Omit<BetaApplication, "phoneNumber"> & { phoneNumber?: string },
+): BetaApplication {
+  return {
+    ...application,
+    ...normalizeSmsSubscription(application.smsOptIn, application.phoneNumber ?? ""),
+  };
+}
 
 export class DuplicateWaitlistEmailError extends Error {
   constructor() {
