@@ -95,7 +95,14 @@ export default function HomePage() {
         <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1440px] items-center gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(520px,1.1fr)] lg:px-14 lg:py-16 xl:gap-20 xl:px-16">
           <div className="max-w-[650px]">
             <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary"><span className="h-px w-7 bg-primary/70" aria-hidden="true" />DECISION TRAINING</p>
-            <h1 className="break-keep text-[clamp(2.2rem,4.7vw,4.5rem)] font-semibold leading-[1.1] tracking-[-0.045em]">투자는 예측이 아니라 판단입니다.<br /><span className="text-primary">TradeNova는 그 판단을 훈련합니다.</span></h1>
+            <h1 className="text-[clamp(2.15rem,4.45vw,4.35rem)] font-semibold leading-[1.1] tracking-[-0.045em]">
+              <span className="block whitespace-nowrap">투자는 예측이 아니라</span>
+              <span className="block">판단입니다.</span>
+              <span className="mt-1 block text-primary sm:mt-0">
+                <span className="whitespace-nowrap">TradeNova는 그 판단을</span>{" "}
+                <span className="whitespace-nowrap">훈련합니다.</span>
+              </span>
+            </h1>
             <p className="mt-7 max-w-[610px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">실제 과거 시장에서 매수·매도·관망을 연습하고,<br className="hidden sm:block" /> AI Review로 내 판단 과정과 매매 습관을 복기하세요.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-11 px-6" onClick={() => openBetaForm("hero")}>무료 베타 신청하기 <ArrowRight aria-hidden="true" /></Button>
@@ -108,8 +115,8 @@ export default function HomePage() {
       </section>
 
       <section id="service-intro" className="scroll-mt-20 mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-          <div><p className="text-xs font-semibold tracking-[0.17em] text-primary">THE PROBLEM</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">차트 지식과 실제 판단 실력은<br className="hidden sm:block" /> 같지 않습니다.</h2></div>
+        <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-14">
+          <div className="max-w-lg"><p className="text-xs font-semibold tracking-[0.17em] text-primary">THE PROBLEM</p><h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl"><span className="block">차트 지식과 실제 판단 실력은</span><span className="block">같지 않습니다.</span></h2></div>
           <ul className="divide-y divide-border/60 border-y border-border/60">
             {["결과를 알고 보는 차트는 쉽습니다.", "수익률만으로는 판단 과정을 알 수 없습니다.", "계획은 세워도, 실제 판단에서는 쉽게 흔들립니다."].map((item) => <li key={item} className="flex gap-3 py-4 text-sm leading-6 text-muted-foreground sm:text-base"><Check className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden="true" /> {item}</li>)}
           </ul>
