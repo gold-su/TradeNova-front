@@ -92,15 +92,15 @@ export default function HomePage() {
     <main className="overflow-hidden bg-background">
       <section className="relative border-b border-border/60">
         <div className="pointer-events-none absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/[0.07] blur-3xl" aria-hidden="true" />
-        <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1440px] items-center gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(520px,1.1fr)] lg:px-14 lg:py-16 xl:gap-20 xl:px-16">
-          <div className="max-w-[650px]">
+        <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1440px] items-center gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(500px,0.95fr)] lg:gap-10 lg:px-14 lg:py-16 xl:gap-14 xl:px-16 2xl:gap-20">
+          <div className="min-w-0 max-w-[650px]">
             <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary"><span className="h-px w-7 bg-primary/70" aria-hidden="true" />DECISION TRAINING</p>
-            <h1 className="text-[clamp(2.15rem,4.45vw,4.35rem)] font-semibold leading-[1.1] tracking-[-0.045em]">
+            <h1 className="text-[2.15rem] font-semibold leading-[1.1] tracking-[-0.045em] sm:text-[2.75rem] lg:text-[3.35rem] xl:text-[3.75rem] 2xl:text-[4.1rem]">
               <span className="block whitespace-nowrap">투자는 예측이 아니라</span>
               <span className="block">판단입니다.</span>
-              <span className="mt-1 block text-primary sm:mt-0">
-                <span className="whitespace-nowrap">TradeNova는 그 판단을</span>{" "}
-                <span className="whitespace-nowrap">훈련합니다.</span>
+              <span className="mt-1 block break-keep text-primary sm:mt-0">
+                <span className="block">TradeNova는</span>
+                <span className="block whitespace-nowrap">그 판단을 훈련합니다.</span>
               </span>
             </h1>
             <p className="mt-7 max-w-[610px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">실제 과거 시장에서 매수·매도·관망을 연습하고,<br className="hidden sm:block" /> AI Review로 내 판단 과정과 매매 습관을 복기하세요.</p>
