@@ -10,6 +10,7 @@ import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
+import { getTrainingChartTileState, hasOpenChartPosition } from "./trainingChartTileState";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -94,6 +95,8 @@ export function TrainingChartTile({
     : candles;
 
   const { current, total } = getTrainingProgressDisplay(chart, progress);
+  const tileState = getTrainingChartTileState(active, chart, progress);
+  const hasPosition = hasOpenChartPosition(chart, progress);
 
   const chartHeight = 245;
 
@@ -108,9 +111,11 @@ export function TrainingChartTile({
       }}
       className={[
         "group relative flex min-h-0 cursor-pointer flex-col rounded-xl border bg-background/10 p-2.5 text-left shadow-sm transition-all duration-150",
-        active
+        tileState === "selected"
           ? "border-primary/60 bg-background/10 shadow-[0_0_0_1px_rgba(52,211,153,0.18),0_10px_24px_rgba(0,0,0,0.2)]"
-          : "border-border/40 hover:border-border/80 hover:bg-background/20 hover:shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
+          : tileState === "holding"
+            ? "border-cyan-400/35 bg-cyan-400/[0.025] hover:border-cyan-300/50 hover:bg-cyan-400/[0.04]"
+            : "border-border/40 hover:border-border/80 hover:bg-background/20 hover:shadow-[0_10px_24px_rgba(0,0,0,0.18)]",
       ].join(" ")}
     >
       <div className="mb-2 flex h-8 items-center justify-between gap-2 border-b border-border/35 pb-2">
@@ -128,6 +133,13 @@ export function TrainingChartTile({
           {hasIndicatorOverride && (
             <span className="shrink-0 rounded border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
               지표
+            </span>
+          )}
+
+          {hasPosition && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded border border-cyan-300/25 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[10px] font-medium text-cyan-200">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-cyan-300" />
+              보유
             </span>
           )}
         </div>

@@ -188,7 +188,7 @@ export function TrainingTradeJournalPanel({
                 type="button"
                 onClick={() => openOrder("BUY")}
                 disabled={disabled}
-                className="h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:opacity-45"
+                className={`h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
                 BUY
               </button>
@@ -196,7 +196,7 @@ export function TrainingTradeJournalPanel({
                 type="button"
                 onClick={() => openOrder("SELL")}
                 disabled={disabled}
-                className="h-9 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-45"
+                className={`h-9 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
                 SELL
               </button>
@@ -222,7 +222,7 @@ export function TrainingTradeJournalPanel({
                   type="button"
                   onClick={onNext}
                   disabled={disabled}
-                  className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 text-sm font-bold text-primary transition hover:bg-primary/15 active:scale-[0.99] disabled:opacity-45"
+                  className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 text-sm font-bold text-primary transition hover:bg-primary/15 active:scale-[0.99] disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
                 >
                   {loading ? (
                     "처리 중..."

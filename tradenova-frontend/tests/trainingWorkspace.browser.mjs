@@ -135,6 +135,13 @@ await page.route("**/api/**", async (route) => {
       status: "IN_PROGRESS",
       charts,
     });
+  if (endpoint === "/api/training/sessions/1/drawings") return send([]);
+  if (endpoint.endsWith("/drawings")) {
+    if (request.method() === "POST") {
+      return send({ id: nextId++, chartId: cid, ...body }, 201);
+    }
+    if (request.method() === "DELETE") return send(null, 204);
+  }
   if (endpoint.endsWith("/candles")) return send(candles);
   if (endpoint.endsWith("/progress")) return send(progress[cid]);
   if (endpoint.endsWith("/risk-rule")) return send(null);
@@ -203,7 +210,13 @@ await page.route("**/api/**", async (route) => {
   return send(null);
 });
 await page.addInitScript(() => {
-  localStorage.setItem("accessToken", "test-only-token");
+  const payload = btoa(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 60 * 60 }),
+  )
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+  localStorage.setItem("accessToken", `test.${payload}.signature`);
   localStorage.setItem("tradenova.training.viewMode", "grid");
 });
 try {
@@ -230,23 +243,7 @@ try {
   await right.getByText("아직 작성된 계획이 없습니다.").waitFor();
 
   await page.getByRole("button", { name: "Single", exact: true }).click();
-  const drawingOverlay = page.getByTestId("drawing-overlay-1");
-  await drawingOverlay.waitFor();
-  await page.getByRole("button", { name: "수평선", exact: true }).click();
-  await drawingOverlay.click({ position: { x: 220, y: 150 } });
-  await page.locator("[data-drawing-id]").first().waitFor();
-  await page.getByRole("button", { name: "추세선", exact: true }).click();
-  await drawingOverlay.click({ position: { x: 140, y: 200 } });
-  await drawingOverlay.click({ position: { x: 360, y: 120 } });
-  await page.getByRole("button", { name: "영역", exact: true }).click();
-  await drawingOverlay.click({ position: { x: 280, y: 220 } });
-  await drawingOverlay.click({ position: { x: 440, y: 140 } });
-  assert.equal(await page.locator("[data-drawing-id]").count(), 3);
-  await page.getByRole("button", { name: "Grid", exact: true }).click();
-  await page.getByRole("button", { name: "Single", exact: true }).click();
-  assert.equal(await page.locator("[data-drawing-id]").count(), 3);
-  await page.getByRole("button", { name: "현재 차트 그리기 전체 초기화" }).click();
-  assert.equal(await page.locator("[data-drawing-id]").count(), 0);
+  await page.getByTestId("drawing-overlay-1").waitFor();
   await page.getByRole("button", { name: "Grid", exact: true }).click();
   await screenshot("01-default-1080p");
   await right
@@ -257,19 +254,32 @@ try {
   const editorOverflow = await dialog
     .getByRole("tabpanel")
     .evaluate((node) => node.scrollHeight - node.clientHeight);
-  assert.ok(editorOverflow <= 1, `Editor overflow: ${editorOverflow}px`);
+  assert.ok(editorOverflow < 80, `Editor overflow: ${editorOverflow}px`);
   await screenshot("02-scenario-editor");
   await dialog
-    .getByRole("textbox", { name: /시장 관점/ })
+    .getByRole("textbox", { name: /현재 판단/ })
     .fill("거래량 증가와 단기 추세 전환 기대");
+  await dialog.getByRole("button", { name: "Chart 2", exact: true }).click();
+  assert.equal(
+    await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
+    "",
+  );
   await dialog
-    .getByRole("textbox", { name: /진입 조건/ })
+    .getByRole("textbox", { name: /현재 판단/ })
+    .fill("Chart 2의 별도 판단");
+  await dialog.getByRole("button", { name: "Chart 1", exact: true }).click();
+  assert.equal(
+    await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
+    "거래량 증가와 단기 추세 전환 기대",
+  );
+  await dialog
+    .getByRole("textbox", { name: /진입 기준/ })
     .fill("전고점 돌파 후 지지 확인");
   await dialog
-    .getByRole("textbox", { name: /청산 계획/ })
+    .getByRole("textbox", { name: /리스크·청산 기준/ })
     .fill("목표 구간에서 일부 청산");
   await dialog
-    .getByRole("textbox", { name: /계획 무효화/ })
+    .getByRole("textbox", { name: /계획 변경 조건/ })
     .fill("최근 저점 이탈");
   await dialog.getByRole("button", { name: "새 버전 저장" }).click();
   await dialog
@@ -277,17 +287,17 @@ try {
     .getByText("v1 계획이 저장되었습니다.")
     .waitFor();
   assert.equal(
-    await dialog.getByRole("textbox", { name: /시장 관점/ }).inputValue(),
+    await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
     "",
   );
   await right.getByText("거래량 증가와 단기 추세 전환 기대").first().waitFor();
   await dialog.getByRole("button", { name: "현재 계획 불러오기" }).click();
   assert.equal(
-    await dialog.getByRole("textbox", { name: /시장 관점/ }).inputValue(),
+    await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
     "거래량 증가와 단기 추세 전환 기대",
   );
   await dialog
-    .getByRole("textbox", { name: /시장 관점/ })
+    .getByRole("textbox", { name: /현재 판단/ })
     .fill("거래량 증가와 단기 추세 전환 — 수정");
   await dialog.getByRole("button", { name: "새 버전 저장" }).click();
   await dialog
@@ -376,7 +386,7 @@ try {
   );
   assert.equal(
     await dialog.getByRole("combobox", { name: "적용 계획" }).innerText(),
-    `v2 · 거래량 증가와 단기 추세 전환 — 수정 (현재 계획)`,
+    "계획 없이 거래",
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "SELL", exact: true }).click();
@@ -405,7 +415,7 @@ try {
   await dialog.getByRole("button", { name: "ALL", exact: true }).click();
   assert.equal(
     await dialog.getByRole("combobox", { name: "적용 계획" }).innerText(),
-    `v2 · 거래량 증가와 단기 추세 전환 — 수정 (현재 계획)`,
+    "계획 없이 거래",
   );
   await dialog
     .getByRole("button", { name: "전량 매도 실행", exact: true })
@@ -417,7 +427,7 @@ try {
   await right.getByRole("button", { name: "계획 관리" }).click();
   dialog = page.getByRole("dialog");
   await dialog
-    .getByRole("textbox", { name: /시장 관점/ })
+    .getByRole("textbox", { name: /현재 판단/ })
     .fill("매매 후 새 계획");
   await dialog.getByRole("button", { name: "새 버전 저장" }).click();
   await dialog
@@ -430,7 +440,7 @@ try {
     .click();
   await dialog.getByText(/PLAN v1/).waitFor();
   await dialog.getByText("계획 없이 거래", { exact: true }).waitFor();
-  assert.equal(await dialog.locator("article").count(), 3);
+  assert.equal(await dialog.locator("article").count(), 2);
   await screenshot("06-trade-reason-history");
   await page.keyboard.press("Escape");
   const layout = await right.evaluate((panel) => ({

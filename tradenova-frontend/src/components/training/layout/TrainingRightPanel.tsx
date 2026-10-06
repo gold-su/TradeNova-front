@@ -15,7 +15,9 @@ import { findLatestScenarioSnapshot } from "@/hooks/training/trainingTradeReason
 import { TrainingPlanSection } from "@/components/training/common/TrainingPlanSection";
 
 type Props = {
+  charts: TrainingChartDto[];
   activeChart: TrainingChartDto | null;
+  onSelectChart: (chartId: number) => void;
   activeProgress: ProgressResponse | null;
   quickPhrases: QuickPhraseResponse[];
   createQuickPhrase: (content: string) => Promise<QuickPhraseResponse>;
@@ -56,7 +58,9 @@ type Props = {
 };
 
 export function TrainingRightPanel({
+  charts,
   activeChart,
+  onSelectChart,
   activeProgress,
   quickPhrases,
   createQuickPhrase,
@@ -94,10 +98,11 @@ export function TrainingRightPanel({
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
         <TrainingPlanSection
-          key={`plan-${activeChart?.chartId ?? "none"}`}
+          charts={charts}
           snapshots={snapshots}
           events={events}
           activeChart={activeChart}
+          onSelectChart={onSelectChart}
           latestScenario={latestScenarioSnapshot}
           onCreateScenario={onCreateScenarioSnapshot}
         />

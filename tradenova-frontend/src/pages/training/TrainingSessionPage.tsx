@@ -141,7 +141,9 @@ export default function TrainingSessionPage() {
       />
 
       <TrainingRightPanel
+        charts={page.charts}
         activeChart={page.activeChart}
+        onSelectChart={page.setActiveChartId}
         activeProgress={page.activeProgress}
         quickPhrases={page.quickPhrases}
         createQuickPhrase={page.createQuickPhrase}

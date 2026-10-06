@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TrainingEventResponse } from "@/types/training";
+import { getEventLogBodyMode } from "./eventLogDisplay";
 import {
   X,
   ArrowUpRight,
@@ -349,6 +350,7 @@ export function EventLogPanel({ items, loading }: Props) {
   const displayItems = compactProgressEvents(visibleItems);
 
   const recent = displayItems.slice(0, 3);
+  const bodyMode = getEventLogBodyMode(loading, recent.length);
 
   return (
     <>
@@ -357,7 +359,7 @@ export function EventLogPanel({ items, loading }: Props) {
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">RECENT LOGS</div>
             <div className="text-[11px] text-muted-foreground">
-              최신 기록 {recent.length}개
+              최신 기록 {recent.length}개{loading ? " · 동기화 중" : ""}
             </div>
           </div>
 
@@ -370,10 +372,8 @@ export function EventLogPanel({ items, loading }: Props) {
           </button>
         </div>
 
-        {loading ? (
-          <div className="text-sm text-muted-foreground">불러오는 중...</div>
-        ) : recent.length === 0 ? (
-          <div className="text-sm text-muted-foreground">기록 없음</div>
+        {bodyMode !== "content" ? (
+          <div className="text-sm text-muted-foreground">{bodyMode === "loading" ? "불러오는 중..." : "기록 없음"}</div>
         ) : (
           <div className="space-y-2">
             {recent.map((item) => (
