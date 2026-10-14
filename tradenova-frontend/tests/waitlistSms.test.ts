@@ -26,4 +26,3 @@ test("normalizes the phone number in an SMS opt-in request", () => {
     phoneNumber: "01012345678",
   });
 });
-
