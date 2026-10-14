@@ -1,4 +1,10 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import type {
   ReportDocumentResponse,
   TrainingChartDto,
@@ -16,6 +22,7 @@ import {
   storeScenarioDraft,
   type ScenarioContent,
 } from "./scenarioDraftState";
+import { resizeScenarioTextarea } from "./scenarioTextarea";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -37,6 +44,44 @@ const time = (value: string) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+function AutoGrowTextarea({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  placeholder: string;
+  onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (ref.current) resizeScenarioTextarea(ref.current);
+  }, [value]);
+
+  useEffect(() => {
+    const textarea = ref.current;
+    if (!textarea) return;
+
+    const resize = () => resizeScenarioTextarea(textarea);
+    window.addEventListener("resize", resize);
+    void document.fonts?.ready.then(resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      placeholder={placeholder}
+      onInput={(event) => resizeScenarioTextarea(event.currentTarget)}
+      onChange={onChange}
+      className="ml-7 min-h-[38px] max-h-40 w-[calc(100%-1.75rem)] resize-none overflow-y-hidden rounded-md border border-border/55 bg-muted/15 px-3.5 py-2 text-[13px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/75 focus:border-primary/65"
+    />
+  );
+}
 
 export function TrainingPlanSection({
   charts,
@@ -166,22 +211,31 @@ export function TrainingPlanSection({
           onClose={() => setOpen(false)}
         >
           {charts.length > 1 && (
-            <div className="mx-6 mt-4 flex shrink-0 flex-wrap gap-2" role="group" aria-label="시나리오 차트 선택">
-              {charts.map((chart) => {
-                const selected = chart.chartId === activeChart?.chartId;
-                return (
-                  <button
-                    key={chart.chartId}
-                    type="button"
-                    aria-pressed={selected}
-                    disabled={saving}
-                    onClick={() => selectChart(chart.chartId)}
-                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${selected ? "border-primary/45 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"}`}
-                  >
-                    Chart {chart.chartIndex + 1}
-                  </button>
-                );
-              })}
+            <div className="mx-6 mt-3 shrink-0">
+              <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">
+                대상 차트
+              </p>
+              <div
+                className="mt-2 flex flex-wrap gap-1 rounded-lg border border-border/40 bg-muted/10 p-1"
+                role="group"
+                aria-label="시나리오 차트 선택"
+              >
+                {charts.map((chart) => {
+                  const selected = chart.chartId === activeChart?.chartId;
+                  return (
+                    <button
+                      key={chart.chartId}
+                      type="button"
+                      aria-pressed={selected}
+                      disabled={saving}
+                      onClick={() => selectChart(chart.chartId)}
+                      className={`min-w-0 basis-[calc(50%-0.125rem)] rounded-md border px-3 py-2 text-xs font-semibold transition sm:flex-1 sm:basis-auto disabled:opacity-50 ${selected ? "border-primary/35 bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:bg-muted/35 hover:text-foreground"}`}
+                    >
+                      Chart {chart.chartIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           <div
@@ -215,7 +269,7 @@ export function TrainingPlanSection({
                   }
                 }}
                 onClick={() => setTab(index)}
-                className={`border-b-2 py-3 text-xs font-semibold ${tab === index ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`border-b-2 py-4 text-sm font-semibold ${tab === index ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 {label}
               </button>
@@ -225,29 +279,28 @@ export function TrainingPlanSection({
             role="tabpanel"
             id={`decision-panel-${tab}`}
             aria-labelledby={`decision-tab-${tab}`}
-            className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-4"
+            className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-2.5"
           >
             {tab === 0 && (
-              <fieldset disabled={saving} className="space-y-3.5">
+              <fieldset disabled={saving} className="space-y-4">
                 {SCENARIO_FIELDS.map(
                   ({ key, label, helper, example }, index) => (
                     <label key={key} className="block">
                       <span className="flex items-baseline gap-2">
-                        <span className="w-5 text-[11px] tabular-nums text-muted-foreground">
+                        <span className="w-6 text-sm tabular-nums text-muted-foreground">
                           {key === "freeNote" ? "·" : `0${index + 1}`}
                         </span>
-                        <span className="text-sm font-semibold">
+                        <span className="text-[17px] font-semibold">
                           {label}
                           {key === "thesis" && (
                             <span className="text-primary"> *</span>
                           )}
                         </span>
                       </span>
-                      <span className="mb-1 ml-7 block text-xs leading-5 text-muted-foreground">
+                      <span className="mb-1 ml-8 block text-[13px] leading-5 text-muted-foreground">
                         {helper}
                       </span>
-                      <textarea
-                        rows={key === "freeNote" ? 2 : 1}
+                      <AutoGrowTextarea
                         value={form[key]}
                         placeholder={example}
                         onChange={(event) => {
@@ -267,7 +320,6 @@ export function TrainingPlanSection({
                             );
                           }
                         }}
-                        className="ml-7 w-[calc(100%-1.75rem)] resize-y rounded-md border border-border/55 bg-muted/15 px-3 py-2 text-[13px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/75 focus:border-primary/65"
                       />
                     </label>
                   ),
@@ -388,7 +440,7 @@ export function TrainingPlanSection({
                           ? `PLAN ${versionOf(trade.scenarioId) ?? "연결"}`
                           : trade.label}
                         {trade.scenarioId != null &&
-                        trade.label.includes("추가 근거")
+                          trade.label.includes("추가 근거")
                           ? ` · ${trade.label.split(" · ")[1]}`
                           : ""}
                       </p>
@@ -426,7 +478,7 @@ export function TrainingPlanSection({
                   type="button"
                   disabled={saving}
                   onClick={() => setOpen(false)}
-                  className="h-9 px-3 text-xs text-muted-foreground"
+                  className="h-9 px-3 text-sm text-muted-foreground"
                 >
                   취소
                 </button>
@@ -434,7 +486,7 @@ export function TrainingPlanSection({
                   type="button"
                   onClick={save}
                   disabled={saving || !form.thesis.trim()}
-                  className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+                  className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {saving ? "저장 중..." : "새 버전 저장"}
                 </button>

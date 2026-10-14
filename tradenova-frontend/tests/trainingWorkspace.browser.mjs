@@ -255,10 +255,38 @@ try {
     .getByRole("tabpanel")
     .evaluate((node) => node.scrollHeight - node.clientHeight);
   assert.ok(editorOverflow < 80, `Editor overflow: ${editorOverflow}px`);
+  assert.equal(
+    await dialog.getByRole("group", { name: "시나리오 차트 선택" }).isVisible(),
+    true,
+  );
+  const thesis = dialog.getByRole("textbox", { name: /현재 판단/ });
+  const initialTextareaHeight = await thesis.evaluate((node) => node.clientHeight);
+  const multilineDraft =
+    "거래량 증가와 단기 추세 전환 기대\n돌파 이후 지지 확인 필요\n거래량 유지 여부 재확인";
+  await thesis.fill(multilineDraft);
+  assert.ok(
+    (await thesis.evaluate((node) => node.clientHeight)) > initialTextareaHeight,
+  );
   await screenshot("02-scenario-editor");
-  await dialog
-    .getByRole("textbox", { name: /현재 판단/ })
-    .fill("거래량 증가와 단기 추세 전환 기대");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(100);
+  const mobileDialogBounds = await dialog.boundingBox();
+  assert.ok(mobileDialogBounds.width <= 390, JSON.stringify(mobileDialogBounds));
+  assert.ok(mobileDialogBounds.height <= 844, JSON.stringify(mobileDialogBounds));
+  const chartButtonBounds = await dialog
+    .getByRole("group", { name: "시나리오 차트 선택" })
+    .getByRole("button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const bounds = button.getBoundingClientRect();
+        return { top: bounds.top, width: bounds.width };
+      }),
+    );
+  assert.equal(chartButtonBounds[0].top, chartButtonBounds[1].top);
+  assert.ok(chartButtonBounds[2].top > chartButtonBounds[0].top);
+  await screenshot("02-scenario-editor-mobile");
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.waitForTimeout(100);
   await dialog.getByRole("button", { name: "Chart 2", exact: true }).click();
   assert.equal(
     await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
@@ -270,7 +298,23 @@ try {
   await dialog.getByRole("button", { name: "Chart 1", exact: true }).click();
   assert.equal(
     await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
-    "거래량 증가와 단기 추세 전환 기대",
+    multilineDraft,
+  );
+  assert.ok(
+    (await thesis.evaluate((node) => node.clientHeight)) > initialTextareaHeight,
+  );
+  await thesis.fill(Array.from({ length: 20 }, (_, index) => `긴 계획 ${index + 1}`).join("\n"));
+  const cappedTextarea = await thesis.evaluate((node) => ({
+    height: node.clientHeight,
+    scrollHeight: node.scrollHeight,
+    overflowY: getComputedStyle(node).overflowY,
+  }));
+  assert.ok(cappedTextarea.height <= 160, JSON.stringify(cappedTextarea));
+  assert.ok(cappedTextarea.scrollHeight > cappedTextarea.height);
+  assert.equal(cappedTextarea.overflowY, "auto");
+  await thesis.fill("거래량 증가와 단기 추세 전환 기대");
+  assert.ok(
+    (await thesis.evaluate((node) => node.clientHeight)) <= initialTextareaHeight + 1,
   );
   await dialog
     .getByRole("textbox", { name: /진입 기준/ })
@@ -289,6 +333,9 @@ try {
   assert.equal(
     await dialog.getByRole("textbox", { name: /현재 판단/ }).inputValue(),
     "",
+  );
+  assert.ok(
+    (await thesis.evaluate((node) => node.clientHeight)) <= initialTextareaHeight + 1,
   );
   await right.getByText("거래량 증가와 단기 추세 전환 기대").first().waitFor();
   await dialog.getByRole("button", { name: "현재 계획 불러오기" }).click();
