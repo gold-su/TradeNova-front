@@ -1,5 +1,6 @@
 // src/pages/LoginPage.tsx
 import { useState } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { M } from "../i18n/messages";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { saveAuthSession } from "@/lib/authSession";
 
 export default function LoginPage() {
     const nav = useNavigate();
@@ -28,18 +30,17 @@ export default function LoginPage() {
             const data = await authApi.login({ email, password });
 
             // 로그인 성공 → 토큰 저장
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("userEmail", data.user.email);
-            localStorage.setItem("userNickname", data.user.nickname);
+            saveAuthSession(data.accessToken, data.user.email, data.user.nickname);
             // 홈으로 이동
             nav("/");
-        } catch (e: any) {
+        } catch (error: unknown) {
             // 백엔드 에러 응답 구조가 다양할 수 있어서 안전하게 처리
+            const data = axios.isAxiosError(error) ? error.response?.data : undefined;
             const msg =
-                e?.response?.data?.message ||
-                e?.response?.data?.msg1 ||
-                e?.response?.data?.errors?.email ||
-                e?.response?.data?.errors?.password ||
+                data?.message ||
+                data?.msg1 ||
+                data?.errors?.email ||
+                data?.errors?.password ||
                 "로그인 실패";
 
             setErrorMsg(String(msg));

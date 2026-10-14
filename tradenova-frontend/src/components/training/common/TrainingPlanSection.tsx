@@ -10,16 +10,17 @@ import {
   getTradeReasonHistory,
   SCENARIO_FIELDS,
 } from "@/hooks/training/trainingDecisionHistory";
+import {
+  emptyScenario,
+  scenarioDraftForChart,
+  storeScenarioDraft,
+  type ScenarioContent,
+} from "./scenarioDraftState";
 
-type ScenarioContent = {
-  thesis: string;
-  entryReason: string;
-  exitPlan: string;
-  riskNote: string;
-  freeNote: string;
-};
 type Props = {
+  charts: TrainingChartDto[];
   activeChart: TrainingChartDto | null;
+  onSelectChart: (chartId: number) => void;
   latestScenario: ReportDocumentResponse | null;
   snapshots: ReportDocumentResponse[];
   events: TrainingEventResponse[];
@@ -29,13 +30,6 @@ type Props = {
   ) => Promise<unknown>;
 };
 const tabs = ["작성 / 수정", "시나리오 기록", "매매 근거 기록"] as const;
-const emptyScenario = (): ScenarioContent => ({
-  thesis: "",
-  entryReason: "",
-  exitPlan: "",
-  riskNote: "",
-  freeNote: "",
-});
 const time = (value: string) =>
   new Date(value).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -45,7 +39,9 @@ const time = (value: string) =>
   });
 
 export function TrainingPlanSection({
+  charts,
   activeChart,
+  onSelectChart,
   latestScenario,
   snapshots,
   events,
@@ -57,6 +53,7 @@ export function TrainingPlanSection({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [form, setForm] = useState<ScenarioContent>(emptyScenario);
+  const [draftsByChart, setDraftsByChart] = useState<Record<number, ScenarioContent>>({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const scenarios = getScenarioHistory(snapshots, activeChart?.chartId ?? null);
   const trades = getTradeReasonHistory(events, activeChart?.chartId ?? null);
@@ -65,7 +62,9 @@ export function TrainingPlanSection({
     return index < 0 ? null : `v${scenarios.length - index}`;
   };
   const openEditor = () => {
-    setForm(emptyScenario());
+    const initial = emptyScenario();
+    setForm(initial);
+    setDraftsByChart(activeChart ? { [activeChart.chartId]: initial } : {});
     setTab(0);
     setError(null);
     setSuccess(null);
@@ -74,13 +73,17 @@ export function TrainingPlanSection({
   };
   const loadCurrent = () => {
     if (!latestScenario) return;
-    setForm({
+    const current = {
       thesis: latestScenario?.contentJson.thesis ?? "",
       entryReason: latestScenario?.contentJson.entryReason ?? "",
       exitPlan: latestScenario?.contentJson.exitPlan ?? "",
       riskNote: latestScenario?.contentJson.riskNote ?? "",
       freeNote: latestScenario?.contentJson.freeNote ?? "",
-    });
+    };
+    setForm(current);
+    if (activeChart) {
+      setDraftsByChart((prev) => storeScenarioDraft(prev, activeChart.chartId, current));
+    }
     setError(null);
     setSuccess(null);
   };
@@ -91,7 +94,9 @@ export function TrainingPlanSection({
     try {
       const saved = await onCreateScenario(activeChart.chartId, form);
       if (saved) {
-        setForm(emptyScenario());
+        const next = emptyScenario();
+        setForm(next);
+        setDraftsByChart((prev) => storeScenarioDraft(prev, activeChart.chartId, next));
         setSuccess(`v${scenarios.length + 1} 계획이 저장되었습니다.`);
       } else setError("계획을 저장하지 못했습니다. 다시 시도해주세요.");
     } catch {
@@ -99,6 +104,14 @@ export function TrainingPlanSection({
     } finally {
       setSaving(false);
     }
+  };
+  const selectChart = (chartId: number) => {
+    if (saving || chartId === activeChart?.chartId) return;
+    setForm(scenarioDraftForChart(draftsByChart, chartId));
+    setError(null);
+    setSuccess(null);
+    setExpandedId(null);
+    onSelectChart(chartId);
   };
   return (
     <>
@@ -152,6 +165,25 @@ export function TrainingPlanSection({
           busy={saving}
           onClose={() => setOpen(false)}
         >
+          {charts.length > 1 && (
+            <div className="mx-6 mt-4 flex shrink-0 flex-wrap gap-2" role="group" aria-label="시나리오 차트 선택">
+              {charts.map((chart) => {
+                const selected = chart.chartId === activeChart?.chartId;
+                return (
+                  <button
+                    key={chart.chartId}
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={saving}
+                    onClick={() => selectChart(chart.chartId)}
+                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${selected ? "border-primary/45 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"}`}
+                  >
+                    Chart {chart.chartIndex + 1}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <div
             role="tablist"
             aria-label="의사결정 기록"
@@ -220,10 +252,20 @@ export function TrainingPlanSection({
                         placeholder={example}
                         onChange={(event) => {
                           setSuccess(null);
-                          setForm((prev) => ({
-                            ...prev,
+                          const next = {
+                            ...form,
                             [key]: event.target.value,
-                          }));
+                          };
+                          setForm(next);
+                          if (activeChart) {
+                            setDraftsByChart((drafts) =>
+                              storeScenarioDraft(
+                                drafts,
+                                activeChart.chartId,
+                                next,
+                              ),
+                            );
+                          }
                         }}
                         className="ml-7 w-[calc(100%-1.75rem)] resize-y rounded-md border border-border/55 bg-muted/15 px-3 py-2 text-[13px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/75 focus:border-primary/65"
                       />

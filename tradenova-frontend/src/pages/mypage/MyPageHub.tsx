@@ -29,7 +29,7 @@ export default function MyPageHub() {
 
   const logout = () => {
     authApi.logoutLocal();
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
