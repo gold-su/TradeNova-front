@@ -4,14 +4,18 @@ import scenarioPlan from "@/assets/landing/product/scenario-plan.png";
 import nextProgress from "@/assets/landing/product/next-progress.png";
 import tradeExecution from "@/assets/landing/product/trade-execution.png";
 import aiReview from "@/assets/landing/product/ai-review.png";
+import aiReviewMobile from "@/assets/landing/product/ai-review-mobile.png";
+import nextProgressMobile from "@/assets/landing/product/next-progress-mobile.png";
+import scenarioPlanMobile from "@/assets/landing/product/scenario-plan-mobile.png";
+import tradeExecutionMobile from "@/assets/landing/product/trade-execution-mobile.png";
 import { PRODUCT_WALKTHROUGH_STEPS } from "@/lib/landing/productWalkthrough";
 
 const screenshots = {
-  blind: blindChart,
-  plan: scenarioPlan,
-  next: nextProgress,
-  trade: tradeExecution,
-  review: aiReview,
+  blind: { desktop: blindChart, mobile: blindChartMobile },
+  plan: { desktop: scenarioPlan, mobile: scenarioPlanMobile },
+  next: { desktop: nextProgress, mobile: nextProgressMobile },
+  trade: { desktop: tradeExecution, mobile: tradeExecutionMobile },
+  review: { desktop: aiReview, mobile: aiReviewMobile },
 } as const;
 
 type ScreenshotProps = {
@@ -31,18 +35,18 @@ export function ProductScreenshot({
 }: ScreenshotProps) {
   return (
     <figure
-      className={`overflow-hidden rounded-xl border border-border/70 bg-[#03100c] shadow-[0_24px_70px_-45px_rgba(0,0,0,0.95)] ${className}`}
+      className={`aspect-[8/5] overflow-hidden rounded-xl border border-border/70 bg-[#06100d] p-1 shadow-[0_22px_58px_-42px_rgba(0,0,0,0.92)] sm:p-1.5 ${className}`}
     >
-      <picture>
+      <picture className="block h-full overflow-hidden rounded-lg bg-[#020806]">
         {mobileSrc && <source media="(max-width: 639px)" srcSet={mobileSrc} />}
         <img
           src={src}
           alt={alt}
-          width={1260}
-          height={680}
+          width={1200}
+          height={750}
           loading={eager ? "eager" : "lazy"}
           decoding="async"
-          className="block h-auto w-full"
+          className="block h-full w-full object-cover"
         />
       </picture>
     </figure>
@@ -59,8 +63,8 @@ export function HeroProductScreenshot() {
         className="absolute -inset-4 rounded-[1.5rem] bg-primary/[0.055] blur-2xl"
       />
       <ProductScreenshot
-        src={screenshots[step.image]}
-        mobileSrc={blindChartMobile}
+        src={screenshots[step.image].desktop}
+        mobileSrc={screenshots[step.image].mobile}
         alt={step.imageAlt}
         eager
         className="relative"
@@ -95,8 +99,8 @@ export function ProductWalkthrough() {
             </p>
           </div>
           <ProductScreenshot
-            src={screenshots[step.image]}
-            mobileSrc={step.image === "blind" ? blindChartMobile : undefined}
+            src={screenshots[step.image].desktop}
+            mobileSrc={screenshots[step.image].mobile}
             alt={step.imageAlt}
             className={index % 2 ? "lg:order-1" : ""}
           />

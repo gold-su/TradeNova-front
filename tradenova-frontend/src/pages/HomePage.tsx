@@ -10,9 +10,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import aiReviewScreenshot from "@/assets/landing/product/ai-review.png";
+import aiReviewMobileScreenshot from "@/assets/landing/product/ai-review-mobile.png";
 import { BetaWaitlistForm } from "@/components/landing/BetaWaitlistForm";
 import {
   HeroProductScreenshot,
+  ProductScreenshot,
   ProductWalkthrough,
 } from "@/components/landing/ProductWalkthrough";
 import { Button } from "@/components/ui/button";
@@ -277,17 +279,11 @@ export default function HomePage() {
               ))}
             </ul>
           </div>
-          <figure className="overflow-hidden rounded-xl border border-border/70 bg-[#03100c] shadow-[0_24px_70px_-45px_rgba(0,0,0,0.95)]">
-            <img
-              src={aiReviewScreenshot}
-              alt="계획과 실행을 바탕으로 전체 요약과 잘 본 점, 놓친 점을 보여주는 TradeNova AI Review"
-              width={880}
-              height={500}
-              loading="lazy"
-              decoding="async"
-              className="block h-auto w-full"
-            />
-          </figure>
+          <ProductScreenshot
+            src={aiReviewScreenshot}
+            mobileSrc={aiReviewMobileScreenshot}
+            alt="계획과 실행을 바탕으로 전체 요약과 잘 본 점, 놓친 점을 보여주는 TradeNova AI Review"
+          />
         </div>
       </section>
 
