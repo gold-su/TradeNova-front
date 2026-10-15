@@ -19,13 +19,7 @@ import { useEffect, useState } from "react";
 import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
-import {
-  Activity,
-  Building2,
-  Newspaper,
-  Camera,
-  X,
-} from "lucide-react";
+import { Activity, X } from "lucide-react";
 import type {
   ChartDrawing,
   DrawingPoint,
@@ -249,29 +243,6 @@ export function TrainingCenterPanel({
               보조지표
             </button>
 
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Building2 className="h-3.5 w-3.5" />
-              재무
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Newspaper className="h-3.5 w-3.5" />
-              뉴스
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              캡처
-            </button>
           </div>
 
           <div className="flex items-center gap-2">
