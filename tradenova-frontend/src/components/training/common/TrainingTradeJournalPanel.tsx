@@ -12,7 +12,6 @@ import {
   Check,
   ChevronDown,
   ChevronsRight,
-  X,
   ShieldAlert,
 } from "lucide-react";
 import {
@@ -62,7 +61,7 @@ type Props = {
 
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
-  saveRiskRule: (body: RiskRuleUpsertRequest) => void;
+  saveRiskRule: (body: RiskRuleUpsertRequest) => void | Promise<void>;
   cashBalance: number;
   positionQty: number;
   currentPrice: number;
@@ -107,6 +106,7 @@ export function TrainingTradeJournalPanel({
   const [orderError, setOrderError] = useState<string | null>(null);
 
   const [riskOpen, setRiskOpen] = useState(false);
+  const [riskError, setRiskError] = useState<string | null>(null);
   const [riskDraft, setRiskDraft] = useState(() => riskRuleToDraft(riskRule));
   const riskRuleAvailable = canConfigureRiskRule(positionQty);
   const riskPercentValid =
@@ -238,6 +238,7 @@ export function TrainingTradeJournalPanel({
                   type="button"
                   onClick={() => {
                     setRiskDraft(riskRuleToDraft(riskRule));
+                    setRiskError(null);
                     setRiskOpen(true);
                   }}
                   disabled={!riskRuleAvailable}
@@ -279,6 +280,7 @@ export function TrainingTradeJournalPanel({
       </div>
       {orderMode && (
         <WorkspaceDialog
+          medium
           title={orderMode}
           description="현재 차트의 주문과 판단을 함께 기록합니다."
           busy={loading}
@@ -320,152 +322,143 @@ export function TrainingTradeJournalPanel({
         </WorkspaceDialog>
       )}
       {riskOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <button
-            type="button"
-            aria-label="닫기"
-            className="absolute inset-0 cursor-default"
-            onClick={() => setRiskOpen(false)}
-          />
-
-          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border/45 bg-background p-5 shadow-2xl">
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-lg font-bold">
-                  <ShieldAlert className="h-4 w-4 text-red-300" />
-                  리스크룰 설정
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  NEXT 진행 중 기준가 도달 시 자동 청산됩니다.
+        <WorkspaceDialog
+          medium
+          title="리스크룰 설정"
+          description="NEXT 진행 중 기준가 도달 시 자동 청산됩니다."
+          busy={riskSaving}
+          onClose={() => {
+            setRiskOpen(false);
+            setRiskError(null);
+          }}
+        >
+          <div className="thin-scrollbar min-h-0 space-y-4 overflow-y-auto px-6 pb-5">
+            <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/[0.08] px-3.5 py-3 text-sm text-muted-foreground">
+              <ShieldAlert className="h-4 w-4 shrink-0 text-red-300" />
+              설정한 가격과 청산 비율은 현재 차트의 보유 포지션에 적용됩니다.
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-border/40 rounded-xl border border-primary/20 bg-primary/5 py-3">
+              <div className="px-4">
+                <div className="text-xs text-muted-foreground">현재가</div>
+                <div className="mt-1 text-lg font-bold text-primary">
+                  {Number.isFinite(currentPrice)
+                    ? `${currentPrice.toLocaleString()}원`
+                    : "-"}
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setRiskOpen(false)}
-                className="rounded-xl p-2 text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 divide-x divide-border/40 rounded-xl border border-primary/20 bg-primary/5 py-2.5">
-                <div className="px-3">
-                  <div className="text-[11px] text-muted-foreground">
-                    현재가
-                  </div>
-                  <div className="mt-0.5 text-base font-bold text-primary">
-                    {Number.isFinite(currentPrice)
-                      ? currentPrice.toLocaleString()
-                      : "-"}
-                  </div>
-                </div>
-                <div className="px-3">
-                  <div className="text-[11px] text-muted-foreground">
-                    현재 보유
-                  </div>
-                  <div className="mt-0.5 text-base font-bold">
-                    {Math.max(0, Math.floor(positionQty)).toLocaleString()}주
-                  </div>
+              <div className="px-4">
+                <div className="text-xs text-muted-foreground">현재 보유</div>
+                <div className="mt-1 text-lg font-bold">
+                  {Math.max(0, Math.floor(positionQty)).toLocaleString()}주
                 </div>
               </div>
-
-              <RiskRuleSection
-                title="손절"
-                tone="loss"
-                price={riskDraft.stopLossPrice}
-                pricePlaceholder="예: 58000"
-                onPriceChange={(value) =>
-                  setRiskDraft((prev) => ({ ...prev, stopLossPrice: value }))
-                }
-                percent={riskDraft.stopLossExitPercent}
-                onPercentChange={(value) =>
-                  setRiskDraft((prev) => ({
-                    ...prev,
-                    stopLossExitPercent: value,
-                  }))
-                }
-                exitQuantity={stopLossExitQuantity}
-                hasPosition={positionQty > 0}
-                currentPrice={currentPrice}
-              />
-
-              <RiskRuleSection
-                title="익절"
-                tone="profit"
-                price={riskDraft.takeProfitPrice}
-                pricePlaceholder="예: 72000"
-                onPriceChange={(value) =>
-                  setRiskDraft((prev) => ({ ...prev, takeProfitPrice: value }))
-                }
-                percent={riskDraft.takeProfitExitPercent}
-                onPercentChange={(value) =>
-                  setRiskDraft((prev) => ({
-                    ...prev,
-                    takeProfitExitPercent: value,
-                  }))
-                }
-                exitQuantity={takeProfitExitQuantity}
-                hasPosition={positionQty > 0}
-                currentPrice={currentPrice}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setRiskDraft((prev) => ({
-                    ...prev,
-                    autoExitEnabled: !prev.autoExitEnabled,
-                  }))
-                }
-                className="flex h-10 w-full items-center justify-between rounded-xl bg-background/45 px-3 text-sm"
-              >
-                <span className="text-muted-foreground">자동 청산</span>
-                <span
-                  className={
-                    riskDraft.autoExitEnabled
-                      ? "font-bold text-primary"
-                      : "font-bold text-muted-foreground"
-                  }
-                >
-                  {riskDraft.autoExitEnabled ? "ON" : "OFF"}
-                </span>
-              </button>
             </div>
 
-            <div className="mt-5 flex justify-between">
-              <button
-                type="button"
-                onClick={() =>
-                  setRiskDraft({
-                    ...riskRuleToDraft(null),
-                    autoExitEnabled: false,
-                  })
-                }
-                className="rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-background/60"
-              >
-                초기화
-              </button>
+            <RiskRuleSection
+              title="손절"
+              tone="loss"
+              price={riskDraft.stopLossPrice}
+              pricePlaceholder="예: 58000"
+              onPriceChange={(value) =>
+                setRiskDraft((prev) => ({ ...prev, stopLossPrice: value }))
+              }
+              percent={riskDraft.stopLossExitPercent}
+              onPercentChange={(value) =>
+                setRiskDraft((prev) => ({
+                  ...prev,
+                  stopLossExitPercent: value,
+                }))
+              }
+              exitQuantity={stopLossExitQuantity}
+              hasPosition={positionQty > 0}
+              currentPrice={currentPrice}
+            />
 
-              <button
-                type="button"
-                disabled={riskSaving || !riskPercentValid || !riskRuleAvailable}
-                onClick={async () => {
+            <RiskRuleSection
+              title="익절"
+              tone="profit"
+              price={riskDraft.takeProfitPrice}
+              pricePlaceholder="예: 72000"
+              onPriceChange={(value) =>
+                setRiskDraft((prev) => ({ ...prev, takeProfitPrice: value }))
+              }
+              percent={riskDraft.takeProfitExitPercent}
+              onPercentChange={(value) =>
+                setRiskDraft((prev) => ({
+                  ...prev,
+                  takeProfitExitPercent: value,
+                }))
+              }
+              exitQuantity={takeProfitExitQuantity}
+              hasPosition={positionQty > 0}
+              currentPrice={currentPrice}
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                setRiskDraft((prev) => ({
+                  ...prev,
+                  autoExitEnabled: !prev.autoExitEnabled,
+                }))
+              }
+              className="flex h-11 w-full items-center justify-between rounded-xl bg-background/45 px-4 text-sm"
+            >
+              <span className="text-muted-foreground">자동 청산</span>
+              <span
+                className={
+                  riskDraft.autoExitEnabled
+                    ? "font-bold text-primary"
+                    : "font-bold text-muted-foreground"
+                }
+              >
+                {riskDraft.autoExitEnabled ? "ON" : "OFF"}
+              </span>
+            </button>
+            {riskError && (
+              <p role="alert" className="text-sm text-red-300">
+                {riskError}
+              </p>
+            )}
+          </div>
+
+          <footer className="flex shrink-0 items-center justify-between border-t border-border/35 px-6 py-4">
+            <button
+              type="button"
+              onClick={() => {
+                setRiskError(null);
+                setRiskDraft({
+                  ...riskRuleToDraft(null),
+                  autoExitEnabled: false,
+                });
+              }}
+              className="h-10 rounded-xl px-4 text-sm text-muted-foreground hover:bg-background/60"
+            >
+              초기화
+            </button>
+
+            <button
+              type="button"
+              disabled={riskSaving || !riskPercentValid || !riskRuleAvailable}
+              onClick={async () => {
+                setRiskError(null);
+                try {
                   const saved = await submitRiskRuleDraft(
                     positionQty,
                     riskDraft,
                     saveRiskRule,
                   );
                   if (saved) setRiskOpen(false);
-                }}
-                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
-              >
-                {riskSaving ? "저장 중..." : "저장"}
-              </button>
-            </div>
-          </div>
-        </div>
+                } catch {
+                  setRiskError("리스크룰을 저장하지 못했습니다. 다시 시도해주세요.");
+                }
+              }}
+              className="h-10 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+            >
+              {riskSaving ? "저장 중..." : "저장"}
+            </button>
+          </footer>
+        </WorkspaceDialog>
       )}
     </>
   );
@@ -505,9 +498,9 @@ function RiskRuleSection({
   const hasCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0;
 
   return (
-    <section className="rounded-xl border border-border/40 bg-background/30 p-3">
+    <section className="rounded-xl border border-border/40 bg-background/30 p-4">
       <div
-        className={`mb-2 text-xs font-bold ${
+        className={`mb-3 text-sm font-bold ${
           tone === "loss" ? "text-red-300" : "text-emerald-300"
         }`}
       >
@@ -521,7 +514,7 @@ function RiskRuleSection({
           }
         }}
       >
-        <div className="mb-1 flex items-center justify-between text-[11px]">
+        <div className="mb-1.5 flex items-center justify-between text-xs">
           <span className="text-muted-foreground">{title} 가격</span>
           {priceChangePercent !== null && (
             <span
@@ -539,14 +532,14 @@ function RiskRuleSection({
             onFocus={() => setPricePickerOpen(true)}
             onChange={(event) => onPriceChange(event.target.value)}
             placeholder={pricePlaceholder}
-            className="h-9 min-w-0 flex-1 rounded-l-lg bg-transparent px-3 text-sm outline-none"
+            className="h-10 min-w-0 flex-1 rounded-l-lg bg-transparent px-3 text-sm outline-none"
           />
           <button
             type="button"
             aria-label={`${title} 가격 후보 열기`}
             aria-expanded={pricePickerOpen}
             onClick={() => setPricePickerOpen((open) => !open)}
-            className="flex w-9 items-center justify-center border-l border-border/40 text-muted-foreground hover:text-foreground"
+            className="flex w-10 items-center justify-center border-l border-border/40 text-muted-foreground hover:text-foreground"
           >
             <ChevronDown className="h-4 w-4" />
           </button>
@@ -629,7 +622,7 @@ function RiskRuleSection({
           onChange={onPercentChange}
         />
       </div>
-      <div className="mt-2 flex items-center justify-between rounded-lg bg-background/55 px-3 py-1.5 text-xs">
+      <div className="mt-3 flex items-center justify-between rounded-lg bg-background/55 px-3 py-2 text-xs">
         <span className="text-muted-foreground">예상 청산수량</span>
         <strong>
           {hasPosition

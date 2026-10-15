@@ -46,11 +46,15 @@ export function WorkspaceDialog({
       <div
         className={`flex max-h-[94dvh] flex-col overflow-hidden rounded-2xl ${wide ? "h-full" : ""}`}
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-3 pt-5">
+        <header
+          className={`flex shrink-0 items-start justify-between gap-4 ${wide || medium ? "px-6 pb-4 pt-6" : "px-5 pb-3 pt-5"}`}
+        >
           <div>
-            <h2 className="text-base font-semibold">{title}</h2>
+            <h2 className={wide || medium ? "text-lg font-semibold" : "text-base font-semibold"}>
+              {title}
+            </h2>
             {description && (
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className={`mt-1 text-muted-foreground ${wide || medium ? "text-sm" : "text-xs"}`}>
                 {description}
               </p>
             )}

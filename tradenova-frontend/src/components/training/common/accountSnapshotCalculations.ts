@@ -1,4 +1,5 @@
 export type UnrealizedPosition = {
+  marketValue: number | null;
   unrealizedPnL: number | null;
   returnRate: number | null;
 };
@@ -18,7 +19,7 @@ export function calculateUnrealizedPosition(
   positionQty: number | null | undefined,
 ): UnrealizedPosition {
   if (isFiniteNumber(positionQty) && positionQty <= 0) {
-    return { unrealizedPnL: 0, returnRate: 0 };
+    return { marketValue: 0, unrealizedPnL: 0, returnRate: 0 };
   }
 
   if (
@@ -27,16 +28,21 @@ export function calculateUnrealizedPosition(
     !isFiniteNumber(avgPrice) ||
     avgPrice <= 0
   ) {
-    return { unrealizedPnL: null, returnRate: null };
+    return { marketValue: null, unrealizedPnL: null, returnRate: null };
   }
 
   const priceDifference = currentPrice - avgPrice;
+  const marketValue = currentPrice * positionQty;
   const unrealizedPnL = priceDifference * positionQty;
   const returnRate = (priceDifference / avgPrice) * 100;
 
-  if (!Number.isFinite(unrealizedPnL) || !Number.isFinite(returnRate)) {
-    return { unrealizedPnL: null, returnRate: null };
+  if (
+    !Number.isFinite(marketValue) ||
+    !Number.isFinite(unrealizedPnL) ||
+    !Number.isFinite(returnRate)
+  ) {
+    return { marketValue: null, unrealizedPnL: null, returnRate: null };
   }
 
-  return { unrealizedPnL, returnRate };
+  return { marketValue, unrealizedPnL, returnRate };
 }
