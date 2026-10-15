@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTrainingTradeMarkers } from "@/hooks/training/useTrainingTradeMarkers";
 import type {
   AutoExitReason,
@@ -19,6 +19,10 @@ import {
 } from "./trainingSessionLifecycle";
 import axios from "axios";
 import { useChartDrawings } from "@/components/training/chart/drawing/useChartDrawings";
+import {
+  applyTradeToProgressMap,
+  isCurrentChartRequest,
+} from "@/hooks/training/trainingStateConsistency";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -89,7 +93,17 @@ export function useTrainingSessionPage() {
   // ===== AI 로직 =====
   const ai = useTrainingAi(core.sessionId, core.activeChartId, report.appendEvent);
 
-  const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
+  const [riskRuleState, setRiskRuleState] = useState<{
+    chartId: number;
+    rule: RiskRuleResponse | null;
+  } | null>(null);
+  const activeRiskChartIdRef = useRef(core.activeChartId);
+  const riskRuleRequestVersionRef = useRef(0);
+  useLayoutEffect(() => {
+    activeRiskChartIdRef.current = core.activeChartId;
+  }, [core.activeChartId]);
+  const riskRule =
+    riskRuleState?.chartId === core.activeChartId ? riskRuleState.rule : null;
 
   const [riskSaving, setRiskSaving] = useState(false);
 
@@ -115,25 +129,16 @@ export function useTrainingSessionPage() {
           (chart) => chart.chartId === res.chartId,
         )?.status ?? "IN_PROGRESS";
 
-      const cur =
-        prev[res.chartId] ??
+      return applyTradeToProgressMap(
+        prev,
+        res,
         emptyProgress(
           res.chartId,
           chartStatus,
           core.status,
           Number(res.executedPrice),
-        );
-
-      return {
-        ...prev,
-        [res.chartId]: {
-          ...cur,
-          cashBalance: res.cashBalance,
-          positionQty: res.positionQty,
-          avgPrice: res.avgPrice,
-          currentPrice: Number(res.executedPrice),
-        },
-      };
+        ),
+      );
     });
   };
 
@@ -204,15 +209,43 @@ export function useTrainingSessionPage() {
   }, [tradeMarkerChartIdsKey, loadTradeMarkers]);
 
   useEffect(() => {
-    if (!core.activeChartId) {
-      setRiskRule(null);
-      return;
-    }
+    const chartId = core.activeChartId;
+    const requestVersion = ++riskRuleRequestVersionRef.current;
+
+    if (!chartId) return;
+
+    const requestToken = { chartId, version: requestVersion };
 
     trainingApi
-      .getRiskRule(core.activeChartId)
-      .then(setRiskRule)
-      .catch(() => setRiskRule(null));
+      .getRiskRule(chartId)
+      .then((rule) => {
+        if (
+          isCurrentChartRequest(
+            activeRiskChartIdRef.current,
+            riskRuleRequestVersionRef.current,
+            requestToken,
+          )
+        ) {
+          setRiskRuleState({ chartId, rule });
+        }
+      })
+      .catch(() => {
+        if (
+          isCurrentChartRequest(
+            activeRiskChartIdRef.current,
+            riskRuleRequestVersionRef.current,
+            requestToken,
+          )
+        ) {
+          setRiskRuleState({ chartId, rule: null });
+        }
+      });
+
+    return () => {
+      if (riskRuleRequestVersionRef.current === requestVersion) {
+        riskRuleRequestVersionRef.current += 1;
+      }
+    };
   }, [core.activeChartId]);
 
   const saveRiskRule = async (body: RiskRuleUpsertRequest) => {
@@ -223,7 +256,7 @@ export function useTrainingSessionPage() {
     try {
       const saved = await trainingApi.upsertRiskRule(core.activeChartId, body);
 
-      setRiskRule(saved);
+      setRiskRuleState({ chartId: core.activeChartId, rule: saved });
     } finally {
       setRiskSaving(false);
     }

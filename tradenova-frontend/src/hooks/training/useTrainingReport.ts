@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type {
@@ -8,6 +8,12 @@ import type {
 } from "@/types/training";
 import { emptyDraft } from "./training.utils";
 import { useQuickPhrases } from "@/hooks/useQuickPhrases";
+import {
+  isCurrentChartRequest,
+  type ChartRequestToken,
+} from "./trainingStateConsistency";
+
+type HydrationResource = "draft" | "events" | "snapshots";
 
 function apiErrorMessage(error: unknown, fallback: string) {
   return axios.isAxiosError<{ message?: string }>(error)
@@ -26,6 +32,37 @@ function apiErrorMessage(error: unknown, fallback: string) {
  * - note 이벤트 저장
  */
 export function useTrainingReport(activeChartId: number | null) {
+  const activeChartIdRef = useRef(activeChartId);
+  const requestVersionsRef = useRef<Record<HydrationResource, number>>({
+    draft: 0,
+    events: 0,
+    snapshots: 0,
+  });
+  useLayoutEffect(() => {
+    activeChartIdRef.current = activeChartId;
+    requestVersionsRef.current.draft += 1;
+    requestVersionsRef.current.events += 1;
+    requestVersionsRef.current.snapshots += 1;
+  }, [activeChartId]);
+
+  const beginHydration = useCallback((
+    resource: HydrationResource,
+    chartId: number,
+  ): ChartRequestToken => ({
+    chartId,
+    version: ++requestVersionsRef.current[resource],
+  }), []);
+
+  const isCurrentHydration = useCallback((
+    resource: HydrationResource,
+    token: ChartRequestToken,
+  ) =>
+    isCurrentChartRequest(
+      activeChartIdRef.current,
+      requestVersionsRef.current[resource],
+      token,
+    ), []);
+
   // ===== 리포트 관련 상태 =====
   const {
     quickPhrases,
@@ -53,9 +90,13 @@ export function useTrainingReport(activeChartId: number | null) {
    * 현재 활성 차트의 draft 로드
    * 없으면 emptyDraft로 초기화
    */
-  const loadDraft = async (chartId: number) => {
+  const loadDraft = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("draft", chartId);
+
     try {
       const data = await reportApi.getDraft(chartId);
+
+      if (!isCurrentHydration("draft", requestToken)) return;
 
       if (data?.contentJson) {
         setDraft({
@@ -70,36 +111,54 @@ export function useTrainingReport(activeChartId: number | null) {
         setDraft(emptyDraft);
       }
     } catch (e) {
-      console.error("draft load failed", e);
+      if (isCurrentHydration("draft", requestToken)) {
+        console.error("draft load failed", e);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * 현재 활성 차트의 이벤트 로그 로드
    */
-  const loadEvents = async (chartId: number) => {
+  const loadEvents = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("events", chartId);
+
     try {
       setEventLoading(true);
       const data = await reportApi.getEvents(chartId, 50);
+
+      if (!isCurrentHydration("events", requestToken)) return;
+
       setEvents(data);
     } catch (e) {
-      console.error("event load failed", e);
+      if (isCurrentHydration("events", requestToken)) {
+        console.error("event load failed", e);
+      }
     } finally {
-      setEventLoading(false);
+      if (isCurrentHydration("events", requestToken)) {
+        setEventLoading(false);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * 현재 활성 차트의 스냅샷 목록 로드
    */
-  const loadSnapshots = async (chartId: number) => {
+  const loadSnapshots = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("snapshots", chartId);
+
     try {
       const data = await reportApi.getSnapshots(chartId);
+
+      if (!isCurrentHydration("snapshots", requestToken)) return;
+
       setSnapshots(data);
     } catch (e) {
-      console.error("snapshot load failed", e);
+      if (isCurrentHydration("snapshots", requestToken)) {
+        console.error("snapshot load failed", e);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * draft 저장
@@ -236,10 +295,12 @@ export function useTrainingReport(activeChartId: number | null) {
   useEffect(() => {
     if (!activeChartId) return;
 
-    loadDraft(activeChartId);
-    loadEvents(activeChartId);
-    loadSnapshots(activeChartId);
-  }, [activeChartId]);
+    queueMicrotask(() => {
+      void loadDraft(activeChartId);
+      void loadEvents(activeChartId);
+      void loadSnapshots(activeChartId);
+    });
+  }, [activeChartId, loadDraft, loadEvents, loadSnapshots]);
 
   return {
     quickPhrases,
