@@ -135,6 +135,21 @@ await page.route("**/api/**", async (route) => {
       status: "IN_PROGRESS",
       charts,
     });
+  if (endpoint === "/api/training/sessions/history")
+    return send([
+      {
+        sessionId: 91,
+        status: "COMPLETED",
+        createdAt: "2026-10-10T09:00:00Z",
+        completedAt: "2026-10-10T09:35:00Z",
+        totalChartCount: 4,
+        completedChartCount: 4,
+        totalTradeCount: 6,
+        snapshotCount: 8,
+        hasSessionAiReview: true,
+        sessionAiScore: 82,
+      },
+    ]);
   if (endpoint === "/api/training/sessions/1/drawings") return send([]);
   if (endpoint.endsWith("/drawings")) {
     if (request.method() === "POST") {
@@ -369,7 +384,7 @@ try {
   dialog = page.getByRole("dialog", { name: "BUY", exact: true });
   await dialog.waitFor();
   const bounds = await dialog.boundingBox();
-  assert.ok(bounds.width >= 420 && bounds.width <= 500);
+  assert.ok(bounds.width >= 520 && bounds.width <= 560);
   assert.equal(
     await dialog
       .getByRole("combobox", { name: "적용 계획" })
@@ -424,6 +439,19 @@ try {
     requests.filter((r) => r.endpoint.endsWith("/trades/buy")).at(-1).body,
     { qty: 4 },
   );
+  const riskTrigger = right.getByRole("button", { name: "리스크", exact: true });
+  await riskTrigger.click();
+  const riskDialog = page.getByRole("dialog", {
+    name: "리스크룰 설정",
+    exact: true,
+  });
+  await riskDialog.waitFor();
+  const riskBounds = await riskDialog.boundingBox();
+  assert.ok(riskBounds.width >= 520 && riskBounds.width <= 560);
+  await screenshot("04-risk-dialog");
+  await page.keyboard.press("Escape");
+  await riskDialog.waitFor({ state: "detached" });
+  assert.equal(await riskTrigger.evaluate((node) => node === document.activeElement), true);
   await page.getByRole("button", { name: "BUY", exact: true }).click();
   assert.equal(
     await dialog
@@ -523,13 +551,50 @@ try {
   await left.getByRole("button", { name: /Chart 4 -/ }).click();
   await ai.getByRole("button", { name: "분석 생성", exact: true }).click();
   await ai.getByText("84점 · FAST").waitFor();
+
+  await page.goto(new URL("/mypage", page.url()).toString());
+  await page.getByRole("heading", { name: "계정과 훈련 허브" }).waitFor();
+  await page.getByText("AI 리뷰 · 82점").waitFor();
+  for (const viewport of [
+    { name: "1440x900", width: 1440, height: 900 },
+    { name: "1280x720", width: 1280, height: 720 },
+    { name: "768x1024", width: 768, height: 1024 },
+    { name: "390x844", width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const pageWidth = await page.locator("html").evaluate((node) => ({
+      clientWidth: node.clientWidth,
+      scrollWidth: node.scrollWidth,
+    }));
+    assert.ok(pageWidth.scrollWidth <= pageWidth.clientWidth, JSON.stringify({ viewport, pageWidth }));
+    await screenshot(`09-mypage-${viewport.name}`);
+  }
+
+  await page.goto(new URL("/mypage/accounts", page.url()).toString());
+  await page.getByRole("heading", { name: "훈련 계좌 관리" }).waitFor();
+  await page
+    .getByRole("region", { name: "선택 계좌" })
+    .getByLabel("계좌 이름", { exact: true })
+    .waitFor();
+  for (const viewport of [
+    { name: "1440x900", width: 1440, height: 900 },
+    { name: "390x844", width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const pageWidth = await page.locator("html").evaluate((node) => ({
+      clientWidth: node.clientWidth,
+      scrollWidth: node.scrollWidth,
+    }));
+    assert.ok(pageWidth.scrollWidth <= pageWidth.clientWidth, JSON.stringify({ viewport, pageWidth }));
+    await screenshot(`10-accounts-${viewport.name}`);
+  }
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify(
       {
         result: "PASS",
         checks:
-          "AI active chart/stale response, Scenario create/edit/history/helpers, BUY/SELL/cancel/failure/success/reset, quantity/percent/ALL, explicit plan/manual reasons/payload, saved plans, 1080p layout",
+          "AI active chart/stale response, Scenario create/edit/history/helpers, BUY/SELL/cancel/failure/success/reset, Risk Escape/focus, quantity/percent/ALL, explicit plan/manual reasons/payload, saved plans, Training layout, responsive My Page and training-account management",
         layout,
         screenshots: output,
       },

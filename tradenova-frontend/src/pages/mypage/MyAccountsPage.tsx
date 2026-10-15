@@ -1,395 +1,300 @@
-// src/pages/mypage/MyAccountsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, WalletCards } from "lucide-react";
+import { Link } from "react-router-dom";
 import { paperAccountApi, type PaperAccountResponse } from "@/api/paperAccountApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  formatTrainingMoney,
+  parseInitialBalance,
+  selectTrainingAccount,
+  trainingAccountDelta,
+} from "./trainingAccountPresentation";
 
-type AccountInsight = {
-    accountId: number;
-    oneLiner: string;
-    riskTag: "LOW" | "MID" | "HIGH";
-};
-
-type ReportSummary = {
-    id: number;
-    accountId: number;
-    title: string;
-    createdAt: string;
-    highlight: string;
-};
-
-function fmt(v: number | null | undefined) {
-    if (v === null || v === undefined) return "-";
-    return new Intl.NumberFormat("ko-KR").format(v);
-}
+type StatusMessage = { tone: "success" | "error"; text: string } | null;
 
 export default function MyAccountsPage() {
-    const [accounts, setAccounts] = useState<PaperAccountResponse[]>([]);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [accounts, setAccounts] = useState<PaperAccountResponse[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createBalance, setCreateBalance] = useState("10000000");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [status, setStatus] = useState<StatusMessage>(null);
 
-    const [createName, setCreateName] = useState("");
-    const [createDesc, setCreateDesc] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [msg, setMsg] = useState<string | null>(null);
+  const selected = useMemo(
+    () => accounts.find((account) => account.id === selectedId) ?? null,
+    [accounts, selectedId],
+  );
 
-    // 임시: AI 한줄평(나중에 API 붙이기)
-    const insights: AccountInsight[] = useMemo(
-        () => [
-            { accountId: 1, oneLiner: "규칙 기반 매매가 안정적. 손절 라인만 더 명확히.", riskTag: "LOW" },
-            { accountId: 2, oneLiner: "승률은 괜찮은데 손익비가 아쉬움. 익절 룰 보완 추천.", riskTag: "MID" },
-            { accountId: 3, oneLiner: "진입 빈도가 높음. 과매매 가능성 체크 필요.", riskTag: "HIGH" },
-        ],
-        []
-    );
+  const syncSelection = useCallback((account: PaperAccountResponse | null) => {
+    setSelectedId(account?.id ?? null);
+    setEditName(account?.name ?? "");
+    setEditDescription(account?.description ?? "");
+  }, []);
 
-    // 임시: 리포트 요약(나중에 API 붙이기)
-    const reportSummaries: ReportSummary[] = useMemo(
-        () => [
-            { id: 101, accountId: 1, title: "2월 1주차 정리", createdAt: "2026-02-07", highlight: "손절은 잘 지켰고, 익절 기준이 흔들림." },
-            { id: 102, accountId: 1, title: "2월 2주차 정리", createdAt: "2026-02-14", highlight: "뉴스 반영 늦음 → 진입 타이밍 개선 필요." },
-            { id: 201, accountId: 2, title: "스윙 루틴 점검", createdAt: "2026-02-20", highlight: "진입 근거는 좋은데 분할매수 계획이 없음." },
-        ],
-        []
-    );
+  const loadAccounts = useCallback(async (preferredId: number | null = null) => {
+    try {
+      const list = await paperAccountApi.list();
+      setAccounts(list);
+      syncSelection(selectTrainingAccount(list, preferredId));
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [syncSelection]);
 
-    const selected = useMemo(
-        () => accounts.find((a) => a.id === selectedId) ?? null,
-        [accounts, selectedId]
-    );
+  useEffect(() => {
+    let cancelled = false;
 
-    const selectedInsight = useMemo(() => {
-        if (!selected) return null;
-        return insights.find((x) => x.accountId === selected.id) ?? null;
-    }, [selected, insights]);
-
-    const selectedReports = useMemo(() => {
-        if (!selected) return [];
-        return reportSummaries.filter((r) => r.accountId === selected.id);
-    }, [selected, reportSummaries]);
-
-    const reload = async () => {
-        const list = await paperAccountApi.list();
+    void paperAccountApi
+      .list()
+      .then((list) => {
+        if (cancelled) return;
+        const initialAccount = selectTrainingAccount(list);
         setAccounts(list);
+        setSelectedId(initialAccount?.id ?? null);
+        setEditName(initialAccount?.name ?? "");
+        setEditDescription(initialAccount?.description ?? "");
+        setLoadError(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-        if (!selectedId) {
-            const def = list.find((a) => a.isDefault) ?? list[0];
-            setSelectedId(def?.id ?? null);
-        } else {
-            // 선택 유지
-            const still = list.some((a) => a.id === selectedId);
-            if (!still) setSelectedId(list[0]?.id ?? null);
-        }
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    useEffect(() => {
-        reload().catch(() => { });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(false);
+    void loadAccounts(selectedId);
+  };
 
-    const onCreate = async () => {
-        setMsg(null);
-        if (!createName.trim()) {
-            setMsg("계좌 이름을 입력해줘.");
-            return;
-        }
-        setLoading(true);
-        try {
-            await paperAccountApi.create({
-              name: createName.trim(),
-              description: createDesc.trim() || null,
-              initialBalance: 10_000_000,
-            });
-            setCreateName("");
-            setCreateDesc("");
-            setMsg("계좌가 생성되었습니다.");
-            await reload();
-        } catch (e: any) {
-            setMsg(e?.response?.data?.message ?? "계좌 생성 실패");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const selectAccount = (account: PaperAccountResponse) => {
+    if (busy) return;
+    setStatus(null);
+    syncSelection(account);
+  };
 
-    const onUpdate = async () => {
-        if (!selected) return;
-        setMsg(null);
-        setLoading(true);
-        try {
-            await paperAccountApi.update(selected.id, { name: selected.name, description: selected.description ?? null });
-            setMsg("수정되었습니다.");
-            await reload();
-        } catch (e: any) {
-            setMsg(e?.response?.data?.message ?? "계좌 수정 실패");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const createAccount = async () => {
+    const initialBalance = parseInitialBalance(createBalance);
+    if (!createName.trim() || initialBalance === null) {
+      setStatus({ tone: "error", text: "계좌 이름과 0보다 큰 초기 자본을 입력해 주세요." });
+      return;
+    }
 
-    const onSetDefault = async () => {
-        if (!selected) return;
-        setMsg(null);
-        setLoading(true);
-        try {
-            await paperAccountApi.setDefault(selected.id);
-            setMsg("기본 계좌로 설정했습니다.");
-            await reload();
-        } catch (e: any) {
-            setMsg(e?.response?.data?.message ?? "기본 계좌 설정 실패");
-        } finally {
-            setLoading(false);
-        }
-    };
+    setBusy(true);
+    setStatus(null);
+    try {
+      const created = await paperAccountApi.create({
+        name: createName.trim(),
+        description: createDescription.trim() || null,
+        initialBalance,
+      });
+      setCreateName("");
+      setCreateDescription("");
+      setCreateBalance("10000000");
+      await loadAccounts(created.id);
+      setStatus({ tone: "success", text: "훈련 계좌를 만들었습니다." });
+    } catch {
+      setStatus({ tone: "error", text: "훈련 계좌를 만들지 못했습니다. 잠시 후 다시 시도해 주세요." });
+    } finally {
+      setBusy(false);
+    }
+  };
 
-    const onReset = async () => {
-        if (!selected) return;
-        setMsg(null);
-        setLoading(true);
-        try {
-            await paperAccountApi.reset(selected.id);
-            setMsg("계좌가 리셋되었습니다.");
-            await reload();
-        } catch (e: any) {
-            setMsg(e?.response?.data?.message ?? "계좌 리셋 실패");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const updateAccount = async () => {
+    if (!selected) return;
+    if (!editName.trim()) {
+      setStatus({ tone: "error", text: "계좌 이름을 입력해 주세요." });
+      return;
+    }
 
-    return (
-      <div className="space-y-6">
-        <div>
-          <div className="text-xl font-semibold">계좌 관리</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            계좌 생성/수정/기본설정/리셋 + 계좌별 인사이트/리포트 요약(데모)
+    setBusy(true);
+    setStatus(null);
+    try {
+      await paperAccountApi.update(selected.id, {
+        name: editName.trim(),
+        description: editDescription.trim() || null,
+      });
+      await loadAccounts(selected.id);
+      setStatus({ tone: "success", text: "훈련 계좌 정보를 저장했습니다." });
+    } catch {
+      setStatus({ tone: "error", text: "훈련 계좌 정보를 저장하지 못했습니다." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setDefaultAccount = async () => {
+    if (!selected || selected.isDefault) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      await paperAccountApi.setDefault(selected.id);
+      await loadAccounts(selected.id);
+      setStatus({ tone: "success", text: "기본 훈련 계좌로 설정했습니다." });
+    } catch {
+      setStatus({ tone: "error", text: "기본 계좌 설정을 변경하지 못했습니다." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetAccount = async () => {
+    if (!selected || !window.confirm("이 훈련 계좌의 현금 잔액을 초기화할까요?")) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      await paperAccountApi.reset(selected.id);
+      await loadAccounts(selected.id);
+      setStatus({ tone: "success", text: "훈련 계좌의 현금 잔액을 초기화했습니다." });
+    } catch {
+      setStatus({ tone: "error", text: "훈련 계좌를 초기화하지 못했습니다." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 lg:py-10">
+      <header className="border-b border-border/45 pb-5">
+        <Link to="/mypage" className="inline-flex items-center gap-1 text-xs text-muted-foreground transition hover:text-foreground">
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />마이페이지
+        </Link>
+        <div className="mt-3 flex items-start gap-3">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary"><WalletCards className="h-5 w-5" aria-hidden="true" /></div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">훈련 계좌 관리</h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">가상 훈련에 사용할 현금 계좌입니다. 실제 증권계좌나 주문 계좌와 연결되지 않습니다.</p>
           </div>
         </div>
+      </header>
 
-        {msg && (
-          <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-sm text-muted-foreground">
-            {msg}
-          </div>
-        )}
+      {status && (
+        <p
+          role="status"
+          className={`mt-5 rounded-lg border px-4 py-3 text-sm ${status.tone === "error" ? "border-red-400/20 bg-red-400/[0.06] text-red-200" : "border-primary/20 bg-primary/[0.06] text-foreground"}`}
+        >
+          {status.text}
+        </p>
+      )}
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-          {/* LEFT: list */}
-          <div className="rounded-2xl border border-border/60 bg-background/10 p-3">
-            <div className="mb-2 text-sm font-semibold">내 계좌</div>
-            <div className="flex flex-col gap-2">
-              {accounts.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => setSelectedId(a.id)}
-                  className={[
-                    "rounded-xl border px-3 py-2 text-left text-sm transition",
-                    selectedId === a.id
-                      ? "border-primary/50 bg-primary/10 font-semibold"
-                      : "border-border/60 hover:bg-muted/30",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      #{a.id} · {a.name}
-                      {a.isDefault && (
-                        <span className="ml-2 rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs">
-                          DEFAULT
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {fmt(a.cashBalance)}
-                    </div>
-                  </div>
-                  {a.description && (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {a.description}
-                    </div>
-                  )}
-                </button>
-              ))}
+      {loading && <div className="mt-7 h-48 animate-pulse rounded-xl bg-muted/20" aria-label="훈련 계좌 불러오는 중" />}
+
+      {!loading && loadError && (
+        <div className="mt-7 rounded-xl border border-dashed border-border/55 px-4 py-14 text-center">
+          <p className="text-sm text-muted-foreground">훈련 계좌를 불러오지 못했습니다.</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={retryLoad}>다시 시도</Button>
+        </div>
+      )}
+
+      {!loading && !loadError && (
+        <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(240px,0.7fr)_minmax(0,1.3fr)]">
+          <section aria-labelledby="account-list-heading" className="min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="account-list-heading" className="text-sm font-semibold">내 훈련 계좌</h2>
+              <span className="text-xs tabular-nums text-muted-foreground">{accounts.length}개</span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {accounts.map((account) => {
+                const isSelected = account.id === selectedId;
+                return (
+                  <button
+                    key={account.id}
+                    type="button"
+                    onClick={() => selectAccount(account)}
+                    className={`w-full rounded-xl px-4 py-3 text-left ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${isSelected ? "bg-primary/[0.07] ring-primary/35" : "bg-muted/[0.05] ring-border/35 hover:bg-muted/[0.12]"}`}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate text-sm font-semibold">{account.name}</span>
+                      {account.isDefault && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">기본</span>}
+                    </span>
+                    <span className="mt-1 block text-xs tabular-nums text-muted-foreground">사용 가능 현금 {formatTrainingMoney(account.cashBalance, account.baseCurrency)}</span>
+                  </button>
+                );
+              })}
               {accounts.length === 0 && (
-                <div className="text-xs text-muted-foreground">
-                  계좌가 없습니다.
-                </div>
+                <div className="rounded-xl border border-dashed border-border/55 px-4 py-8 text-center text-sm text-muted-foreground">등록된 훈련 계좌가 없습니다.</div>
               )}
             </div>
+          </section>
 
-            {/* create */}
-            <div className="mt-4 rounded-2xl border border-border/60 bg-background/20 p-3">
-              <div className="text-sm font-semibold">계좌 생성</div>
-              <input
-                className="mt-2 w-full rounded-xl border border-border/60 bg-background/30 px-3 py-2 text-sm"
-                placeholder="계좌 이름"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-              />
-              <input
-                className="mt-2 w-full rounded-xl border border-border/60 bg-background/30 px-3 py-2 text-sm"
-                placeholder="설명(선택)"
-                value={createDesc}
-                onChange={(e) => setCreateDesc(e.target.value)}
-              />
-              <div className="mt-2 text-xs text-muted-foreground">
-                초기 자금: 10,000,000원
-              </div>
-              <button
-                onClick={onCreate}
-                disabled={loading}
-                className="mt-3 w-full rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-muted/30 disabled:opacity-60"
-              >
-                {loading ? "생성 중..." : "생성"}
-              </button>
-            </div>
-          </div>
-
-          {/* RIGHT: detail */}
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-background/10 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">선택 계좌</div>
-                  <div className="mt-1 text-muted-foreground text-sm">
-                    {selected
-                      ? `#${selected.id} · ${selected.name}`
-                      : "선택된 계좌 없음"}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Cash</div>
-                  <div className="text-lg font-semibold">
-                    {fmt(selected?.cashBalance)}
-                  </div>
-                </div>
-              </div>
-
-              {selected && (
+          <div className="min-w-0 space-y-5">
+            <section aria-labelledby="selected-account-heading" className="rounded-xl bg-muted/[0.06] p-4 ring-1 ring-border/35 sm:p-5">
+              <h2 id="selected-account-heading" className="text-sm font-semibold">선택 계좌</h2>
+              {selected ? (
                 <>
-                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <AccountMetric label="사용 가능 현금" value={formatTrainingMoney(selected.cashBalance, selected.baseCurrency)} />
+                    <AccountMetric label="초기 자본" value={formatTrainingMoney(selected.initialBalance, selected.baseCurrency)} />
+                    <AccountMetric
+                      label="현금 증감"
+                      value={formatTrainingMoney(trainingAccountDelta(selected), selected.baseCurrency)}
+                      tone={trainingAccountDelta(selected)}
+                    />
+                  </dl>
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <div className="text-xs text-muted-foreground">이름</div>
-                      <input
-                        className="mt-1 w-full rounded-xl border border-border/60 bg-background/30 px-3 py-2 text-sm"
-                        value={selected.name}
-                        onChange={(e) =>
-                          setAccounts((prev) =>
-                            prev.map((x) =>
-                              x.id === selected.id
-                                ? { ...x, name: e.target.value }
-                                : x,
-                            ),
-                          )
-                        }
-                      />
+                      <Label htmlFor="training-account-name">계좌 이름</Label>
+                      <Input id="training-account-name" className="mt-1.5" value={editName} onChange={(event) => setEditName(event.target.value)} maxLength={100} disabled={busy} />
                     </div>
-
                     <div>
-                      <div className="text-xs text-muted-foreground">설명</div>
-                      <input
-                        className="mt-1 w-full rounded-xl border border-border/60 bg-background/30 px-3 py-2 text-sm"
-                        value={selected.description ?? ""}
-                        onChange={(e) =>
-                          setAccounts((prev) =>
-                            prev.map((x) =>
-                              x.id === selected.id
-                                ? { ...x, description: e.target.value }
-                                : x,
-                            ),
-                          )
-                        }
-                      />
+                      <Label htmlFor="training-account-description">설명 <span className="font-normal text-muted-foreground">(선택)</span></Label>
+                      <Input id="training-account-description" className="mt-1.5" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={255} disabled={busy} />
                     </div>
                   </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={onUpdate}
-                      disabled={loading}
-                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-muted/30 disabled:opacity-60"
-                    >
-                      수정 저장
-                    </button>
-
-                    <button
-                      onClick={onSetDefault}
-                      disabled={loading}
-                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-muted/30 disabled:opacity-60"
-                    >
-                      기본 계좌로 설정
-                    </button>
-
-                    <button
-                      onClick={onReset}
-                      disabled={loading}
-                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-muted/30 disabled:opacity-60"
-                    >
-                      리셋
-                    </button>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button size="sm" disabled={busy || !editName.trim()} onClick={() => void updateAccount()}>변경 저장</Button>
+                    <Button size="sm" variant="outline" disabled={busy || selected.isDefault} onClick={() => void setDefaultAccount()}>기본 계좌로 설정</Button>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => void resetAccount()}>현금 초기화</Button>
                   </div>
                 </>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">왼쪽에서 계좌를 선택하거나 새 계좌를 만들어 주세요.</p>
               )}
-            </div>
+            </section>
 
-            {/* AI one-liner (demo) */}
-            <div className="rounded-2xl border border-border/60 bg-background/10 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">AI 한줄평(데모)</div>
-                {selectedInsight && (
-                  <span className="rounded-md border border-border/60 bg-background/20 px-2 py-1 text-xs">
-                    RISK: {selectedInsight.riskTag}
-                  </span>
-                )}
+            <section aria-labelledby="create-account-heading" className="rounded-xl bg-muted/[0.06] p-4 ring-1 ring-border/35 sm:p-5">
+              <h2 id="create-account-heading" className="text-sm font-semibold">새 훈련 계좌</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="new-account-name">계좌 이름</Label>
+                  <Input id="new-account-name" className="mt-1.5" value={createName} onChange={(event) => setCreateName(event.target.value)} maxLength={100} disabled={busy} placeholder="예: 기본 훈련 계좌" />
+                </div>
+                <div>
+                  <Label htmlFor="new-account-balance">초기 자본</Label>
+                  <Input id="new-account-balance" className="mt-1.5" type="number" min="1" step="100000" value={createBalance} onChange={(event) => setCreateBalance(event.target.value)} disabled={busy} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="new-account-description">설명 <span className="font-normal text-muted-foreground">(선택)</span></Label>
+                  <Input id="new-account-description" className="mt-1.5" value={createDescription} onChange={(event) => setCreateDescription(event.target.value)} maxLength={255} disabled={busy} placeholder="계좌를 구분할 짧은 설명" />
+                </div>
               </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {selected
-                  ? (selectedInsight?.oneLiner ??
-                    "아직 인사이트가 없습니다. (다음 단계에서 생성)")
-                  : "계좌를 선택하면 표시됩니다."}
-              </div>
-              <div className="mt-3 text-xs text-muted-foreground">
-                다음 단계: 계좌별 통계(승률/손익비/최대낙폭) + AI 생성 API로
-                교체
-              </div>
-            </div>
-
-            {/* report summaries (demo) */}
-            <div className="rounded-2xl border border-border/60 bg-background/10 p-4">
-              <div className="text-sm font-semibold">리포트 요약(데모)</div>
-              <div className="mt-3 space-y-2">
-                {selected ? (
-                  selectedReports.length ? (
-                    selectedReports.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-xl border border-border/60 bg-background/20 p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-semibold">{r.title}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {r.createdAt}
-                          </div>
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {r.highlight}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground">
-                      이 계좌에 대한 리포트가 아직 없습니다.
-                    </div>
-                  )
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    계좌를 선택하면 리포트가 표시됩니다.
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-3 text-xs text-muted-foreground">
-                다음 단계: 실제 “세션/차트 리포트” 저장/조회 API 연결 → 여기로
-                자동 집계
-              </div>
-            </div>
+              <Button className="mt-5" size="sm" disabled={busy} onClick={() => void createAccount()}>{busy ? "처리 중" : "훈련 계좌 만들기"}</Button>
+            </section>
           </div>
         </div>
-      </div>
-    );
+      )}
+    </div>
+  );
+}
+
+function AccountMetric({ label, value, tone = 0 }: { label: string; value: string; tone?: number }) {
+  const toneClass = tone > 0 ? "text-emerald-300" : tone < 0 ? "text-red-200" : "text-foreground";
+  return <div className="min-w-0"><dt className="text-[11px] text-muted-foreground">{label}</dt><dd className={`mt-1 truncate text-base font-semibold tabular-nums sm:text-lg ${toneClass}`} title={value}>{value}</dd></div>;
 }
