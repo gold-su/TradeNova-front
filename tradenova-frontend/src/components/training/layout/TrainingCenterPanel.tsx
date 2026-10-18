@@ -19,13 +19,15 @@ import { useEffect, useState } from "react";
 import { IndicatorDrawer } from "@/components/training/chart/indicator/IndicatorDrawer";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import type { TradeChartMarker } from "@/components/training/chart/CandleChart";
-import {
-  PencilLine,
-  Activity,
-  Building2,
-  Newspaper,
-  Camera,
-} from "lucide-react";
+import { Activity, X } from "lucide-react";
+import type {
+  ChartDrawing,
+  DrawingPoint,
+  DrawingTool,
+  PendingDrawing,
+  SelectedDrawing,
+} from "@/components/training/chart/drawing/drawingTypes";
+import { drawingEscapeAction } from "@/components/training/chart/drawing/drawingTypes";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -60,8 +62,9 @@ type Props = {
   activeProgress: ProgressResponse | null;
   visibleActiveCandles: Candle[];
   error: string | null;
+  autoExitNotices: Array<{ id: number; message: string }>;
   onRefreshChart: (chartId: number) => void;
-  refreshing: boolean;
+  refreshingChartIds: Set<number>;
   refreshRequest: ChartRefreshRequest;
   setRefreshRequest: React.Dispatch<React.SetStateAction<ChartRefreshRequest>>;
   globalIndicators: IndicatorSettings;
@@ -72,6 +75,17 @@ type Props = {
   >;
   getIndicatorSettings: (chartId: number | null) => IndicatorSettings;
   tradeMarkersByChart: Record<number, TradeChartMarker[]>;
+  drawingsByChart: Record<number, ChartDrawing[]>;
+  drawingTool: DrawingTool;
+  onSelectDrawingTool: (tool: DrawingTool) => void;
+  pendingDrawing: PendingDrawing;
+  selectedDrawing: SelectedDrawing;
+  onAddDrawingPoint: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText: (value: string) => boolean;
+  onCancelDrawingDraft: () => void;
+  onSelectDrawing: (selection: SelectedDrawing) => void;
+  onDeleteSelectedDrawing: () => void;
+  onClearChartDrawings: (chartId: number | null) => void;
 };
 
 export function TrainingCenterPanel({
@@ -86,7 +100,8 @@ export function TrainingCenterPanel({
   visibleActiveCandles,
   onRefreshChart,
   error,
-  refreshing,
+  autoExitNotices,
+  refreshingChartIds,
   refreshRequest,
   setRefreshRequest,
   globalIndicators,
@@ -96,6 +111,17 @@ export function TrainingCenterPanel({
   getIndicatorSettings,
   activeProgress,
   tradeMarkersByChart = {},
+  drawingsByChart,
+  drawingTool,
+  onSelectDrawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  onDeleteSelectedDrawing,
+  onClearChartDrawings,
 }: Props) {
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 
@@ -104,6 +130,19 @@ export function TrainingCenterPanel({
   );
 
   const [visibleError, setVisibleError] = useState<string | null>(null);
+  const [drawingRailCollapsed, setDrawingRailCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (viewMode === "grid" && drawingTool !== "POINTER") {
+      onSelectDrawingTool("POINTER");
+    }
+  }, [drawingTool, onSelectDrawingTool, viewMode]);
+
+  useEffect(() => {
+    if (selectedDrawing && selectedDrawing.chartId !== activeChartId) {
+      onSelectDrawing(null);
+    }
+  }, [activeChartId, onSelectDrawing, selectedDrawing]);
 
   useEffect(() => {
     if (!error) return;
@@ -116,6 +155,30 @@ export function TrainingCenterPanel({
 
     return () => window.clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (viewMode !== "single") return;
+      if (event.key === "Escape" && drawingTool !== "POINTER") {
+        const action = drawingEscapeAction(drawingTool, pendingDrawing);
+        if (action === "CANCEL_DRAFT") onCancelDrawingDraft();
+        if (action === "SELECT_POINTER") onSelectDrawingTool("POINTER");
+        return;
+      }
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.matches("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+      if (!selectedDrawing) return;
+      event.preventDefault();
+      onDeleteSelectedDrawing();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawingTool, onCancelDrawingDraft, onDeleteSelectedDrawing, onSelectDrawingTool, pendingDrawing, selectedDrawing, viewMode]);
 
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">
@@ -170,14 +233,6 @@ export function TrainingCenterPanel({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <PencilLine className="h-3.5 w-3.5" />
-              그리기
-            </button>
-
-            <button
-              type="button"
               onClick={() => {
                 setIndicatorScope("GLOBAL");
                 setIndicatorOpen(true);
@@ -188,29 +243,6 @@ export function TrainingCenterPanel({
               보조지표
             </button>
 
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Building2 className="h-3.5 w-3.5" />
-              재무
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Newspaper className="h-3.5 w-3.5" />
-              뉴스
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              캡처
-            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -269,11 +301,40 @@ export function TrainingCenterPanel({
       </div>
 
       {visibleError && (
-        <div className="pointer-events-none absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
+        <div className="absolute left-6 right-6 top-[92px] z-30 rounded-2xl border border-red-500/35 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-400" />
-            <span>{visibleError}</span>
+            <span className="min-w-0 flex-1">{visibleError}</span>
+            <button
+              type="button"
+              aria-label="오류 메시지 닫기"
+              onClick={() => setVisibleError(null)}
+              className="rounded-lg p-1 text-red-100/70 transition hover:bg-red-500/20 hover:text-red-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+        </div>
+      )}
+
+      {autoExitNotices.length > 0 && (
+        <div
+          className={`pointer-events-none absolute left-6 right-6 z-30 space-y-2 ${
+            visibleError ? "top-[150px]" : "top-[92px]"
+          }`}
+        >
+          {autoExitNotices.map((notice) => (
+            <div
+              key={notice.id}
+              role="status"
+              className="rounded-2xl border border-amber-400/35 bg-amber-400/15 px-5 py-3 text-sm font-semibold text-amber-50 shadow-2xl backdrop-blur-md"
+            >
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-amber-300" />
+                <span>{notice.message}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -287,10 +348,11 @@ export function TrainingCenterPanel({
             progressByChart={progressByChart}
             onOpenSingle={() => setViewMode("single")}
             onRefreshChart={onRefreshChart}
-            refreshing={refreshing}
+            refreshingChartIds={refreshingChartIds}
             globalIndicators={globalIndicators}
             chartIndicators={chartIndicators}
             tradeMarkersByChart={tradeMarkersByChart ?? {}}
+            drawingsByChart={drawingsByChart}
           />
         ) : (
           <TrainingChartSingle
@@ -298,11 +360,26 @@ export function TrainingCenterPanel({
             progress={activeProgress}
             candles={visibleActiveCandles}
             onRefresh={onRefreshChart}
-            refreshing={refreshing}
+            refreshing={
+              activeChartId ? refreshingChartIds.has(activeChartId) : false
+            }
             indicatorSettings={getIndicatorSettings(activeChartId)}
             tradeMarkers={
               activeChartId ? (tradeMarkersByChart[activeChartId] ?? []) : []
             }
+            drawings={activeChartId ? (drawingsByChart[activeChartId] ?? []) : []}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
+            onSelectDrawing={onSelectDrawing}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            onClearChartDrawings={onClearChartDrawings}
+            drawingRailCollapsed={drawingRailCollapsed}
+            onToggleDrawingRail={() => setDrawingRailCollapsed((value) => !value)}
           />
         )}
       </div>

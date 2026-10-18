@@ -33,6 +33,7 @@ export function emptyProgress(
 
     autoExited: false,
     reason: null,
+    revealedCandles: [],
   };
 }
 

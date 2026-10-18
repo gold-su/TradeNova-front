@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TrainingEventResponse } from "@/types/training";
+import { getEventLogBodyMode } from "./eventLogDisplay";
 import {
   X,
   ArrowUpRight,
@@ -168,7 +169,7 @@ function eventTone(item: TrainingEventResponse) {
   return "border-border/50 bg-background/50 text-muted-foreground";
 }
 
-function EventSummary({ item }: { item: TrainingEventResponse }) {
+function EventSummary({ item, compact = false }: { item: TrainingEventResponse; compact?: boolean }) {
   const tradePayload = getTradePayload(item);
 
   if (item.type === "TRADE") {
@@ -193,12 +194,12 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
           </span>
 
           <span className="truncate text-xs font-semibold leading-none text-foreground">
-            {formatNumber(tradePayload.qty)}주 @{" "}
+            {formatNumber(tradePayload.qty)}주 ·{" "}
             {formatNumber(tradePayload.price ?? tradePayload.executedPrice)}원
           </span>
         </div>
 
-        {reasonPreview && (
+        {!compact && reasonPreview && (
           <div className="mt-1 truncate text-[11px] text-muted-foreground">
             근거 {reasons.length > 0 ? `${reasons.length}개 · ` : ""}
             {reasonPreview}
@@ -208,13 +209,13 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
     );
   }
 
-  const normalPayload = item.payloadJson as any;
+  const normalPayload = item.payloadJson;
 
   const subText =
     item.type === "SNAPSHOT"
-      ? normalPayload?.thesis || "시나리오"
+      ? String(normalPayload?.thesis || "시나리오")
       : item.type === "NOTE"
-        ? normalPayload?.thesis || "메모"
+        ? String(normalPayload?.thesis || "메모")
         : eventLabel(item.type);
 
   return (
@@ -222,9 +223,9 @@ function EventSummary({ item }: { item: TrainingEventResponse }) {
       <div className="truncate text-xs font-semibold text-foreground">
         {item.title}
       </div>
-      <div className="mt-1 truncate text-[11px] text-muted-foreground">
+      {!compact && <div className="mt-1 truncate text-[11px] text-muted-foreground">
         {subText}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -243,8 +244,8 @@ function EventRow({
   return (
     <div
       className={[
-        "rounded-lg border bg-background/30",
-        compact ? "px-3 py-2" : "p-3",
+        "rounded-lg",
+        compact ? "py-1.5" : "border border-border/30 p-3",
       ].join(" ")}
     >
       <div className="flex items-center gap-2">
@@ -257,7 +258,7 @@ function EventRow({
           <EventIcon item={item} />
         </div>
 
-        <EventSummary item={item} />
+        <EventSummary item={item} compact={compact} />
 
         <div className="shrink-0 text-[10px] text-muted-foreground">
           {formatTime(item.createdAt)}
@@ -341,7 +342,7 @@ export function EventLogPanel({ items, loading }: Props) {
   const visibleItems = sortedItems.filter((item) => {
     if (item.type !== "TRADE") return true;
 
-    const payload = item.payloadJson as any;
+    const payload = item.payloadJson;
 
     return !!payload?.savedForAiReview;
   });
@@ -349,15 +350,16 @@ export function EventLogPanel({ items, loading }: Props) {
   const displayItems = compactProgressEvents(visibleItems);
 
   const recent = displayItems.slice(0, 3);
+  const bodyMode = getEventLogBodyMode(loading, recent.length);
 
   return (
     <>
-      <div className="rounded-xl border border-border/60 bg-background/30 p-3">
+      <div className="py-1">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold">Recent Logs</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">RECENT LOGS</div>
             <div className="text-[11px] text-muted-foreground">
-              최신 기록 {recent.length}개
+              최신 기록 {recent.length}개{loading ? " · 동기화 중" : ""}
             </div>
           </div>
 
@@ -370,10 +372,8 @@ export function EventLogPanel({ items, loading }: Props) {
           </button>
         </div>
 
-        {loading ? (
-          <div className="text-sm text-muted-foreground">불러오는 중...</div>
-        ) : recent.length === 0 ? (
-          <div className="text-sm text-muted-foreground">기록 없음</div>
+        {bodyMode !== "content" ? (
+          <div className="text-sm text-muted-foreground">{bodyMode === "loading" ? "불러오는 중..." : "기록 없음"}</div>
         ) : (
           <div className="space-y-2">
             {recent.map((item) => (

@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTrainingTradeMarkers } from "@/hooks/training/useTrainingTradeMarkers";
-import type { SessionSummaryResponse, TradeResponse } from "@/types/training";
+import type {
+  AutoExitReason,
+  ProgressResponse,
+  SessionSummaryResponse,
+  TradeResponse,
+} from "@/types/training";
 import { useTrainingReport } from "@/hooks/training/useTrainingReport";
 import { useTrainingSessionCore } from "@/hooks/training/useTrainingSessionCore";
 import { useTrainingTrade } from "@/hooks/training/useTrainingTrade";
@@ -8,6 +13,16 @@ import { emptyProgress } from "@/hooks/training/training.utils";
 import { useTrainingAi } from "@/hooks/training/useTrainingAi";
 import { trainingApi } from "@/api/trainingApi";
 import type { RiskRuleResponse, RiskRuleUpsertRequest } from "@/types/training";
+import {
+  analyzeSessionAi,
+  finishTrainingAndOpenCompletion,
+} from "./trainingSessionLifecycle";
+import axios from "axios";
+import { useChartDrawings } from "@/components/training/chart/drawing/useChartDrawings";
+import {
+  applyTradeToProgressMap,
+  isCurrentChartRequest,
+} from "@/hooks/training/trainingStateConsistency";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -23,20 +38,72 @@ export function useTrainingSessionPage() {
   // 거래와 차트 진행이 같은 렌더 안에서 재진입하더라도 동시에 실행되지 않게 한다.
   const mutationGuard = useRef(false);
 
+  // ===== marker / 자동청산 알림 =====
+  const {
+    tradeMarkersByChart,
+    loadTradeMarkers,
+    syncTradeMarkers,
+    addTradeMarker,
+  } = useTrainingTradeMarkers();
+  const autoExitNoticeId = useRef(0);
+  const [autoExitNotices, setAutoExitNotices] = useState<
+    Array<{ id: number; message: string }>
+  >([]);
+
+  const autoExitMessage = (reason: AutoExitReason | null) => {
+    switch (reason) {
+      case "STOP_LOSS":
+        return "손절가 도달로 자동청산되었습니다.";
+      case "TAKE_PROFIT":
+        return "익절가 도달로 자동청산되었습니다.";
+      case "END_OF_CHART":
+        return "마지막 봉에 도달해 남은 포지션이 전량청산되었습니다.";
+      case "END_OF_SESSION":
+        return "훈련 종료로 전량 청산되었습니다.";
+      default:
+        return "포지션이 자동청산되었습니다.";
+    }
+  };
+
+  const handleAutoExit = async (
+    progress: ProgressResponse,
+    chartIndex: number | undefined,
+  ) => {
+    const id = ++autoExitNoticeId.current;
+    const chartLabel = chartIndex == null ? "" : `Chart ${chartIndex + 1} · `;
+
+    setAutoExitNotices((prev) => [
+      ...prev,
+      { id, message: `${chartLabel}${autoExitMessage(progress.reason)}` },
+    ]);
+    window.setTimeout(() => {
+      setAutoExitNotices((prev) => prev.filter((notice) => notice.id !== id));
+    }, 5000);
+
+    await syncTradeMarkers(progress.chartId);
+  };
+
   // ===== 세션 핵심 로직 =====
-  const core = useTrainingSessionCore(mutationGuard);
+  const core = useTrainingSessionCore(mutationGuard, handleAutoExit);
+  const drawings = useChartDrawings(core.sessionId);
 
   // ===== 리포트 로직 =====
   const report = useTrainingReport(core.activeChartId);
 
   // ===== AI 로직 =====
-  const ai = useTrainingAi(
-    core.sessionId,
-    core.activeChartId,
-    report.appendEvent,
-  );
+  const ai = useTrainingAi(core.sessionId, core.activeChartId, report.appendEvent);
 
-  const [riskRule, setRiskRule] = useState<RiskRuleResponse | null>(null);
+  const [riskRuleState, setRiskRuleState] = useState<{
+    chartId: number;
+    rule: RiskRuleResponse | null;
+  } | null>(null);
+  const activeRiskChartIdRef = useRef(core.activeChartId);
+  const riskRuleRequestVersionRef = useRef(0);
+  useLayoutEffect(() => {
+    activeRiskChartIdRef.current = core.activeChartId;
+  }, [core.activeChartId]);
+  const riskRule =
+    riskRuleState?.chartId === core.activeChartId ? riskRuleState.rule : null;
 
   const [riskSaving, setRiskSaving] = useState(false);
 
@@ -50,10 +117,6 @@ export function useTrainingSessionPage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
-  // ===== marker =====
-  const { tradeMarkersByChart, loadTradeMarkers, addTradeMarker } =
-    useTrainingTradeMarkers();
-
   /**
    * 거래 응답을 progress map에 반영하는 함수
    * trade는 progress 응답이 아니라 cash/qty/avg 정보를 주기 때문에
@@ -66,25 +129,16 @@ export function useTrainingSessionPage() {
           (chart) => chart.chartId === res.chartId,
         )?.status ?? "IN_PROGRESS";
 
-      const cur =
-        prev[res.chartId] ??
+      return applyTradeToProgressMap(
+        prev,
+        res,
         emptyProgress(
           res.chartId,
           chartStatus,
           core.status,
           Number(res.executedPrice),
-        );
-
-      return {
-        ...prev,
-        [res.chartId]: {
-          ...cur,
-          cashBalance: res.cashBalance,
-          positionQty: res.positionQty,
-          avgPrice: res.avgPrice,
-          currentPrice: Number(res.executedPrice),
-        },
-      };
+        ),
+      );
     });
   };
 
@@ -93,7 +147,6 @@ export function useTrainingSessionPage() {
     mutationGuard,
     activeChartId: core.activeChartId,
     status: core.status,
-    loadEvents: report.loadEvents,
     setSnapshots: report.setSnapshots,
     setError: (message) => {
       report.setError(message);
@@ -116,33 +169,83 @@ export function useTrainingSessionPage() {
       !core.activeChartId ||
       core.status === "COMPLETED" ||
       core.loading ||
+      (core.activeChartId != null &&
+        core.refreshingChartIds.has(core.activeChartId)) ||
       trade.loading,
-    [core.activeChartId, core.status, core.loading, trade.loading],
+    [
+      core.activeChartId,
+      core.status,
+      core.loading,
+      core.refreshingChartIds,
+      trade.loading,
+    ],
   );
 
   /**
    * 에러는 core / report 중 먼저 있는 것을 보여준다.
    */
-  const error = core.error ?? report.error;
+  const error = drawings.error ?? core.error ?? report.error;
+
+  const onRefreshChart = (chartId: number) => {
+    if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {
+      core.setError("이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.");
+      return;
+    }
+    void core.onRefreshChart(chartId);
+  };
 
   /**
    * 세션 차트 로드 후 자동 복원
    */
-  useEffect(() => {
-    const chartIds = core.charts.map((chart) => chart.chartId);
-    loadTradeMarkers(chartIds);
-  }, [core.charts, loadTradeMarkers]);
+  const tradeMarkerChartIdsKey = core.charts
+    .map((chart) => chart.chartId)
+    .join(",");
 
   useEffect(() => {
-    if (!core.activeChartId) {
-      setRiskRule(null);
-      return;
-    }
+    const chartIds = tradeMarkerChartIdsKey
+      ? tradeMarkerChartIdsKey.split(",").map(Number)
+      : [];
+    loadTradeMarkers(chartIds);
+  }, [tradeMarkerChartIdsKey, loadTradeMarkers]);
+
+  useEffect(() => {
+    const chartId = core.activeChartId;
+    const requestVersion = ++riskRuleRequestVersionRef.current;
+
+    if (!chartId) return;
+
+    const requestToken = { chartId, version: requestVersion };
 
     trainingApi
-      .getRiskRule(core.activeChartId)
-      .then(setRiskRule)
-      .catch(() => setRiskRule(null));
+      .getRiskRule(chartId)
+      .then((rule) => {
+        if (
+          isCurrentChartRequest(
+            activeRiskChartIdRef.current,
+            riskRuleRequestVersionRef.current,
+            requestToken,
+          )
+        ) {
+          setRiskRuleState({ chartId, rule });
+        }
+      })
+      .catch(() => {
+        if (
+          isCurrentChartRequest(
+            activeRiskChartIdRef.current,
+            riskRuleRequestVersionRef.current,
+            requestToken,
+          )
+        ) {
+          setRiskRuleState({ chartId, rule: null });
+        }
+      });
+
+    return () => {
+      if (riskRuleRequestVersionRef.current === requestVersion) {
+        riskRuleRequestVersionRef.current += 1;
+      }
+    };
   }, [core.activeChartId]);
 
   const saveRiskRule = async (body: RiskRuleUpsertRequest) => {
@@ -153,7 +256,7 @@ export function useTrainingSessionPage() {
     try {
       const saved = await trainingApi.upsertRiskRule(core.activeChartId, body);
 
-      setRiskRule(saved);
+      setRiskRuleState({ chartId: core.activeChartId, rule: saved });
     } finally {
       setRiskSaving(false);
     }
@@ -174,12 +277,14 @@ export function useTrainingSessionPage() {
       const summary = await trainingApi.getSessionSummary(sid);
 
       setSessionSummary(summary);
-      setShowCompletion(true);
 
       return summary;
-    } catch (e: any) {
+    } catch (error: unknown) {
       setSummaryError(
-        e?.response?.data?.message ?? "세션 완료 정보를 불러오지 못했습니다.",
+        axios.isAxiosError<{ message?: string }>(error)
+          ? (error.response?.data?.message ??
+            "세션 완료 정보를 불러오지 못했습니다.")
+          : "세션 완료 정보를 불러오지 못했습니다.",
       );
 
       return null;
@@ -191,20 +296,25 @@ export function useTrainingSessionPage() {
   /**
    * 세션 종료
    * 1. 백엔드 세션 종료
-   * 2. Summary 조회
-   * 3. 완료 화면으로 전환
+   * 2. core에서 progress/account/trade marker 재동기화
+   * 3. 현재 차트의 서버 이벤트와 Summary 조회
+   * 4. 완료 화면으로 전환
    */
   const onFinishSession = async () => {
     const sid = core.sessionId;
 
-    if (!sid) return;
+    if (!sid) return false;
 
-    const finished = await core.onFinishSession();
-
-    // 종료 요청에 실패했다면 Summary 화면으로 넘어가지 않는다.
-    if (!finished) return;
-
-    await loadSessionSummary(sid);
+    return await finishTrainingAndOpenCompletion({
+      finishSession: core.onFinishSession,
+      synchronizeAfterFinish: async () => {
+        if (core.activeChartId) {
+          await report.loadEvents(core.activeChartId);
+        }
+      },
+      loadSummary: () => loadSessionSummary(sid),
+      openCompletion: () => setShowCompletion(true),
+    });
   };
 
   const onCreateSession = async (): Promise<boolean> => {
@@ -247,15 +357,8 @@ export function useTrainingSessionPage() {
       setNewSessionLoading(false);
     }
   };
-  /**
-   * 세션 AI 생성 후 완료 화면 Summary도 다시 조회한다.
-   */
   const onAnalyzeSessionAi = async () => {
-    await ai.onAnalyzeSessionAi();
-
-    if (core.sessionId) {
-      await loadSessionSummary(core.sessionId);
-    }
+    await analyzeSessionAi(ai.onAnalyzeSessionAi);
   };
 
 
@@ -293,6 +396,9 @@ export function useTrainingSessionPage() {
 
     // ===== 리포트 데이터 =====
     quickPhrases: report.quickPhrases,
+    createQuickPhrase: report.createQuickPhrase,
+    updateQuickPhrase: report.updateQuickPhrase,
+    deleteQuickPhrase: report.deleteQuickPhrase,
     events: report.events,
     snapshots: report.snapshots,
     draft: report.draft,
@@ -304,6 +410,7 @@ export function useTrainingSessionPage() {
     draftSaving: report.draftSaving,
     eventLoading: report.eventLoading,
     error,
+    autoExitNotices,
     disabled,
 
     // ===== 거래 모달 =====
@@ -347,7 +454,8 @@ export function useTrainingSessionPage() {
     onAnalyzeChartAi: ai.onAnalyzeChartAi,
 
     // chart Refresh
-    onRefreshChart: core.onRefreshChart,
+    onRefreshChart,
+    refreshingChartIds: core.refreshingChartIds,
     refreshRequest: core.refreshRequest,
     setRefreshRequest: core.setRefreshRequest,
 
@@ -365,6 +473,17 @@ export function useTrainingSessionPage() {
     saveRiskRule,
 
     tradeMarkersByChart,
+    drawingsByChart: drawings.drawingsByChart,
+    drawingTool: drawings.tool,
+    selectDrawingTool: drawings.selectTool,
+    pendingDrawing: drawings.pendingDrawing,
+    cancelDrawingDraft: drawings.cancelDraft,
+    addDrawingPoint: drawings.addPoint,
+    commitDrawingText: drawings.commitText,
+    selectedDrawing: drawings.selectedDrawing,
+    setSelectedDrawing: drawings.setSelectedDrawing,
+    deleteSelectedDrawing: drawings.deleteSelected,
+    clearChartDrawings: drawings.clearActiveChart,
     currentPositionQty: core.activeProgress?.positionQty,
     onTradeExecuted: (input: {
       side: "BUY" | "SELL";

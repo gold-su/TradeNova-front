@@ -8,7 +8,7 @@ export default function TrainingSessionPage() {
   const page = useTrainingSessionPage();
   if (page.activeSessionLoading) {
     return (
-      <div className="flex h-[calc(100vh-56px)] w-full items-center justify-center bg-background">
+      <div className="flex h-[calc(100dvh-57px)] w-full items-center justify-center bg-background">
         <div className="rounded-2xl border border-border/60 bg-background/40 px-8 py-6 text-center shadow-sm">
           <div className="mb-2 text-sm font-semibold">훈련 세션 복구 중</div>
           <div className="text-xs text-muted-foreground">
@@ -28,9 +28,11 @@ export default function TrainingSessionPage() {
         summaryError={page.summaryError}
         sessionAiPayload={page.sessionAiPayload}
         sessionAiLoading={page.sessionAiLoading}
+        sessionAiError={page.sessionAiError}
         newSessionLoading={page.newSessionLoading}
         onReloadSummary={() => page.loadSessionSummary(page.sessionId)}
         onAnalyzeSessionAi={page.onAnalyzeSessionAi}
+        onLoadSessionAi={() => page.loadLatestSessionAi(page.sessionId)}
         onStartNewSession={page.onStartNewSession}
       />
     );
@@ -38,7 +40,7 @@ export default function TrainingSessionPage() {
 
   if (!page.sessionId) {
     return (
-      <div className="flex h-[calc(100vh-56px)] w-full bg-background">
+      <div className="flex h-[calc(100dvh-57px)] w-full bg-background">
         <TrainingLeftPanel
           sessionId={page.sessionId}
           status={page.status}
@@ -52,11 +54,10 @@ export default function TrainingSessionPage() {
           loading={page.loading}
           onCreateSession={page.onCreateSession}
           onFinishSession={page.onFinishSession}
-          onAnalyzeSessionAi={page.onAnalyzeSessionAi}
-          sessionAiLoading={page.sessionAiLoading}
-          sessionAiExists={!!page.sessionAi}
           progressByChart={page.progressByChart}
-          onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
+          chartAiPayload={page.chartAiPayload}
+          chartAiLoading={page.chartAiLoading}
+          onAnalyzeChartAi={page.onAnalyzeChartAi}
         />
 
         <main className="flex flex-1 items-center justify-center p-6">
@@ -83,7 +84,7 @@ export default function TrainingSessionPage() {
     );
   }
   return (
-    <div className="flex h-[calc(100vh-56px)] w-full overflow-hidden">
+    <div className="flex h-[calc(100dvh-57px)] w-full overflow-hidden">
       <TrainingLeftPanel
         sessionId={page.sessionId}
         status={page.status}
@@ -97,11 +98,10 @@ export default function TrainingSessionPage() {
         loading={page.loading}
         onCreateSession={page.onCreateSession}
         onFinishSession={page.onFinishSession}
-        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
-        sessionAiLoading={page.sessionAiLoading}
-        sessionAiExists={!!page.sessionAi}
         progressByChart={page.progressByChart}
-        onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
+        chartAiPayload={page.chartAiPayload}
+        chartAiLoading={page.chartAiLoading}
+        onAnalyzeChartAi={page.onAnalyzeChartAi}
       />
 
       <TrainingCenterPanel
@@ -116,8 +116,9 @@ export default function TrainingSessionPage() {
         activeProgress={page.activeProgress}
         visibleActiveCandles={page.visibleActiveCandles}
         error={page.error}
+        autoExitNotices={page.autoExitNotices}
         onRefreshChart={page.onRefreshChart}
-        refreshing={page.loading}
+        refreshingChartIds={page.refreshingChartIds}
         refreshRequest={page.refreshRequest}
         setRefreshRequest={page.setRefreshRequest}
         globalIndicators={page.globalIndicators}
@@ -126,36 +127,38 @@ export default function TrainingSessionPage() {
         setChartIndicators={page.setChartIndicators}
         getIndicatorSettings={page.getIndicatorSettings}
         tradeMarkersByChart={page.tradeMarkersByChart ?? {}}
+        drawingsByChart={page.drawingsByChart}
+        drawingTool={page.drawingTool}
+        onSelectDrawingTool={page.selectDrawingTool}
+        pendingDrawing={page.pendingDrawing}
+        selectedDrawing={page.selectedDrawing}
+        onAddDrawingPoint={page.addDrawingPoint}
+        onCommitDrawingText={page.commitDrawingText}
+        onCancelDrawingDraft={page.cancelDrawingDraft}
+        onSelectDrawing={page.setSelectedDrawing}
+        onDeleteSelectedDrawing={page.deleteSelectedDrawing}
+        onClearChartDrawings={page.clearChartDrawings}
       />
 
       <TrainingRightPanel
+        charts={page.charts}
         activeChart={page.activeChart}
+        onSelectChart={page.setActiveChartId}
         activeProgress={page.activeProgress}
         quickPhrases={page.quickPhrases}
+        createQuickPhrase={page.createQuickPhrase}
+        updateQuickPhrase={page.updateQuickPhrase}
+        deleteQuickPhrase={page.deleteQuickPhrase}
         events={page.events}
         snapshots={page.snapshots}
-        draft={page.draft}
-        setDraft={page.setDraft}
         loading={page.loading}
-        draftSaving={page.draftSaving}
         eventLoading={page.eventLoading}
         disabled={page.disabled}
         onNext={page.onNext}
         advanceSteps={page.advanceSteps}
         setAdvanceSteps={page.setAdvanceSteps}
         onSellAll={page.onSellAll}
-        onSaveDraft={page.onSaveDraft}
-        onCreateSnapshot={page.onCreateSnapshot}
-        onCreateNoteEvent={page.onCreateNoteEvent}
-        appendQuickPhrase={page.appendQuickPhrase}
-        openBuyModal={page.openBuyModal}
-        openSellModal={page.openSellModal}
-        sessionAiPayload={page.sessionAiPayload}
-        sessionAiLoading={page.sessionAiLoading}
-        chartAiPayload={page.chartAiPayload}
-        chartAiLoading={page.chartAiLoading}
-        onAnalyzeChartAi={page.onAnalyzeChartAi}
-        onAnalyzeSessionAi={page.onAnalyzeSessionAi}
+        onCreateScenarioSnapshot={page.onCreateScenarioSnapshot}
         syncNext={page.syncNext}
         setSyncNext={page.setSyncNext}
         tradeForm={page.tradeForm}

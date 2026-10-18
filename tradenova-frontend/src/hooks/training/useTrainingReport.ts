@@ -1,12 +1,25 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type {
-  QuickPhraseResponse,
   ReportDocumentResponse,
   ReportDraftContent,
   TrainingEventResponse,
 } from "@/types/training";
 import { emptyDraft } from "./training.utils";
+import { useQuickPhrases } from "@/hooks/useQuickPhrases";
+import {
+  isCurrentChartRequest,
+  type ChartRequestToken,
+} from "./trainingStateConsistency";
+
+type HydrationResource = "draft" | "events" | "snapshots";
+
+function apiErrorMessage(error: unknown, fallback: string) {
+  return axios.isAxiosError<{ message?: string }>(error)
+    ? (error.response?.data?.message ?? fallback)
+    : fallback;
+}
 
 /**
  * 훈련 화면의 "리포트/이벤트/스냅샷/빠른문구" 관련 로직을 담당하는 훅
@@ -19,8 +32,45 @@ import { emptyDraft } from "./training.utils";
  * - note 이벤트 저장
  */
 export function useTrainingReport(activeChartId: number | null) {
+  const activeChartIdRef = useRef(activeChartId);
+  const requestVersionsRef = useRef<Record<HydrationResource, number>>({
+    draft: 0,
+    events: 0,
+    snapshots: 0,
+  });
+  useLayoutEffect(() => {
+    activeChartIdRef.current = activeChartId;
+    requestVersionsRef.current.draft += 1;
+    requestVersionsRef.current.events += 1;
+    requestVersionsRef.current.snapshots += 1;
+  }, [activeChartId]);
+
+  const beginHydration = useCallback((
+    resource: HydrationResource,
+    chartId: number,
+  ): ChartRequestToken => ({
+    chartId,
+    version: ++requestVersionsRef.current[resource],
+  }), []);
+
+  const isCurrentHydration = useCallback((
+    resource: HydrationResource,
+    token: ChartRequestToken,
+  ) =>
+    isCurrentChartRequest(
+      activeChartIdRef.current,
+      requestVersionsRef.current[resource],
+      token,
+    ), []);
+
   // ===== 리포트 관련 상태 =====
-  const [quickPhrases, setQuickPhrases] = useState<QuickPhraseResponse[]>([]);
+  const {
+    quickPhrases,
+    loadQuickPhrases,
+    createQuickPhrase,
+    updateQuickPhrase,
+    deleteQuickPhrase,
+  } = useQuickPhrases();
   const [events, setEvents] = useState<TrainingEventResponse[]>([]);
 
   const appendEvent = (event: TrainingEventResponse) => {
@@ -35,25 +85,18 @@ export function useTrainingReport(activeChartId: number | null) {
   const [eventLoading, setEventLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 빠른 문구 목록 로드
-   */
-  const loadQuickPhrases = async () => {
-    try {
-      const data = await reportApi.getQuickPhrases();
-      setQuickPhrases(data);
-    } catch (e) {
-      console.error("quick phrase load failed", e);
-    }
-  };
 
   /**
    * 현재 활성 차트의 draft 로드
    * 없으면 emptyDraft로 초기화
    */
-  const loadDraft = async (chartId: number) => {
+  const loadDraft = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("draft", chartId);
+
     try {
       const data = await reportApi.getDraft(chartId);
+
+      if (!isCurrentHydration("draft", requestToken)) return;
 
       if (data?.contentJson) {
         setDraft({
@@ -68,36 +111,54 @@ export function useTrainingReport(activeChartId: number | null) {
         setDraft(emptyDraft);
       }
     } catch (e) {
-      console.error("draft load failed", e);
+      if (isCurrentHydration("draft", requestToken)) {
+        console.error("draft load failed", e);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * 현재 활성 차트의 이벤트 로그 로드
    */
-  const loadEvents = async (chartId: number) => {
+  const loadEvents = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("events", chartId);
+
     try {
       setEventLoading(true);
       const data = await reportApi.getEvents(chartId, 50);
+
+      if (!isCurrentHydration("events", requestToken)) return;
+
       setEvents(data);
     } catch (e) {
-      console.error("event load failed", e);
+      if (isCurrentHydration("events", requestToken)) {
+        console.error("event load failed", e);
+      }
     } finally {
-      setEventLoading(false);
+      if (isCurrentHydration("events", requestToken)) {
+        setEventLoading(false);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * 현재 활성 차트의 스냅샷 목록 로드
    */
-  const loadSnapshots = async (chartId: number) => {
+  const loadSnapshots = useCallback(async (chartId: number) => {
+    const requestToken = beginHydration("snapshots", chartId);
+
     try {
       const data = await reportApi.getSnapshots(chartId);
+
+      if (!isCurrentHydration("snapshots", requestToken)) return;
+
       setSnapshots(data);
     } catch (e) {
-      console.error("snapshot load failed", e);
+      if (isCurrentHydration("snapshots", requestToken)) {
+        console.error("snapshot load failed", e);
+      }
     }
-  };
+  }, [beginHydration, isCurrentHydration]);
 
   /**
    * draft 저장
@@ -112,8 +173,8 @@ export function useTrainingReport(activeChartId: number | null) {
       await reportApi.upsertDraft(activeChartId, {
         contentJson: draft,
       });
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "드래프트 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "드래프트 저장 실패"));
     } finally {
       setDraftSaving(false);
     }
@@ -135,8 +196,8 @@ export function useTrainingReport(activeChartId: number | null) {
       });
 
       setSnapshots((prev) => [saved, ...prev]);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "스냅샷 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "스냅샷 저장 실패"));
     }
   };
 
@@ -186,8 +247,8 @@ export function useTrainingReport(activeChartId: number | null) {
       }
 
       return saved;
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "시나리오 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "시나리오 저장 실패"));
       return null;
     }
   };
@@ -215,8 +276,8 @@ export function useTrainingReport(activeChartId: number | null) {
       });
 
       appendEvent(event);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? "메모 이벤트 저장 실패");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, "메모 이벤트 저장 실패"));
     }
   };
 
@@ -230,19 +291,16 @@ export function useTrainingReport(activeChartId: number | null) {
     }));
   };
 
-  // 빠른문구는 최초 1회만 로드
-  useEffect(() => {
-    loadQuickPhrases();
-  }, []);
-
   // active chart가 바뀌면 리포트 관련 데이터도 다시 로드
   useEffect(() => {
     if (!activeChartId) return;
 
-    loadDraft(activeChartId);
-    loadEvents(activeChartId);
-    loadSnapshots(activeChartId);
-  }, [activeChartId]);
+    queueMicrotask(() => {
+      void loadDraft(activeChartId);
+      void loadEvents(activeChartId);
+      void loadSnapshots(activeChartId);
+    });
+  }, [activeChartId, loadDraft, loadEvents, loadSnapshots]);
 
   return {
     quickPhrases,
@@ -257,6 +315,9 @@ export function useTrainingReport(activeChartId: number | null) {
     setError,
 
     loadQuickPhrases,
+    createQuickPhrase,
+    updateQuickPhrase,
+    deleteQuickPhrase,
     loadDraft,
     loadEvents,
     loadSnapshots,

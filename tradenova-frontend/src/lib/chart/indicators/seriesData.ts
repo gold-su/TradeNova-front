@@ -41,6 +41,8 @@ export function toMovingAverageData(
   period: number,
   type: "SMA" | "EMA" | "WMA" = "SMA",
 ): LineData<UTCTimestamp>[] {
+  if (!Number.isInteger(period) || period <= 0) return [];
+
   const sorted = candles.slice().sort((a, b) => a.t - b.t);
   const result: LineData<UTCTimestamp>[] = [];
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trainingApi } from "@/api/trainingApi";
 import type {
   Candle,
@@ -17,11 +17,28 @@ import type {
 } from "./training.types";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
 import { paperAccountApi } from "@/api/paperAccountApi";
+import axios from "axios";
+import {
+  findRefreshedChart,
+  moveChartKey,
+  replaceActiveChartId,
+  replaceChartKey,
+} from "./trainingChartRefresh";
+import { buildRandomTrainingSessionRequest } from "./trainingSessionRequest";
+import { appendRevealedCandlesForChart } from "./trainingCandleReveal";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
 const TRAINING_VIEW_MODE_KEY = "tradenova.training.viewMode";
 const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
+
+function progressErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message;
+  }
+
+  return undefined;
+}
 /**
  * 훈련 화면의 "세션/차트/캔들/진행도" 핵심 로직을 담당하는 훅
  *
@@ -38,7 +55,13 @@ const TRAINING_ACTIVE_CHART_KEY = "tradenova.training.activeChartId";
  * 를 넣지 않는다.
  * 그건 다른 훅에서 담당한다.
  */
-export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
+export function useTrainingSessionCore(
+  mutationGuard: { current: boolean },
+  onAutoExit?: (
+    progress: ProgressResponse,
+    chartIndex: number | undefined,
+  ) => Promise<void> | void,
+) {
   // ===== 화면 제어 상태 =====
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
@@ -69,6 +92,11 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
 
   // ===== 로딩 / 에러 =====
   const [loading, setLoading] = useState(false);
+  const [refreshingChartIds, setRefreshingChartIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const refreshingChartIdsRef = useRef(new Set<number>());
+  const retiredChartIdsRef = useRef(new Set<number>());
   const [activeSessionLoading, setActiveSessionLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,6 +159,7 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
    * 화면 상태(session/charts/candles/progress)를 한 번에 복구한다.
    */
   const hydrateSession = async (session: HydrateSessionInput) => {
+    retiredChartIdsRef.current.clear();
     // active 세션 복구 시 계좌까지 같이 맞춰준다.
     if (session.accountId != null) {
       setAccountId(session.accountId);
@@ -189,6 +218,8 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
    * 차트 진행 응답을 progress map에 반영한다.
    */
   const applyProgress = (res: ProgressResponse) => {
+    if (retiredChartIdsRef.current.has(res.chartId)) return;
+    setCandlesByChart((prev) => appendRevealedCandlesForChart(prev, res));
     setProgressByChart((prev) => ({
       ...prev,
       [res.chartId]: res,
@@ -209,6 +240,15 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
           : chart,
       ),
     );
+  };
+
+  const handleAutoExit = async (res: ProgressResponse) => {
+    if (!res.autoExited) return;
+
+    const chartIndex = sortedCharts.find(
+      (chart) => chart.chartId === res.chartId,
+    )?.chartIndex;
+    await onAutoExit?.(res, chartIndex);
   };
 
   /**
@@ -256,12 +296,9 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
     setLoading(true);
 
     try {
-      const created = await trainingApi.createSession({
-        accountId,
-        mode: "RANDOM",
-        bars: 100,
-        chartCount: 4,
-      });
+      const created = await trainingApi.createSession(
+        buildRandomTrainingSessionRequest(accountId),
+      );
 
       await hydrateSession({
         sessionId: created.sessionId,
@@ -299,30 +336,30 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
 
       const finished = await trainingApi.finishSession(sessionId);
 
-      setStatus(finished.sessionStatus);
-
-      setCharts((prev) =>
-        prev.map((chart) => ({
-          ...chart,
-          status: "COMPLETED",
-        })),
+      // finish 응답으로 잔고나 포지션을 추측하지 않는다. 서버가 만든
+      // END_OF_SESSION 거래까지 반영된 authoritative 상태를 다시 읽는다.
+      const finishedCharts = (await trainingApi.getSessionCharts(sessionId))
+        .slice()
+        .sort((a, b) => a.chartIndex - b.chartIndex);
+      const progressPairs = await Promise.all(
+        finishedCharts.map(async (chart) => [
+          chart.chartId,
+          await trainingApi.getProgress(chart.chartId),
+        ] as const),
       );
 
-      setProgressByChart((prev) => {
-        const next = { ...prev };
+      setCharts(finishedCharts);
+      setProgressByChart(Object.fromEntries(progressPairs));
+      setStatus(finished.sessionStatus);
 
-        for (const key of Object.keys(next)) {
-          const chartId = Number(key);
+      // shared account의 현금 잔액도 liquidation 이후 값으로 갱신한다.
+      await loadAccounts(accountId ?? undefined);
 
-          next[chartId] = {
-            ...next[chartId],
-            chartStatus: "COMPLETED",
-            sessionStatus: finished.sessionStatus,
-          };
-        }
-
-        return next;
-      });
+      // 서버가 실제 자동청산으로 판정한 차트만 canonical trade marker와
+      // 기존 자동청산 알림 흐름을 통해 동기화한다.
+      await Promise.all(progressPairs.map(([, progress]) =>
+        handleAutoExit(progress),
+      ));
 
       return finished;
     } catch (e: any) {
@@ -367,6 +404,7 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
       if (viewMode === "single") {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
         return;
       }
@@ -381,16 +419,80 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
           return;
         }
 
-        const results = await Promise.all(
-          ids.map((id) => runProgress(id, safeSteps)),
+        const settled = await Promise.allSettled(
+          ids.map((id) =>
+            runProgress(id, safeSteps).then((progress) => {
+              applyProgress(progress);
+              return progress;
+            }),
+          ),
         );
+        const succeeded: ProgressResponse[] = [];
+        const failedIds: number[] = [];
 
-        results.forEach(applyProgress);
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            succeeded.push(result.value);
+          } else {
+            failedIds.push(ids[index]);
+          }
+        });
+
+        await Promise.all(succeeded.map(handleAutoExit));
+
+        if (failedIds.length > 0) {
+          // 응답을 받지 못했더라도 서버 mutation은 성공했을 수 있으므로
+          // 실패한 chart만 authoritative progress로 다시 맞춘다.
+          const recovered = await Promise.allSettled(
+            failedIds.map(async (id) => {
+              const [progress, candles] = await Promise.all([
+                trainingApi.getProgress(id),
+                trainingApi.getChartCandles(id),
+              ]);
+              if (!retiredChartIdsRef.current.has(id)) {
+                setCandlesByChart((prev) => ({ ...prev, [id]: candles }));
+                applyProgress(progress);
+              }
+              return progress;
+            }),
+          );
+          const recoveredProgress: ProgressResponse[] = [];
+
+          recovered.forEach((result) => {
+            if (result.status === "fulfilled") {
+              recoveredProgress.push(result.value);
+            }
+          });
+
+          await Promise.all(recoveredProgress.map(handleAutoExit));
+
+          const recoveryFailed = recovered.some(
+            (result) => result.status === "rejected",
+          );
+
+          if (succeeded.length > 0) {
+            setError(
+              recoveryFailed
+                ? "일부 차트 진행에 실패했고 서버 상태를 다시 동기화하지 못했습니다."
+                : "일부 차트 진행에 실패해 서버 상태를 다시 동기화했습니다.",
+            );
+          } else {
+            const firstFailure = settled.find(
+              (result) => result.status === "rejected",
+            );
+            setError(
+              firstFailure?.status === "rejected"
+                ? (progressErrorMessage(firstFailure.reason) ?? "NEXT 실패")
+                : "NEXT 실패",
+            );
+          }
+        }
 
         await afterProgress?.(activeChartId);
       } else {
         const res = await runProgress(activeChartId, safeSteps);
         applyProgress(res);
+        await handleAutoExit(res);
         await afterProgress?.(activeChartId);
       }
     } catch (e: any) {
@@ -471,54 +573,77 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
   };
 
   const onRefreshChart = async (chartId: number) => {
+    if (refreshingChartIdsRef.current.has(chartId)) return;
+
+    const oldChart = charts.find((chart) => chart.chartId === chartId);
+    if (!oldChart || !sessionId) return;
+
+    refreshingChartIdsRef.current.add(chartId);
+    setRefreshingChartIds((prev) => new Set(prev).add(chartId));
+
+    const applyReplacement = async (replacement: TrainingChartDto) => {
+      // Fetch all authoritative keyed data before changing any visible state.
+      const [candles, progress] = await Promise.all([
+        trainingApi.getChartCandles(replacement.chartId),
+        trainingApi.getProgress(replacement.chartId),
+      ]);
+
+      retiredChartIdsRef.current.add(chartId);
+      retiredChartIdsRef.current.delete(replacement.chartId);
+      setCharts((prev) =>
+        prev.map((chart) =>
+          chart.chartIndex === oldChart.chartIndex ? replacement : chart,
+        ),
+      );
+      setCandlesByChart((prev) =>
+        replaceChartKey(prev, chartId, replacement.chartId, candles),
+      );
+      setProgressByChart((prev) =>
+        replaceChartKey(prev, chartId, replacement.chartId, progress),
+      );
+      setChartIndicators((prev) =>
+        moveChartKey(prev, chartId, replacement.chartId),
+      );
+      setActiveChartId((prev) =>
+        replaceActiveChartId(prev, chartId, replacement.chartId),
+      );
+    };
+
     try {
-      setLoading(true);
       setError(null);
 
       const res = await trainingApi.refreshChart(chartId, refreshRequest);
-
-      setCharts((prev) =>
-        prev.map((c) => (c.chartIndex === res.chartIndex ? res : c)),
-      );
-      // 새 캔들 로드
-      const [candles, progress] = await Promise.all([
-        trainingApi.getChartCandles(res.chartId),
-        trainingApi.getProgress(res.chartId),
-      ]);
-
-      // 기존 chartId의 캔들 데이터는 제거하고,
-      // 새 chartId의 캔들 데이터만 다시 넣는다.
-      setCandlesByChart((prev) => {
-        const next = { ...prev };
-        delete next[chartId];
-
-        next[res.chartId] = candles;
-
-        return next;
-      });
-
-      // 기존 chartId의 progress 데이터는 제거하고,
-      // 새 chartId의 progress 상태를 초기값으로 넣는다.
-      setProgressByChart((prev) => {
-        const next = { ...prev };
-        delete next[chartId];
-
-        next[res.chartId] = progress;
-
-        return next;
-      });
-
-      setActiveChartId((prev) => (prev === chartId ? res.chartId : prev));
-    } catch (e: any) {
+      await applyReplacement(res);
+    } catch (e: unknown) {
       console.error("[refresh] failed:", e);
 
+      // A response-less mutation failure is ambiguous: read server state rather
+      // than retrying a mutation which may already have committed.
+      if (axios.isAxiosError(e) && !e.response) {
+        try {
+          const serverCharts = await trainingApi.getSessionCharts(sessionId);
+          const replacement = findRefreshedChart(serverCharts, oldChart);
+          if (replacement) {
+            await applyReplacement(replacement);
+            return;
+          }
+        } catch (reconcileError) {
+          console.error("[refresh] reconciliation failed:", reconcileError);
+        }
+      }
+
       setError(
-        e?.response?.data?.message ??
-        e?.message ??
+        progressErrorMessage(e) ??
+        (e instanceof Error ? e.message : undefined) ??
         "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
       );
     } finally {
-      setLoading(false);
+      refreshingChartIdsRef.current.delete(chartId);
+      setRefreshingChartIds((prev) => {
+        const next = new Set(prev);
+        next.delete(chartId);
+        return next;
+      });
     }
   };
 
@@ -588,6 +713,7 @@ export function useTrainingSessionCore(mutationGuard: { current: boolean }) {
     visibleActiveCandles,
 
     loading,
+    refreshingChartIds,
     activeSessionLoading,
     error,
     setError,

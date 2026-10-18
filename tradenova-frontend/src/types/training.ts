@@ -3,7 +3,11 @@
 // ===== Enums =====
 export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
-export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
+export type AutoExitReason =
+  | "STOP_LOSS"
+  | "TAKE_PROFIT"
+  | "END_OF_CHART"
+  | "END_OF_SESSION";
 
 export type EventType =
   | "PROGRESS"
@@ -19,6 +23,17 @@ export type ReportKind = "DRAFT" | "SNAPSHOT";
 // 백엔드 candle: t는 epoch millis
 // 프론트 차트에서는 필요하면 /1000 해서 sec로 변환
 export type Candle = {
+  idx?: number;
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+};
+
+export type RevealedCandle = {
+  idx: number;
   t: number;
   o: number;
   h: number;
@@ -43,12 +58,29 @@ export type TrainingChartDto = {
 };
 
 
-export type CreateSessionRequest = {
+type CreateSessionRequestBase = {
   accountId: number;
   mode: TrainingMode;
-  bars: number;
   chartCount?: number;
 };
+
+/**
+ * New sessions should use explicit analysis/training ranges. `bars` remains
+ * available only for callers that still need the backend's legacy behavior.
+ */
+export type CreateSessionRequest = CreateSessionRequestBase &
+  (
+    | {
+        analysisBars: number;
+        trainingBars: number;
+        bars?: never;
+      }
+    | {
+        bars: number;
+        analysisBars?: never;
+        trainingBars?: never;
+      }
+  );
 
 export type CreateSessionResponse = {
   sessionId: number;
@@ -77,6 +109,11 @@ export type ProgressResponse = {
   remainingBars: number;
   atLastBar: boolean;
 
+  analysisBars?: number;
+  trainingBars?: number;
+  trainingProgress?: number;
+  remainingTrainingBars?: number;
+
   currentPrice: number;
 
   chartStatus: "IN_PROGRESS" | "COMPLETED";
@@ -88,6 +125,7 @@ export type ProgressResponse = {
 
   autoExited: boolean;
   reason: AutoExitReason | null;
+  revealedCandles: RevealedCandle[];
 };
 
 // ===== Trade =====
@@ -97,7 +135,7 @@ export type TradeRequest = {
 
 export type TradeResponse = {
   chartId: number;
-  tradeId: number;
+  tradeId: number | null;
   cashBalance: number;
   positionQty: number;
   avgPrice: number;
@@ -136,10 +174,96 @@ export type SessionSummaryResponse = {
   sessionAiScore: number | null;
 };
 
+// ===== Training History =====
+export type TrainingHistorySummaryResponse = {
+  sessionId: number;
+  status: TrainingStatus;
+  createdAt: string;
+  completedAt: string | null;
+  totalChartCount: number;
+  completedChartCount: number;
+  totalTradeCount: number;
+  snapshotCount: number;
+  hasSessionAiReview: boolean;
+  sessionAiScore: number | null;
+};
+
+export type TrainingHistoryChartResponse = {
+  chartId: number;
+  chartIndex: number | null;
+  status: TrainingStatus;
+  active: boolean;
+  refreshed: boolean;
+  symbolTicker: string | null;
+  symbolName: string | null;
+  sector: string | null;
+  tradeCount: number;
+  snapshotCount: number;
+  hasChartAiReview: boolean;
+  chartAiScore: number | null;
+  chartAiReview: TrainingEventResponse | null;
+};
+
+export type TrainingHistoryDetailResponse = {
+  session: TrainingHistorySummaryResponse;
+  sessionAiReview: TrainingEventResponse | null;
+  charts: TrainingHistoryChartResponse[];
+};
+
+// ===== Growth Analytics =====
+export type GrowthPeriod = "LAST_10" | "LAST_30" | "ALL";
+export type GrowthMetricResponse = { numerator: number; denominator: number; rate: number };
+export type GrowthTrendPointResponse = { sessionId: number; completedAt: string | null; score: number };
+export type GrowthOverviewResponse = {
+  lifetime: {
+    totalXp: number;
+    level: number;
+    levelTitle: string;
+    currentLevelXp: number;
+    nextLevelXp: number;
+    progressPercent: number;
+  };
+  period: {
+    key: GrowthPeriod;
+    limit: number | null;
+    completedSessions: number;
+    totalTrades: number;
+    planSessionRate: GrowthMetricResponse;
+    actionReasonRate: GrowthMetricResponse;
+    riskRuleSessionRate: GrowthMetricResponse;
+    aiReviewSessionRate: GrowthMetricResponse;
+    averageSessionAiScore: number | null;
+    scoreTrend: GrowthTrendPointResponse[];
+  };
+};
+
+/** Compatibility contract served before lifetime/period were nested. */
+export type LegacyGrowthOverviewResponse = {
+  period: GrowthPeriod;
+  totalCompletedSessions: number;
+  totalTrades: number;
+  totalXp: number;
+  level: number;
+  levelTitle: string;
+  currentLevelXp: number;
+  nextLevelXp: number;
+  progressPercent: number;
+  planSessionRate: GrowthMetricResponse;
+  actionReasonRate: GrowthMetricResponse;
+  riskRuleSessionRate: GrowthMetricResponse;
+  aiReviewSessionRate: GrowthMetricResponse;
+  averageSessionAiScore: number | null;
+  scoreTrend: GrowthTrendPointResponse[];
+};
+
+export type GrowthApiResponse = GrowthOverviewResponse | LegacyGrowthOverviewResponse;
+
 // ===== Risk Rule =====
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
 };
 
@@ -148,7 +272,9 @@ export type RiskRuleResponse = {
   chartId: number;
   accountId: number;
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
   updatedAt: string;
 };
@@ -276,6 +402,23 @@ export type SessionAiPayload = {
   snapshotCount: number;
   warnings: string[];
   strengths: string[];
+  decisionReview?: {
+    assessment: string;
+    evidence: string[];
+    betterAction: string;
+  } | null;
+  riskReview?: {
+    assessment: string;
+    evidence: string[];
+    improvement: string;
+  } | null;
+  behaviorPatterns?: Array<{
+    pattern: string;
+    evidence: string[];
+    impact: string;
+    correction: string;
+  }> | null;
+  nextTrainingFocus?: string[] | null;
 };
 
 export type ChartRefreshType =

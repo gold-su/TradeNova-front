@@ -2,7 +2,11 @@
 
 export type TrainingMode = "RANDOM" | "MANUAL";
 export type TrainingStatus = "IN_PROGRESS" | "COMPLETED";
-export type AutoExitReason = "STOP_LOSS" | "TAKE_PROFIT";
+export type AutoExitReason =
+  | "STOP_LOSS"
+  | "TAKE_PROFIT"
+  | "END_OF_CHART"
+  | "END_OF_SESSION";
 
 export type CandleDto = {
   idx?: number; // 백엔드가 주면 쓰고, 없으면 생략 가능
@@ -13,6 +17,8 @@ export type CandleDto = {
   c: number;
   v: number;
 };
+
+export type RevealedCandle = Required<CandleDto>;
 
 // ========== Session / Chart DTO ==========
 
@@ -30,12 +36,25 @@ export type TrainingChartDto = {
   status: TrainingStatus;
 };
 
-export type CreateSessionRequest = {
+type CreateSessionRequestBase = {
   accountId: number;
   mode: TrainingMode;
-  bars: number; // >= 30
-  // (추후) chartCount/seed/charts[] 확장 가능
+  chartCount?: number;
 };
+
+export type CreateSessionRequest = CreateSessionRequestBase &
+  (
+    | {
+        analysisBars: number;
+        trainingBars: number;
+        bars?: never;
+      }
+    | {
+        bars: number; // legacy range
+        analysisBars?: never;
+        trainingBars?: never;
+      }
+  );
 
 // 백엔드 현재 응답: sessionId + chartId(단일)만 주는지,
 // 혹은 charts[] 주는지에 따라 유연하게 받기 위해 두 케이스 모두 허용
@@ -71,6 +90,11 @@ export type ProgressResponse = {
   remainingBars: number;
   atLastBar: boolean;
 
+  analysisBars?: number;
+  trainingBars?: number;
+  trainingProgress?: number;
+  remainingTrainingBars?: number;
+
   currentPrice: number;
 
   chartStatus: "IN_PROGRESS" | "COMPLETED";
@@ -82,6 +106,7 @@ export type ProgressResponse = {
 
   autoExited: boolean;
   reason: AutoExitReason | null;
+  revealedCandles: RevealedCandle[];
 };
 
 export type AdvanceRequest = { steps: number };
@@ -90,7 +115,7 @@ export type TradeRequest = { qty: number };
 
 export type TradeResponse = {
   chartId: number;
-  tradeId: number;
+  tradeId: number | null;
   cashBalance: number;
   positionQty: number;
   avgPrice: number;
@@ -100,7 +125,9 @@ export type TradeResponse = {
 
 export type RiskRuleUpsertRequest = {
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
 };
 
@@ -109,7 +136,9 @@ export type RiskRuleResponse = {
   chartId: number;
   accountId: number;
   stopLossPrice: number | null;
+  stopLossExitPercent: number;
   takeProfitPrice: number | null;
+  takeProfitExitPercent: number;
   autoExitEnabled: boolean;
   updatedAt: string;
 };

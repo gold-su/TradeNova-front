@@ -8,6 +8,10 @@ import {
 } from "lightweight-charts";
 import type { Candle, IndicatorSettings } from "@/types/training";
 import { DEFAULT_INDICATORS } from "@/components/training/chart/indicator/indicatorDefaults";
+import {
+  isIndicatorVisible,
+  type IndicatorDisplayMode,
+} from "@/components/training/chart/indicator/indicatorDisplayPolicy";
 import { calculateBollinger } from "@/lib/chart/indicators/bollinger";
 import {
   createMainPriceSeries,
@@ -35,6 +39,19 @@ import {
 } from "@/lib/chart/indicators/seriesData";
 import { calculateRSI } from "@/lib/chart/indicators/rsi";
 import { calculateMACD } from "@/lib/chart/indicators/macd";
+import {
+  getChartDataUpdateMode,
+  shouldResetChartViewport,
+} from "@/components/training/chart/chartLifecycle";
+import { DrawingOverlay } from "./drawing/DrawingOverlay";
+import { DrawingToolbar } from "./drawing/DrawingToolbar";
+import type {
+  ChartDrawing,
+  DrawingPoint,
+  DrawingTool,
+  PendingDrawing,
+  SelectedDrawing,
+} from "./drawing/drawingTypes";
 
 export type TradeChartMarker = {
   id: string;
@@ -42,13 +59,33 @@ export type TradeChartMarker = {
   time: number; // epoch millis
   price: number;
   qty?: number;
+  count?: number;
 };
 
 type Props = {
+  chartId: number;
   candles: Candle[];
   height?: number;
   indicatorSettings?: IndicatorSettings;
+  indicatorDisplayMode?: IndicatorDisplayMode;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool?: DrawingTool;
+  pendingDrawing?: PendingDrawing;
+  selectedDrawing?: SelectedDrawing;
+  onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText?: (value: string) => boolean;
+  onCancelDrawingDraft?: () => void;
+  onSelectDrawing?: (selection: SelectedDrawing) => void;
+  showDrawingToolbar?: boolean;
+  onSelectDrawingTool?: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing?: () => void;
+  canDeleteDrawing?: boolean;
+  onClearDrawings?: () => void;
+  canClearDrawings?: boolean;
+  drawingEditingEnabled?: boolean;
+  drawingRailCollapsed?: boolean;
+  onToggleDrawingRail?: () => void;
 };
 
 function formatTooltipDate(timestamp: number) {
@@ -78,10 +115,29 @@ function formatAxisMonth(timestamp: number) {
 }
 
 export default function CandleChart({
+  chartId,
   candles,
   height = 520,
   indicatorSettings = DEFAULT_INDICATORS,
+  indicatorDisplayMode = "FULL",
   tradeMarkers = [],
+  drawings = [],
+  drawingTool = "POINTER",
+  pendingDrawing = null,
+  selectedDrawing = null,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  showDrawingToolbar = false,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  canDeleteDrawing = false,
+  onClearDrawings,
+  canClearDrawings = false,
+  drawingEditingEnabled = false,
+  drawingRailCollapsed = false,
+  onToggleDrawingRail,
 }: Props) {
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
@@ -102,7 +158,9 @@ export default function CandleChart({
   } | null>(null);
 
   const prevCandleLengthRef = useRef(0);
+  const previousLastCandleTimeRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
+  const previousChartIdRef = useRef<number | null>(null);
 
   const tradeMarkersRef = useRef<any>(null);
 
@@ -117,9 +175,13 @@ export default function CandleChart({
     y: number;
     trade: TradeChartMarker;
   } | null>(null);
+  const [drawingChartReady, setDrawingChartReady] = useState(false);
+  const [drawingChart, setDrawingChart] = useState<IChartApi | null>(null);
+  const [drawingCandleSeries, setDrawingCandleSeries] =
+    useState<ISeriesApi<"Candlestick"> | null>(null);
 
-  const showRsi = indicatorSettings.rsi.enabled;
-  const showMacd = indicatorSettings.macd.enabled;
+  const showRsi = isIndicatorVisible(indicatorSettings, "rsi", indicatorDisplayMode);
+  const showMacd = isIndicatorVisible(indicatorSettings, "macd", indicatorDisplayMode);
 
   const subPaneCount = Number(showRsi) + Number(showMacd);
   const subPaneHeight = subPaneCount > 0 ? 90 : 0;
@@ -209,7 +271,8 @@ export default function CandleChart({
    * 차트 생성 effect
    * - createChart는 여기서만 실행
    * - candles 변경으로는 재생성하지 않음
-   * - RSI/MACD 표시 여부처럼 pane 구조가 바뀔 때만 재생성
+   * - RSI/MACD 표시 여부 또는 chart identity가 바뀔 때 재생성
+   * - 서로 다른 chart는 series/time/price scale을 공유하지 않음
    */
   useEffect(() => {
     const mainEl = mainContainerRef.current;
@@ -268,6 +331,9 @@ export default function CandleChart({
 
     mainChartRef.current = mainChart;
     mainSeriesRef.current = createMainPriceSeries(mainChart);
+    setDrawingChart(mainChart);
+    setDrawingCandleSeries(mainSeriesRef.current.candleSeries);
+    setDrawingChartReady(true);
 
     tradeMarkersRef.current = createSeriesMarkers(
       mainSeriesRef.current.candleSeries,
@@ -542,14 +608,22 @@ export default function CandleChart({
       macdSeriesRef.current = null;
       bollingerSeriesRef.current = null;
       initializedRef.current = false;
+      previousChartIdRef.current = null;
       prevCandleLengthRef.current = 0;
+      previousLastCandleTimeRef.current = null;
       tradeMarkersRef.current = null;
+      setDrawingChart(null);
+      setDrawingCandleSeries(null);
+      setDrawingChartReady(false);
+      setTooltip(null);
+      setTradeTooltip(null);
     };
-  }, [height, mainHeight, showRsi, showMacd, subPaneHeight]);
+  }, [chartId, height, mainHeight, showRsi, showMacd, subPaneHeight]);
 
   /**
    * 데이터 업데이트 effect
-   * - candles 변경 시 chart를 재생성하지 않고 setData만 실행
+   * - chart 변경 시 전체 데이터를 교체하고 viewport를 초기화
+   * - 같은 chart의 NEXT/ADVANCE는 새 데이터만 append
    * - NEXT로 봉이 하나 늘어나면 오른쪽 끝으로 부드럽게 이동
    */
   useEffect(() => {
@@ -558,8 +632,24 @@ export default function CandleChart({
 
     if (!mainChart || !mainSeries) return;
 
-    const candleData = toCandlestickData(candles);
-    mainSeries.candleSeries.setData(candleData);
+    const previousLength = prevCandleLengthRef.current;
+    const updateMode = getChartDataUpdateMode({
+      initialized: initializedRef.current,
+      previousChartId: previousChartIdRef.current,
+      chartId,
+      previousLength,
+      previousLastTime: previousLastCandleTimeRef.current,
+      candleTimes: candles.map((candle) => candle.t),
+    });
+    const isAppendOnly = updateMode === "APPEND";
+
+    if (isAppendOnly) {
+      toCandlestickData(candles.slice(previousLength)).forEach((candle) => {
+        mainSeries.candleSeries.update(candle);
+      });
+    } else {
+      mainSeries.candleSeries.setData(toCandlestickData(candles));
+    }
 
     mainChart.applyOptions({
       rightPriceScale: {
@@ -573,9 +663,14 @@ export default function CandleChart({
     if (indicatorSettings.volume.enabled) {
       if (!volumeSeriesRef.current) {
         volumeSeriesRef.current = createVolumeSeries(mainChart);
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
+      } else if (isAppendOnly) {
+        toVolumeData(candles.slice(previousLength)).forEach((volume) => {
+          volumeSeriesRef.current?.volumeSeries.update(volume);
+        });
+      } else {
+        volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
       }
-
-      volumeSeriesRef.current.volumeSeries.setData(toVolumeData(candles));
     } else if (volumeSeriesRef.current) {
       mainChart.removeSeries(volumeSeriesRef.current.volumeSeries);
       volumeSeriesRef.current = null;
@@ -704,15 +799,15 @@ export default function CandleChart({
       macdSeriesRef.current.signalSeries.setData(macd.signalLine);
     }
 
-    const isFirstDataLoad = !initializedRef.current;
-    const isNextCandle = candles.length > prevCandleLengthRef.current;
+    const animationFrame = requestAnimationFrame(() => {
+      // The effect may have been cleaned up because the identity/pane changed.
+      if (mainChartRef.current !== mainChart) return;
 
-    requestAnimationFrame(() => {
-      if (isFirstDataLoad) {
+      if (shouldResetChartViewport(updateMode)) {
         mainChart.timeScale().fitContent();
         rsiChartRef.current?.timeScale().fitContent();
         macdChartRef.current?.timeScale().fitContent();
-      } else if (isNextCandle) {
+      } else if (isAppendOnly) {
         mainChart.timeScale().scrollToPosition(0, true);
         rsiChartRef.current?.timeScale().scrollToPosition(0, true);
         macdChartRef.current?.timeScale().scrollToPosition(0, true);
@@ -720,8 +815,12 @@ export default function CandleChart({
     });
 
     initializedRef.current = true;
+    previousChartIdRef.current = chartId;
     prevCandleLengthRef.current = candles.length;
-  }, [candles, indicatorSettings, maLines, showRsi, showMacd]);
+    previousLastCandleTimeRef.current = candles.at(-1)?.t ?? null;
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [chartId, candles, indicatorSettings, maLines, showRsi, showMacd]);
 
   useEffect(() => {
     if (!tradeMarkersRef.current) return;
@@ -735,7 +834,7 @@ export default function CandleChart({
         text: "",
       })),
     );
-  }, [tradeMarkers]);
+  }, [chartId, tradeMarkers]);
 
   return (
     <div className="relative h-full w-full">
@@ -780,11 +879,39 @@ export default function CandleChart({
         )}
       </div>
 
-      <div
-        ref={mainContainerRef}
-        className="w-full"
-        style={{ height: mainHeight }}
-      />
+      <div className="relative w-full" style={{ height: mainHeight }}>
+        <div ref={mainContainerRef} className="h-full w-full" />
+        {showDrawingToolbar && drawingEditingEnabled && (
+          <DrawingToolbar
+            tool={drawingTool}
+            onSelectTool={(nextTool) => onSelectDrawingTool?.(nextTool)}
+            onDelete={() => onDeleteSelectedDrawing?.()}
+            canDelete={canDeleteDrawing}
+            onClear={() => onClearDrawings?.()}
+            canClear={canClearDrawings}
+            collapsed={drawingRailCollapsed}
+            onToggleCollapsed={() => onToggleDrawingRail?.()}
+          />
+        )}
+        {drawingChartReady && (
+          <DrawingOverlay
+            chart={drawingChart}
+            candleSeries={drawingCandleSeries}
+            chartId={chartId}
+            drawings={drawings}
+            tool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddPoint={(targetChartId, point) =>
+              onAddDrawingPoint?.(targetChartId, point)
+            }
+            onCommitText={(value) => onCommitDrawingText?.(value) ?? false}
+            onCancelDraft={() => onCancelDrawingDraft?.()}
+            onSelectDrawing={(selection) => onSelectDrawing?.(selection)}
+            editingEnabled={drawingEditingEnabled}
+          />
+        )}
+      </div>
 
       {tooltip && (
         <div
@@ -835,6 +962,9 @@ export default function CandleChart({
             }
           >
             {tradeTooltip.trade.side}
+            {(tradeTooltip.trade.count ?? 1) > 1
+              ? ` ×${tradeTooltip.trade.count}`
+              : ""}
           </div>
 
           <div className="mt-1 flex justify-between text-muted-foreground">

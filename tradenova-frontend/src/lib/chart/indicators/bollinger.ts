@@ -1,6 +1,6 @@
 import type { LineData } from "lightweight-charts";
 import type { Candle } from "@/types/training";
-import { toChartTime } from "./seriesData";
+import { toChartTime } from "./seriesData.ts";
 
 export function calculateBollinger(
   candles: Candle[],
@@ -12,10 +12,19 @@ export function calculateBollinger(
   lower: LineData[];
 } {
   const sorted = candles.slice().sort((a, b) => a.t - b.t);
+  const validParameters =
+    Number.isInteger(period) &&
+    period > 0 &&
+    Number.isFinite(multiplier) &&
+    multiplier >= 0;
 
   const upper: LineData[] = [];
   const middle: LineData[] = [];
   const lower: LineData[] = [];
+
+  if (!validParameters || sorted.length < period) {
+    return { upper, middle, lower };
+  }
 
   for (let i = period - 1; i < sorted.length; i++) {
     const window = sorted.slice(i - period + 1, i + 1);

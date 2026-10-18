@@ -1,0 +1,71 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { calculateUnrealizedPosition } from "../src/components/training/common/accountSnapshotCalculations.ts";
+
+test("calculates positive, negative, and flat unrealized results", () => {
+  assert.deepEqual(calculateUnrealizedPosition(110, 100, 5), {
+    marketValue: 550,
+    unrealizedPnL: 50,
+    returnRate: 10,
+  });
+  assert.deepEqual(calculateUnrealizedPosition(90, 100, 5), {
+    marketValue: 450,
+    unrealizedPnL: -50,
+    returnRate: -10,
+  });
+  assert.deepEqual(calculateUnrealizedPosition(100, 100, 5), {
+    marketValue: 500,
+    unrealizedPnL: 0,
+    returnRate: 0,
+  });
+});
+
+test("uses only the remaining quantity after a partial sell", () => {
+  assert.deepEqual(calculateUnrealizedPosition(110_000, 110_500, 50), {
+    marketValue: 5_500_000,
+    unrealizedPnL: -25_000,
+    returnRate: (-500 / 110_500) * 100,
+  });
+});
+
+test("recalculates immediately when the current price changes", () => {
+  assert.equal(calculateUnrealizedPosition(105, 100, 10).unrealizedPnL, 50);
+  assert.equal(calculateUnrealizedPosition(95, 100, 10).unrealizedPnL, -50);
+});
+
+test("returns a natural empty result for a closed position", () => {
+  assert.deepEqual(calculateUnrealizedPosition(null, 0, 0), {
+    marketValue: 0,
+    unrealizedPnL: 0,
+    returnRate: 0,
+  });
+  assert.deepEqual(calculateUnrealizedPosition(100, 100, -1), {
+    marketValue: 0,
+    unrealizedPnL: 0,
+    returnRate: 0,
+  });
+});
+
+test("does not calculate an open position with invalid prices", () => {
+  assert.deepEqual(calculateUnrealizedPosition(100, 0, 5), {
+    marketValue: null,
+    unrealizedPnL: null,
+    returnRate: null,
+  });
+  assert.deepEqual(calculateUnrealizedPosition(null, 100, 5), {
+    marketValue: null,
+    unrealizedPnL: null,
+    returnRate: null,
+  });
+});
+
+test("does not leak Infinity when finite inputs overflow", () => {
+  assert.deepEqual(
+    calculateUnrealizedPosition(Number.MAX_VALUE, 1, Number.MAX_VALUE),
+    {
+      marketValue: null,
+      unrealizedPnL: null,
+      returnRate: null,
+    },
+  );
+});

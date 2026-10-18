@@ -1,5 +1,6 @@
 // src/api/http.ts
 import axios from "axios";
+import { clearAuthSession } from "@/lib/authSession";
 
 /**
  * axios 인스턴스(커스텀 axios 객체)
@@ -26,9 +27,7 @@ const http = axios.create({
 http.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken");
     if (token) {
-        // axios v1에서 headers 타입이 다양해서 이런 방식이 제일 안전함
-        config.headers = config.headers ?? {}; //config.headers가 null 또는 undefined가 아니면 config.headers 그대로 쓰고 맞다면 {} <- 공백 사용
-        (config.headers as any).Authorization = `Bearer ${token}`; //Axios v1부터 config.headers 타입이 복잡한 유니온 타입이라서 config.headers.Authorization 바로 못 믿음. 그래서 as any로 그냥 넣어달라고 하는거임
+        config.headers.set("Authorization", `Bearer ${token}`);
     }
     return config;
 });
@@ -45,11 +44,11 @@ http.interceptors.response.use(
         const status = error?.response?.status;
 
         // 토큰이 잘못되었거나 만료되면, 일단 토큰 제거해서 재로그인 유도
-        if (status === 401 || status === 403) {
-            localStorage.removeItem("accessToken");
+        if (status === 401) {
+            clearAuthSession();
             // 여기서 router navigate를 직접 하려면 별도 패턴이 필요(예: event bus)
             // 일단은 필요한 경우 페이지 컴포넌트에서 처리하는 게 깔끔함
-            console.warn("Auth error:", status, "토큰 제거됨. 재로그인 필요");
+            console.warn("Auth error:", status, "인증 정보가 제거되었습니다. 재로그인이 필요합니다.");
         }
 
         return Promise.reject(error);

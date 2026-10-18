@@ -8,6 +8,9 @@ import type {
 } from "@/types/training";
 import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
+import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
+import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
+import { getTrainingChartTileState, hasOpenChartPosition } from "./trainingChartTileState";
 
 function sectorLabel(sector?: string) {
   switch (sector) {
@@ -42,6 +45,21 @@ type Props = {
   indicatorSettings: IndicatorSettings;
   hasIndicatorOverride?: boolean;
   tradeMarkers?: TradeChartMarker[];
+  drawings?: ChartDrawing[];
+  drawingTool?: DrawingTool;
+  pendingDrawing?: PendingDrawing;
+  selectedDrawing?: SelectedDrawing;
+  onAddDrawingPoint?: (chartId: number, point: DrawingPoint) => void;
+  onCommitDrawingText?: (value: string) => boolean;
+  onCancelDrawingDraft?: () => void;
+  onSelectDrawing?: (selection: SelectedDrawing) => void;
+  showDrawingToolbar?: boolean;
+  onSelectDrawingTool?: (tool: DrawingTool) => void;
+  onDeleteSelectedDrawing?: () => void;
+  canDeleteDrawing?: boolean;
+  onClearDrawings?: () => void;
+  canClearDrawings?: boolean;
+  drawingEditingEnabled?: boolean;
 };
 
 export function TrainingChartTile({
@@ -56,19 +74,31 @@ export function TrainingChartTile({
   indicatorSettings,
   hasIndicatorOverride,
   tradeMarkers = [],
+  drawings = [],
+  drawingTool,
+  pendingDrawing,
+  selectedDrawing,
+  onAddDrawingPoint,
+  onCommitDrawingText,
+  onCancelDrawingDraft,
+  onSelectDrawing,
+  showDrawingToolbar,
+  onSelectDrawingTool,
+  onDeleteSelectedDrawing,
+  canDeleteDrawing,
+  onClearDrawings,
+  canClearDrawings,
+  drawingEditingEnabled = false,
 }: Props) {
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
     : candles;
 
-  const current = progress?.progressIndex ?? chart.progressIndex ?? 0;
-  const total = Math.max(chart.bars - 1, 1);
+  const { current, total } = getTrainingProgressDisplay(chart, progress);
+  const tileState = getTrainingChartTileState(active, chart, progress);
+  const hasPosition = hasOpenChartPosition(chart, progress);
 
-  const subPaneCount =
-    Number(indicatorSettings.rsi.enabled) +
-    Number(indicatorSettings.macd.enabled);
-
-  const chartHeight = subPaneCount > 0 ? 250 + subPaneCount * 86 : 245;
+  const chartHeight = 245;
 
   return (
     <div
@@ -81,9 +111,11 @@ export function TrainingChartTile({
       }}
       className={[
         "group relative flex min-h-0 cursor-pointer flex-col rounded-xl border bg-background/10 p-2.5 text-left shadow-sm transition-all duration-150",
-        active
+        tileState === "selected"
           ? "border-primary/60 bg-background/10 shadow-[0_0_0_1px_rgba(52,211,153,0.18),0_10px_24px_rgba(0,0,0,0.2)]"
-          : "border-border/40 hover:border-border/80 hover:bg-background/20 hover:shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
+          : tileState === "holding"
+            ? "border-cyan-400/35 bg-cyan-400/[0.025] hover:border-cyan-300/50 hover:bg-cyan-400/[0.04]"
+            : "border-border/40 hover:border-border/80 hover:bg-background/20 hover:shadow-[0_10px_24px_rgba(0,0,0,0.18)]",
       ].join(" ")}
     >
       <div className="mb-2 flex h-8 items-center justify-between gap-2 border-b border-border/35 pb-2">
@@ -101,6 +133,13 @@ export function TrainingChartTile({
           {hasIndicatorOverride && (
             <span className="shrink-0 rounded border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
               지표
+            </span>
+          )}
+
+          {hasPosition && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded border border-cyan-300/25 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[10px] font-medium text-cyan-200">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-cyan-300" />
+              보유
             </span>
           )}
         </div>
@@ -135,10 +174,27 @@ export function TrainingChartTile({
       <div className="min-h-0 flex-1" style={{ height: chartHeight }}>
         {visible.length > 0 ? (
           <CandleChart
+            chartId={chart.chartId}
             candles={visible}
             height={chartHeight}
             indicatorSettings={indicatorSettings}
+            indicatorDisplayMode="COMPACT"
             tradeMarkers={tradeMarkers}
+            drawings={drawings}
+            drawingTool={drawingTool}
+            pendingDrawing={pendingDrawing}
+            selectedDrawing={selectedDrawing}
+            onAddDrawingPoint={onAddDrawingPoint}
+            onCommitDrawingText={onCommitDrawingText}
+            onCancelDrawingDraft={onCancelDrawingDraft}
+            onSelectDrawing={onSelectDrawing}
+            showDrawingToolbar={showDrawingToolbar}
+            onSelectDrawingTool={onSelectDrawingTool}
+            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+            canDeleteDrawing={canDeleteDrawing}
+            onClearDrawings={onClearDrawings}
+            canClearDrawings={canClearDrawings}
+            drawingEditingEnabled={drawingEditingEnabled}
           />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">

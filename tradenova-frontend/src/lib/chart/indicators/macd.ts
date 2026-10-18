@@ -1,17 +1,20 @@
 import type { HistogramData, LineData } from "lightweight-charts";
 import type { Candle } from "@/types/training";
-import { toChartTime } from "./seriesData";
+import { toChartTime } from "./seriesData.ts";
 
-function ema(values: number[], period: number): number[] {
+function ema(values: number[], period: number): Array<number | null> {
   const k = 2 / (period + 1);
-  const result: number[] = [];
+  const result: Array<number | null> = Array(values.length).fill(null);
 
-  let prev = values[0];
+  if (values.length < period) return result;
 
-  for (let i = 0; i < values.length; i++) {
-    const current = values[i];
-    prev = i === 0 ? current : current * k + prev * (1 - k);
-    result.push(prev);
+  let previous =
+    values.slice(0, period).reduce((sum, value) => sum + value, 0) / period;
+  result[period - 1] = previous;
+
+  for (let i = period; i < values.length; i++) {
+    previous = values[i] * k + previous * (1 - k);
+    result[i] = previous;
   }
 
   return result;
@@ -30,8 +33,16 @@ export function calculateMACD(
   histogram: HistogramData[];
 } {
   const sorted = candles.slice().sort((a, b) => a.t - b.t);
+  const periodsAreValid =
+    Number.isInteger(fastPeriod) &&
+    Number.isInteger(slowPeriod) &&
+    Number.isInteger(signalPeriod) &&
+    fastPeriod > 0 &&
+    slowPeriod > fastPeriod &&
+    signalPeriod > 0;
+  const firstOutputIndex = slowPeriod + signalPeriod - 2;
 
-  if (sorted.length < slowPeriod + signalPeriod) {
+  if (!periodsAreValid || sorted.length <= firstOutputIndex) {
     return {
       macdLine: [],
       signalLine: [],
@@ -43,32 +54,38 @@ export function calculateMACD(
 
   const fastEma = ema(closes, fastPeriod);
   const slowEma = ema(closes, slowPeriod);
-
-  const macdRaw = closes.map((_, i) => fastEma[i] - slowEma[i]);
+  const macdStartIndex = slowPeriod - 1;
+  const macdRaw = closes.slice(macdStartIndex).map((_, offset) => {
+    const index = macdStartIndex + offset;
+    return (fastEma[index] as number) - (slowEma[index] as number);
+  });
   const signalRaw = ema(macdRaw, signalPeriod);
-  const histRaw = macdRaw.map((v, i) => v - signalRaw[i]);
 
   const macdLine: LineData[] = [];
   const signalLine: LineData[] = [];
   const histogram: HistogramData[] = [];
 
-  for (let i = slowPeriod - 1; i < sorted.length; i++) {
-    const time = toChartTime(sorted[i].t);
+  for (let offset = signalPeriod - 1; offset < macdRaw.length; offset++) {
+    const candleIndex = macdStartIndex + offset;
+    const macdValue = macdRaw[offset];
+    const signalValue = signalRaw[offset] as number;
+    const histogramValue = macdValue - signalValue;
+    const time = toChartTime(sorted[candleIndex].t);
 
     macdLine.push({
       time,
-      value: Number(macdRaw[i].toFixed(2)),
+      value: Number(macdValue.toFixed(2)),
     });
 
     signalLine.push({
       time,
-      value: Number(signalRaw[i].toFixed(2)),
+      value: Number(signalValue.toFixed(2)),
     });
 
     histogram.push({
       time,
-      value: Number(histRaw[i].toFixed(2)),
-      color: histRaw[i] >= 0 ? histogramUpColor : histogramDownColor,
+      value: Number(histogramValue.toFixed(2)),
+      color: histogramValue >= 0 ? histogramUpColor : histogramDownColor,
     });
   }
 

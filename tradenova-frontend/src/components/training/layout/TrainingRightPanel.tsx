@@ -1,54 +1,51 @@
 import type {
-  ChartAiPayload,
   ProgressResponse,
   QuickPhraseResponse,
   ReportDocumentResponse,
-  ReportDraftContent,
-  SessionAiPayload,
   TrainingChartDto,
   TrainingEventResponse,
   RiskRuleResponse,
   RiskRuleUpsertRequest,
 } from "@/types/training";
 import { AccountSnapshotCard } from "@/components/training/common/AccountSnapshotCard";
-import { SnapshotListPanel } from "@/components/training/report/SnapshotListPanel";
 import { TrainingTradeJournalPanel } from "@/components/training/common/TrainingTradeJournalPanel";
 import { EventLogPanel } from "@/components/training/report/EventLogPanel";
-import { AiReviewPanel } from "@/components/training/ai/AiReviewPanel";
 import type { TradeForm } from "@/hooks/training/training.types";
+import { findLatestScenarioSnapshot } from "@/hooks/training/trainingTradeReason";
+import { TrainingPlanSection } from "@/components/training/common/TrainingPlanSection";
 
 type Props = {
+  charts: TrainingChartDto[];
   activeChart: TrainingChartDto | null;
+  onSelectChart: (chartId: number) => void;
   activeProgress: ProgressResponse | null;
   quickPhrases: QuickPhraseResponse[];
+  createQuickPhrase: (content: string) => Promise<QuickPhraseResponse>;
+  updateQuickPhrase: (id: number, content: string) => Promise<QuickPhraseResponse>;
+  deleteQuickPhrase: (id: number) => Promise<void>;
   events: TrainingEventResponse[];
   snapshots: ReportDocumentResponse[];
-  draft: ReportDraftContent;
-  setDraft: React.Dispatch<React.SetStateAction<ReportDraftContent>>;
   loading: boolean;
-  draftSaving: boolean;
   eventLoading: boolean;
   disabled: boolean;
   onNext: () => void;
-  onSellAll: () => void;
-  onSaveDraft: () => void;
-  onCreateSnapshot: () => void;
-  onCreateNoteEvent: () => void;
-  appendQuickPhrase: (content: string) => void;
-  openBuyModal: () => void;
-  openSellModal: () => void;
-  sessionAiPayload: SessionAiPayload | null;
-  sessionAiLoading: boolean;
-  chartAiPayload: ChartAiPayload | null;
-  chartAiLoading: boolean;
-  onAnalyzeChartAi: () => void;
-  onAnalyzeSessionAi: () => void;
+  onSellAll: () => Promise<boolean>;
+  onCreateScenarioSnapshot: (
+    chartId: number,
+    content: {
+      thesis: string;
+      entryReason: string;
+      exitPlan: string;
+      riskNote: string;
+      freeNote: string;
+    },
+  ) => Promise<unknown>;
   syncNext: boolean;
   setSyncNext: React.Dispatch<React.SetStateAction<boolean>>;
   tradeForm: TradeForm;
   setTradeForm: React.Dispatch<React.SetStateAction<TradeForm>>;
-  executeBuy: () => void;
-  executeSell: () => void;
+  executeBuy: () => Promise<boolean>;
+  executeSell: () => Promise<boolean>;
   lastSavedMessage: {
     text: string;
     side: "BUY" | "SELL";
@@ -57,13 +54,18 @@ type Props = {
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
-  saveRiskRule: (body: RiskRuleUpsertRequest) => void;
+  saveRiskRule: (body: RiskRuleUpsertRequest) => void | Promise<void>;
 };
 
 export function TrainingRightPanel({
+  charts,
   activeChart,
+  onSelectChart,
   activeProgress,
   quickPhrases,
+  createQuickPhrase,
+  updateQuickPhrase,
+  deleteQuickPhrase,
   events,
   snapshots,
   loading,
@@ -71,12 +73,7 @@ export function TrainingRightPanel({
   disabled,
   onNext,
   onSellAll,
-  sessionAiPayload,
-  sessionAiLoading,
-  chartAiPayload,
-  chartAiLoading,
-  onAnalyzeChartAi,
-  onAnalyzeSessionAi,
+  onCreateScenarioSnapshot,
   syncNext,
   setSyncNext,
   tradeForm,
@@ -90,30 +87,36 @@ export function TrainingRightPanel({
   riskSaving,
   saveRiskRule,
 }: Props) {
+  const latestScenarioSnapshot = findLatestScenarioSnapshot(
+    snapshots,
+    activeChart?.chartId ?? null,
+  );
+
   return (
-    <aside className="w-[420px] shrink-0 border-l border-border/60 bg-background/40 p-4">
-      <div className="thin-scrollbar h-full space-y-4 overflow-y-auto pr-1">
+    <aside className="flex h-full min-h-0 w-[360px] shrink-0 flex-col border-l border-border/40 bg-background/40 px-4 py-4">
+      <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
         <AccountSnapshotCard chart={activeChart} progress={activeProgress} />
 
-        <AiReviewPanel
-          activeChartLabel={
-            activeChart
-              ? `Chart ${activeChart.chartIndex + 1}`
-              : "차트 선택 안 됨"
-          }
-          sessionAiPayload={sessionAiPayload}
-          sessionAiLoading={sessionAiLoading}
-          chartAiPayload={chartAiPayload}
-          chartAiLoading={chartAiLoading}
-          onAnalyzeChartAi={onAnalyzeChartAi}
-          onAnalyzeSessionAi={onAnalyzeSessionAi}
-          disabled={loading || !activeChart}
+        <TrainingPlanSection
+          charts={charts}
+          snapshots={snapshots}
+          events={events}
+          activeChart={activeChart}
+          onSelectChart={onSelectChart}
+          latestScenario={latestScenarioSnapshot}
+          onCreateScenario={onCreateScenarioSnapshot}
         />
 
+        <div className="min-h-4 flex-1" aria-hidden="true" />
+
         <TrainingTradeJournalPanel
+          key={`trade-${activeChart?.chartId ?? "none"}`}
           tradeForm={tradeForm}
           setTradeForm={setTradeForm}
           quickPhrases={quickPhrases}
+          createQuickPhrase={createQuickPhrase}
+          updateQuickPhrase={updateQuickPhrase}
+          deleteQuickPhrase={deleteQuickPhrase}
           disabled={disabled}
           loading={loading}
           syncNext={syncNext}
@@ -128,11 +131,20 @@ export function TrainingRightPanel({
           riskRule={riskRule}
           riskSaving={riskSaving}
           saveRiskRule={saveRiskRule}
+          cashBalance={activeProgress?.cashBalance ?? 0}
+          positionQty={activeProgress?.positionQty ?? 0}
+          currentPrice={activeProgress?.currentPrice ?? 0}
+          scenarioSnapshots={snapshots}
+          chartId={activeChart?.chartId ?? null}
         />
-
-        <EventLogPanel items={events} loading={eventLoading} />
-
-        <SnapshotListPanel items={snapshots} />
+      </div>
+      <div className="mt-4 max-h-[220px] shrink-0 overflow-y-auto border-t border-border/35 pt-3">
+        <EventLogPanel
+          items={events.filter(
+            (event) => event.chartId === activeChart?.chartId,
+          )}
+          loading={eventLoading}
+        />
       </div>
     </aside>
   );
