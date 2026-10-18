@@ -1,4 +1,8 @@
 import type { CampaignAttribution } from "@/lib/landing/analytics";
+import {
+  DuplicateWaitlistEmailError,
+  InvalidWaitlistApplicationError,
+} from "@/lib/landing/waitlistErrors";
 import { normalizeSmsSubscription } from "@/lib/landing/waitlistSms";
 import axios from "axios";
 import http from "./http";
@@ -38,13 +42,6 @@ export function createBetaApplication(
   };
 }
 
-export class DuplicateWaitlistEmailError extends Error {
-  constructor() {
-    super("Email already joined the beta waitlist");
-    this.name = "DuplicateWaitlistEmailError";
-  }
-}
-
 export const waitlistApi = {
   submit: async (application: BetaApplication) => {
     try {
@@ -53,6 +50,9 @@ export const waitlistApi = {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409 && error.response.data?.error === "WAITLIST_EMAIL_ALREADY_EXISTS") {
         throw new DuplicateWaitlistEmailError();
+      }
+      if (axios.isAxiosError(error) && error.response?.status === 400 && error.response.data?.error === "INVALID_REQUEST") {
+        throw new InvalidWaitlistApplicationError();
       }
       throw error;
     }
