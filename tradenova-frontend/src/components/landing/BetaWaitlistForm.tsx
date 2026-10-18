@@ -2,7 +2,6 @@ import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import {
   createBetaApplication,
-  DuplicateWaitlistEmailError,
   waitlistApi,
 } from "@/api/waitlistApi";
 import type {
@@ -25,6 +24,10 @@ import {
   trackLandingEvent,
 } from "@/lib/landing/analytics";
 import { isValidKoreanMobileNumber } from "@/lib/landing/waitlistSms";
+import {
+  DuplicateWaitlistEmailError,
+  InvalidWaitlistApplicationError,
+} from "@/lib/landing/waitlistErrors";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -98,13 +101,20 @@ export function BetaWaitlistForm() {
     } catch (error) {
       setStatus("error");
       const duplicate = error instanceof DuplicateWaitlistEmailError;
+      const invalid = error instanceof InvalidWaitlistApplicationError;
       setMessage(
         duplicate
           ? "이미 베타 신청이 완료된 이메일입니다."
+          : invalid
+            ? "입력한 신청 정보를 다시 확인해주세요."
           : "신청을 접수하지 못했습니다. 잠시 후 다시 시도해주세요.",
       );
       trackLandingEvent("beta_form_error", {
-        reason: duplicate ? "duplicate_email" : "request_failed",
+        reason: duplicate
+          ? "duplicate_email"
+          : invalid
+            ? "invalid_request"
+            : "request_failed",
       });
     }
   };
