@@ -93,11 +93,11 @@ export function TradeDialogContent({
       : orderQuantity > positionQty);
   return (
     <>
-      <div className="thin-scrollbar min-h-0 space-y-4 overflow-y-auto px-5 pb-4">
-        <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/25 px-3 py-2.5 text-xs">
+      <div className="thin-scrollbar min-h-0 space-y-5 overflow-y-auto px-6 pb-5">
+        <dl className="grid grid-cols-2 gap-4 rounded-xl bg-muted/25 px-4 py-3 text-sm">
           <div>
             <dt className="text-muted-foreground">현재가</dt>
-            <dd className="mt-1 font-semibold tabular-nums">
+            <dd className="mt-1 text-base font-semibold tabular-nums">
               {currentPrice.toLocaleString()}원
             </dd>
           </div>
@@ -105,26 +105,26 @@ export function TradeDialogContent({
             <dt className="text-muted-foreground">
               {buying ? "사용 가능 현금" : "보유수량"}
             </dt>
-            <dd className="mt-1 font-semibold tabular-nums">
+            <dd className="mt-1 text-base font-semibold tabular-nums">
               {buying
                 ? `${cashBalance.toLocaleString()}원`
                 : `${positionQty.toLocaleString()}주`}
             </dd>
           </div>
         </dl>
-        <fieldset disabled={loading} className="space-y-2">
+        <fieldset disabled={loading} className="space-y-3">
           <label
             htmlFor="trade-quantity"
-            className="block text-xs font-semibold"
+            className="block text-sm font-semibold"
           >
             수량
           </label>
-          <div className="flex h-9 items-center overflow-hidden rounded-lg border border-border/60 focus-within:border-primary/60">
+          <div className="flex h-11 items-center overflow-hidden rounded-lg border border-border/60 focus-within:border-primary/60">
             <button
               type="button"
               aria-label="수량 줄이기"
               onClick={() => setQuantity(Math.max(1, validQuantity - 1))}
-              className="h-full w-10 text-lg hover:bg-muted/40"
+              className="h-full w-11 text-xl hover:bg-muted/40"
             >
               −
             </button>
@@ -135,13 +135,13 @@ export function TradeDialogContent({
               step={1}
               value={tradeForm.qty}
               onChange={(event) => setQuantity(Number(event.target.value))}
-              className="no-number-spinner h-full min-w-0 flex-1 bg-transparent text-center text-sm font-semibold outline-none"
+              className="no-number-spinner h-full min-w-0 flex-1 bg-transparent text-center text-base font-semibold outline-none"
             />
             <button
               type="button"
               aria-label="수량 늘리기"
               onClick={() => setQuantity(validQuantity + 1)}
-              className="h-full w-10 text-lg hover:bg-muted/40"
+              className="h-full w-11 text-xl hover:bg-muted/40"
             >
               +
             </button>
@@ -163,7 +163,7 @@ export function TradeDialogContent({
                   type="button"
                   disabled={qty === 0}
                   onClick={() => setQuantity(qty)}
-                  className="h-7 rounded-md bg-muted/35 text-[11px] font-medium hover:bg-muted/70 disabled:opacity-35"
+                  className="h-8 rounded-md bg-muted/35 text-xs font-medium hover:bg-muted/70 disabled:opacity-35"
                 >
                   {percent}%
                 </button>
@@ -175,20 +175,20 @@ export function TradeDialogContent({
                 aria-pressed={sellAllSelected}
                 disabled={positionQty <= 0}
                 onClick={selectAll}
-                className={`h-7 rounded-md text-[11px] font-semibold disabled:opacity-35 ${sellAllSelected ? "bg-red-500/20 text-red-300" : "bg-muted/35 hover:bg-muted/70"}`}
+                className={`h-8 rounded-md text-xs font-semibold disabled:opacity-35 ${sellAllSelected ? "bg-red-500/20 text-red-300" : "bg-muted/35 hover:bg-muted/70"}`}
               >
                 ALL
               </button>
             )}
           </div>
         </fieldset>
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">예상 주문금액</span>
-          <strong className="text-base tabular-nums">
+          <strong className="text-lg tabular-nums">
             {amount.toLocaleString()}원
           </strong>
         </div>
-        <section className="border-t border-border/30 pt-3">
+        <section className="border-t border-border/30 pt-4">
           <label
             htmlFor="trade-plan"
             className="mb-2 block text-sm font-semibold"
@@ -218,7 +218,7 @@ export function TradeDialogContent({
                   setPlanOpen(false);
                 }
               }}
-              className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-border/65 bg-card px-3 text-left text-[13px] text-foreground outline-none transition hover:border-primary/45 hover:bg-muted/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-40"
+              className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-border/65 bg-card px-3.5 text-left text-sm text-foreground outline-none transition hover:border-primary/45 hover:bg-muted/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-40"
             >
               <span className="truncate">
                 {selectedPlan
@@ -293,7 +293,7 @@ export function TradeDialogContent({
             </div>
           )}
         </section>
-        <fieldset disabled={loading} className="border-t border-border/35 pt-3">
+        <fieldset disabled={loading} className="border-t border-border/35 pt-4">
           <div className="text-[10px] font-bold tracking-widest text-muted-foreground">
             ACTION
           </div>
@@ -336,7 +336,7 @@ export function TradeDialogContent({
                 ? "계획 외에 이번 거래에서 추가로 본 점을 기록하세요."
                 : "예: 돌파 이후 지지를 확인해 진입"
             }
-            className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
+            className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
           />
         </fieldset>
         {error && (
@@ -352,12 +352,12 @@ export function TradeDialogContent({
           </p>
         )}
       </div>
-      <footer className="flex shrink-0 justify-end gap-2 border-t border-border/35 px-5 py-3">
+      <footer className="flex shrink-0 justify-end gap-2 border-t border-border/35 px-6 py-4">
         <button
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="h-9 rounded-lg px-4 text-xs font-medium text-muted-foreground hover:bg-muted/40 disabled:opacity-40"
+          className="h-10 rounded-lg px-5 text-sm font-medium text-muted-foreground hover:bg-muted/40 disabled:opacity-40"
         >
           취소
         </button>
@@ -365,7 +365,7 @@ export function TradeDialogContent({
           type="button"
           onClick={onSubmit}
           disabled={disabled || loading || unavailable}
-          className={`h-9 rounded-lg px-5 text-xs font-semibold disabled:opacity-40 ${buying ? "bg-primary text-primary-foreground hover:brightness-110" : "bg-red-500 text-white hover:bg-red-500/90"}`}
+          className={`h-10 rounded-lg px-6 text-sm font-semibold disabled:opacity-40 ${buying ? "bg-primary text-primary-foreground hover:brightness-110" : "bg-red-500 text-white hover:bg-red-500/90"}`}
         >
           {loading
             ? "처리 중..."

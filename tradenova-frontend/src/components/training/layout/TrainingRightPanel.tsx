@@ -54,7 +54,7 @@ type Props = {
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
   riskRule: RiskRuleResponse | null;
   riskSaving: boolean;
-  saveRiskRule: (body: RiskRuleUpsertRequest) => void;
+  saveRiskRule: (body: RiskRuleUpsertRequest) => void | Promise<void>;
 };
 
 export function TrainingRightPanel({
