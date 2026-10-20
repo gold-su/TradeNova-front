@@ -1,6 +1,7 @@
 // src/api/http.ts
 import axios from "axios";
 import { clearAuthSession } from "@/lib/authSession";
+import { isPublicBetaClosedResponse, notifyPublicBetaClosed } from "@/lib/publicBetaAccess";
 
 /**
  * axios 인스턴스(커스텀 axios 객체)
@@ -42,6 +43,11 @@ http.interceptors.response.use(
     (res) => res,
     (error) => {
         const status = error?.response?.status;
+        const errorCode = error?.response?.data?.error;
+
+        if (isPublicBetaClosedResponse(status, errorCode)) {
+            notifyPublicBetaClosed();
+        }
 
         // 토큰이 잘못되었거나 만료되면, 일단 토큰 제거해서 재로그인 유도
         if (status === 401) {

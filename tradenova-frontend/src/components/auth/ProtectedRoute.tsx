@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { clearAuthSession, hasValidAccessToken } from "@/lib/authSession";
+import { PublicBetaGate } from "@/components/beta/PublicBetaGate";
 
 //accessToken 확인용
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -16,5 +17,5 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         return <Navigate to="/login" replace />;
     }
 
-    return <>{children} </>;
+    return <PublicBetaGate>{children}</PublicBetaGate>;
 }

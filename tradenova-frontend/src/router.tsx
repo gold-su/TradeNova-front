@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { PublicBetaGate } from "@/components/beta/PublicBetaGate";
 
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
@@ -64,7 +65,7 @@ export const router = createBrowserRouter([
         element: <AuthLayout />,
         children: [
             { path: "/login", element: <LoginPage /> },
-            { path: "/signup", element: <SignupPage /> },
+            { path: "/signup", element: <PublicBetaGate><SignupPage /></PublicBetaGate> },
         ],
     },
 ]);
