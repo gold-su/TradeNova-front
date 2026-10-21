@@ -178,6 +178,9 @@ export function useTrainingTrade({
     if (mutationGuard.current) return false;
     mutationGuard.current = true;
 
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+
     try {
       setLoading(true);
       setError(null);
