@@ -304,6 +304,10 @@ export type ReportDraftContent = {
   exitPlan?: string;
   riskNote?: string;
   freeNote?: string;
+  currentView?: "BULLISH" | "BEARISH" | "NEUTRAL";
+  entryCondition?: string;
+  invalidationCondition?: string;
+  ifInvalidated?: "EXIT" | "REDUCE" | "WAIT" | "REASSESS";
   tags?: string[];
 };
 

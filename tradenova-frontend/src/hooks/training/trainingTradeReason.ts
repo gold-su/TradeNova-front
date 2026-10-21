@@ -1,5 +1,5 @@
 import type { ReportDocumentResponse, TradeResponse } from "@/types/training";
-import type { TradeForm, TradeReasonItem } from "./training.types";
+import type { PlanRelation, TradeForm, TradeReasonItem } from "./training.types";
 
 export function clearPendingTradeReason(tradeForm: TradeForm): TradeForm {
   return {
@@ -9,6 +9,8 @@ export function clearPendingTradeReason(tradeForm: TradeForm): TradeForm {
     reasons: [],
     reasonMode: "MANUAL",
     scenarioSnapshotId: null,
+    planRelation: null,
+    changeReason: "",
   };
 }
 
@@ -33,7 +35,44 @@ export function reconcileScenarioSelection(
     ...tradeForm,
     reasonMode: "MANUAL",
     scenarioSnapshotId: null,
+    planRelation: null,
+    changeReason: "",
   };
+}
+
+export function selectPlanRelation(
+  tradeForm: TradeForm,
+  planRelation: PlanRelation,
+  scenarios: ReportDocumentResponse[],
+): TradeForm {
+  if (planRelation === "UNPLANNED") {
+    return {
+      ...tradeForm,
+      planRelation,
+      reasonMode: "MANUAL",
+      scenarioSnapshotId: null,
+      changeReason: "",
+    };
+  }
+  const selected = scenarios.some((item) => item.id === tradeForm.scenarioSnapshotId)
+    ? tradeForm.scenarioSnapshotId
+    : scenarios[0]?.id ?? null;
+  return {
+    ...tradeForm,
+    planRelation,
+    reasonMode: selected == null ? "MANUAL" : "SCENARIO",
+    scenarioSnapshotId: selected,
+    changeReason: planRelation === "CHANGED_PLAN" ? tradeForm.changeReason : "",
+  };
+}
+
+export function canSubmitDecisionAction(tradeForm: TradeForm) {
+  if (!tradeForm.planRelation) return false;
+  if (
+    tradeForm.planRelation !== "UNPLANNED" &&
+    (tradeForm.reasonMode !== "SCENARIO" || tradeForm.scenarioSnapshotId == null)
+  ) return false;
+  return tradeForm.planRelation !== "CHANGED_PLAN" || Boolean(tradeForm.changeReason.trim());
 }
 
 export function selectTradeScenario(
@@ -46,6 +85,14 @@ export function selectTradeScenario(
     ...tradeForm,
     reasonMode: scenario ? "SCENARIO" : "MANUAL",
     scenarioSnapshotId: scenario?.id ?? null,
+    planRelation: scenario
+      ? tradeForm.planRelation === "CHANGED_PLAN"
+        ? "CHANGED_PLAN"
+        : "FOLLOWED_PLAN"
+      : "UNPLANNED",
+    changeReason: scenario && tradeForm.planRelation === "CHANGED_PLAN"
+      ? tradeForm.changeReason
+      : "",
   };
 }
 
@@ -71,15 +118,15 @@ export function findLatestScenarioSnapshot(
 
 export function createScenarioClaim(
   side: "BUY" | "SELL",
+  planRelation: PlanRelation,
   createdAt = new Date().toISOString(),
 ): TradeReasonItem {
   return {
     id: `scenario-${side.toLowerCase()}`,
-    title: side === "BUY" ? "사전 계획대로 진입" : "사전 계획대로 청산",
-    entryReason:
-      side === "BUY"
-        ? "사전 시나리오의 진입 조건이 충족되었다고 판단"
-        : "사전 시나리오의 청산 또는 무효화 조건에 따라 실행했다고 판단",
+    title: planRelation === "FOLLOWED_PLAN" ? "기존 계획 실행" : "계획 변경 후 실행",
+    entryReason: planRelation === "FOLLOWED_PLAN"
+      ? `${side === "BUY" ? "진입" : "청산"} 조건이 충족되었다고 사용자가 기록함`
+      : "사전 계획을 변경해 실행했다고 사용자가 기록함",
     riskNote: "",
     createdAt,
   };
@@ -98,10 +145,12 @@ export function buildTradeEventPayload({
   tradeForm: TradeForm;
   sellAll?: boolean;
 }) {
-  const scenarioSelected =
+  const scenarioSelected = tradeForm.planRelation !== "UNPLANNED" &&
     tradeForm.reasonMode === "SCENARIO" && tradeForm.scenarioSnapshotId != null;
   const reasons = [
-    ...(scenarioSelected ? [createScenarioClaim(side)] : []),
+    ...(scenarioSelected && tradeForm.planRelation
+      ? [createScenarioClaim(side, tradeForm.planRelation)]
+      : []),
     ...(tradeForm.reasons ?? []),
   ];
 
@@ -117,10 +166,43 @@ export function buildTradeEventPayload({
           reasonMode: "SCENARIO" as const,
         }
       : { reasonMode: "MANUAL" as const }),
+    ...(tradeForm.planRelation ? { planRelation: tradeForm.planRelation } : {}),
+    ...(tradeForm.planRelation === "CHANGED_PLAN"
+      ? { changeReason: tradeForm.changeReason.trim() }
+      : {}),
     reasons,
     reasonCount: reasons.length,
     savedForAiReview: true,
     sellAll,
     reasonVersion: 2,
+  };
+}
+
+export function buildWaitEventPayload({
+  candleTime,
+  price,
+  tradeForm,
+}: {
+  candleTime: number | null;
+  price: number | null;
+  tradeForm: TradeForm;
+}) {
+  const scenarioSelected = tradeForm.planRelation !== "UNPLANNED" &&
+    tradeForm.reasonMode === "SCENARIO" && tradeForm.scenarioSnapshotId != null;
+  return {
+    side: "WAIT" as const,
+    candleTime,
+    price,
+    ...(scenarioSelected
+      ? { reasonMode: "SCENARIO" as const, scenarioSnapshotId: tradeForm.scenarioSnapshotId }
+      : { reasonMode: "MANUAL" as const }),
+    ...(tradeForm.planRelation ? { planRelation: tradeForm.planRelation } : {}),
+    ...(tradeForm.planRelation === "CHANGED_PLAN"
+      ? { changeReason: tradeForm.changeReason.trim() }
+      : {}),
+    reasons: tradeForm.reasons ?? [],
+    reasonCount: tradeForm.reasons?.length ?? 0,
+    savedForAiReview: true,
+    reasonVersion: 3,
   };
 }

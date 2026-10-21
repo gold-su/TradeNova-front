@@ -155,6 +155,9 @@ export function useTrainingSessionPage() {
     applyTrade,
     onTradeExecuted: addTradeMarker,
     currentPositionQty: core.activeProgress?.positionQty,
+    currentPrice: core.activeProgress?.currentPrice,
+    currentCandleTime:
+      core.activeProgress?.revealedCandles.at(-1)?.t ?? null,
     appendEvent: report.appendEvent,
   });
 
@@ -421,6 +424,7 @@ export function useTrainingSessionPage() {
     setTradeForm: trade.setTradeForm,
     executeBuy: trade.executeBuy,
     executeSell: trade.executeSell,
+    executeWait: trade.executeWait,
 
     // ===== 액션 =====
     onCreateSession,

@@ -42,7 +42,7 @@ test("Scenario history is chart scoped, newest first, and does not mutate input"
   assert.deepEqual(getScenarioHistory(items, null), []);
 });
 test("every scenario input has a concise writing example/helper", () => {
-  assert.equal(SCENARIO_FIELDS.length, 5);
+  assert.equal(SCENARIO_FIELDS.length, 2);
   assert.ok(SCENARIO_FIELDS.every((field) => field.example.length > 10));
 });
 test("trade history renders scenario linkage, manual counts and legacy reasons without internal fields", () => {

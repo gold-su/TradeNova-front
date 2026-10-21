@@ -4,9 +4,12 @@ import type { ReportDocumentResponse, TradeResponse } from "../src/types/trainin
 import type { TradeForm } from "../src/hooks/training/training.types.ts";
 import {
   buildTradeEventPayload,
+  buildWaitEventPayload,
+  canSubmitDecisionAction,
   clearPendingTradeReason,
   findLatestScenarioSnapshot,
   reconcileScenarioSelection,
+  selectPlanRelation,
 } from "../src/hooks/training/trainingTradeReason.ts";
 
 const snapshot = (
@@ -55,6 +58,8 @@ const form = (overrides: Partial<TradeForm> = {}): TradeForm => ({
   reasons: [],
   reasonMode: "MANUAL",
   scenarioSnapshotId: null,
+  planRelation: null,
+  changeReason: "",
   ...overrides,
 });
 
@@ -81,29 +86,28 @@ test("same-time Scenario snapshots use the greater id deterministically", () => 
   );
 });
 
-test("Scenario BUY payload has the reference and a user-claim reason", () => {
+test("FOLLOWED_PLAN BUY payload has the explicit relation and reference", () => {
   const payload = buildTradeEventPayload({
     side: "BUY",
     qty: 10,
     res: response,
-    tradeForm: form({ reasonMode: "SCENARIO", scenarioSnapshotId: 55 }),
+    tradeForm: form({ reasonMode: "SCENARIO", scenarioSnapshotId: 55, planRelation: "FOLLOWED_PLAN" }),
   });
 
   assert.equal(payload.scenarioSnapshotId, 55);
   assert.equal(payload.reasonMode, "SCENARIO");
-  assert.equal(payload.reasons[0].title, "사전 계획대로 진입");
-  assert.match(payload.reasons[0].entryReason, /판단/);
+  assert.equal(payload.planRelation, "FOLLOWED_PLAN");
+  assert.equal(payload.reasons[0].title, "기존 계획 실행");
 });
 
 test("Scenario SELL payload has a liquidation/invalidation user claim", () => {
   const payload = buildTradeEventPayload({
     side: "SELL",
     res: response,
-    tradeForm: form({ reasonMode: "SCENARIO", scenarioSnapshotId: 55 }),
+    tradeForm: form({ reasonMode: "SCENARIO", scenarioSnapshotId: 55, planRelation: "FOLLOWED_PLAN" }),
   });
 
-  assert.equal(payload.reasons[0].title, "사전 계획대로 청산");
-  assert.match(payload.reasons[0].entryReason, /청산 또는 무효화/);
+  assert.equal(payload.reasons[0].title, "기존 계획 실행");
 });
 
 test("manual mode remains unlinked and preserves manual reasons", () => {
@@ -125,10 +129,14 @@ test("Scenario and an additional manual reason are both retained", () => {
     tradeForm: form({
       reasonMode: "SCENARIO",
       scenarioSnapshotId: 55,
+      planRelation: "CHANGED_PLAN",
+      changeReason: "거래량 돌파가 새로 확인됨",
       reasons: [manualReason],
     }),
   });
 
+  assert.equal(payload.planRelation, "CHANGED_PLAN");
+  assert.equal(payload.changeReason, "거래량 돌파가 새로 확인됨");
   assert.equal(payload.reasonCount, 2);
   assert.equal(payload.reasons[1], manualReason);
 });
@@ -138,12 +146,14 @@ test("pending reasons and Scenario selection clear without changing snapshots", 
   const cleared = clearPendingTradeReason(form({
     reasonMode: "SCENARIO",
     scenarioSnapshotId: 55,
+    planRelation: "FOLLOWED_PLAN",
     reasons: [manualReason],
   }));
 
   assert.deepEqual(cleared.reasons, []);
   assert.equal(cleared.reasonMode, "MANUAL");
   assert.equal(cleared.scenarioSnapshotId, null);
+  assert.equal(cleared.planRelation, null);
   assert.equal(findLatestScenarioSnapshot([savedScenario], 7), savedScenario);
 });
 
@@ -215,4 +225,28 @@ test("a reconciled stale selection emits a manual payload without its old id", (
 
   assert.equal(payload.reasonMode, "MANUAL");
   assert.equal("scenarioSnapshotId" in payload, false);
+});
+
+test("plan relation requires a plan and CHANGED_PLAN requires a reason", () => {
+  const scenarios = [snapshot(55, 7, ["SCENARIO"], "2026-01-01T00:00:00Z")];
+  const followed = selectPlanRelation(form(), "FOLLOWED_PLAN", scenarios);
+  assert.equal(followed.scenarioSnapshotId, 55);
+  assert.equal(canSubmitDecisionAction(followed), true);
+
+  const changed = selectPlanRelation(form(), "CHANGED_PLAN", scenarios);
+  assert.equal(canSubmitDecisionAction(changed), false);
+  assert.equal(canSubmitDecisionAction({ ...changed, changeReason: "돌파 확인" }), true);
+  assert.equal(canSubmitDecisionAction(selectPlanRelation(form(), "UNPLANNED", scenarios)), true);
+});
+
+test("WAIT payload records the user-selected relation without a canonical trade", () => {
+  const payload = buildWaitEventPayload({
+    candleTime: 123,
+    price: 100,
+    tradeForm: form({ planRelation: "UNPLANNED" }),
+  });
+  assert.equal(payload.side, "WAIT");
+  assert.equal(payload.planRelation, "UNPLANNED");
+  assert.equal("tradeId" in payload, false);
+  assert.equal(payload.savedForAiReview, true);
 });

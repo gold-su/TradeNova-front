@@ -11,7 +11,7 @@ import {
   ORDER_PERCENTAGES,
 } from "./trainingOrderCalculations";
 import { updateActionReason } from "@/hooks/training/trainingWorkspaceState";
-import { selectTradeScenario } from "@/hooks/training/trainingTradeReason";
+import { canSubmitDecisionAction } from "@/hooks/training/trainingTradeReason";
 import {
   removeQuickPhraseReason,
   selectedQuickPhraseIds,
@@ -20,7 +20,8 @@ import {
 } from "@/hooks/training/quickPhraseSelection";
 import { QuickPhrasePicker } from "../trade-reason/QuickPhrasePicker";
 import { QuickPhraseManagerDialog } from "../trade-reason/QuickPhraseManagerDialog";
-import { Check, ChevronDown, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
+import { PlanRelationSection } from "./PlanRelationSection";
 
 type Props = {
   side: "BUY" | "SELL";
@@ -67,16 +68,8 @@ export function TradeDialogContent({
   onSubmit,
   validQuantity,
 }: Props) {
-  const [planOpen, setPlanOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const buying = side === "BUY";
-  const selectedIndex =
-    tradeForm.reasonMode === "SCENARIO"
-      ? scenarios.findIndex((item) => item.id === tradeForm.scenarioSnapshotId)
-      : -1;
-  const selectedPlan = selectedIndex >= 0 ? scenarios[selectedIndex] : null;
-  const selectedVersion =
-    selectedIndex >= 0 ? scenarios.length - selectedIndex : null;
   const action = tradeForm.reasons?.find(
     (reason) => reason.id === "action-input",
   );
@@ -87,6 +80,7 @@ export function TradeDialogContent({
     !buying && sellAllSelected ? positionQty : validQuantity;
   const amount = calculateEstimatedAmount(orderQuantity, currentPrice);
   const unavailable =
+    !canSubmitDecisionAction(tradeForm) ||
     orderQuantity <= 0 ||
     (buying
       ? amount > cashBalance || currentPrice <= 0
@@ -188,111 +182,12 @@ export function TradeDialogContent({
             {amount.toLocaleString()}원
           </strong>
         </div>
-        <section className="border-t border-border/30 pt-4">
-          <label
-            htmlFor="trade-plan"
-            className="mb-2 block text-sm font-semibold"
-          >
-            적용 계획
-          </label>
-          <div
-            className="relative"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setPlanOpen(false);
-            }}
-          >
-            <button
-              id="trade-plan"
-              type="button"
-              role="combobox"
-              aria-label="적용 계획"
-              aria-haspopup="listbox"
-              aria-expanded={planOpen}
-              aria-controls="trade-plan-options"
-              disabled={loading}
-              onClick={() => setPlanOpen((open) => !open)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && planOpen) {
-                  event.stopPropagation();
-                  setPlanOpen(false);
-                }
-              }}
-              className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-border/65 bg-card px-3.5 text-left text-sm text-foreground outline-none transition hover:border-primary/45 hover:bg-muted/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-40"
-            >
-              <span className="truncate">
-                {selectedPlan
-                  ? `v${selectedVersion} · ${selectedPlan.contentJson.thesis || "관점 미작성"}${selectedIndex === 0 ? " (현재 계획)" : ""}`
-                  : "계획 없이 거래"}
-              </span>
-              <ChevronDown
-                aria-hidden="true"
-                className="h-4 w-4 shrink-0 text-primary"
-              />
-            </button>
-            {planOpen && (
-              <div
-                id="trade-plan-options"
-                role="listbox"
-                aria-label="적용 계획"
-                className="thin-scrollbar absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-52 overflow-y-auto rounded-md border border-border/75 bg-popover p-1 shadow-xl shadow-black/40"
-              >
-                {scenarios.map((scenario, index) => (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selectedPlan?.id === scenario.id}
-                    onClick={() => {
-                      setTradeForm((prev) =>
-                        selectTradeScenario(prev, scenario.id, scenarios),
-                      );
-                      setPlanOpen(false);
-                    }}
-                    className="flex w-full items-center justify-between gap-2 rounded px-2.5 py-2 text-left text-[13px] text-popover-foreground outline-none hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary aria-selected:text-primary"
-                  >
-                    <span className="truncate">
-                      v{scenarios.length - index} ·{" "}
-                      {scenario.contentJson.thesis || "관점 미작성"}
-                      {index === 0 ? " (현재 계획)" : ""}
-                    </span>
-                    {selectedPlan?.id === scenario.id && (
-                      <Check className="h-4 w-4 shrink-0" />
-                    )}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={!selectedPlan}
-                  onClick={() => {
-                    setTradeForm((prev) =>
-                      selectTradeScenario(prev, null, scenarios),
-                    );
-                    setPlanOpen(false);
-                  }}
-                  className="flex w-full items-center justify-between gap-2 rounded px-2.5 py-2 text-left text-[13px] text-popover-foreground outline-none hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary aria-selected:text-primary"
-                >
-                  계획 없이 거래
-                  {!selectedPlan && <Check className="h-4 w-4 shrink-0" />}
-                </button>
-              </div>
-            )}
-          </div>
-          {selectedPlan && (
-            <div className="mt-3 space-y-1 text-xs leading-5">
-              <p className="font-semibold text-primary">
-                PLAN · v{selectedVersion}
-              </p>
-              <p className="line-clamp-2 text-foreground/90">
-                {selectedPlan.contentJson.thesis}
-              </p>
-              <p className="line-clamp-2 text-muted-foreground">
-                진입: {selectedPlan.contentJson.entryReason || "조건 미작성"}
-              </p>
-            </div>
-          )}
-        </section>
+        <PlanRelationSection
+          tradeForm={tradeForm}
+          setTradeForm={setTradeForm}
+          scenarios={scenarios}
+          disabled={loading}
+        />
         <fieldset disabled={loading} className="border-t border-border/35 pt-4">
           <div className="text-[10px] font-bold tracking-widest text-muted-foreground">
             ACTION
@@ -311,14 +206,6 @@ export function TradeDialogContent({
               <Settings className="h-3.5 w-3.5" />
             </button>
           </div>
-          {selectedPlan && (
-            <div className="mb-2 text-xs text-primary">
-              PLAN · v{selectedVersion} 연결{" "}
-              <span className="ml-1 text-muted-foreground">
-                · 추가 근거 (선택)
-              </span>
-            </div>
-          )}
           <QuickPhrasePicker
             items={quickPhrases}
             selectedIds={selectedPhraseIds}
@@ -331,11 +218,7 @@ export function TradeDialogContent({
             rows={3}
             value={action?.entryReason ?? ""}
             onChange={(event) => updateReason(event.target.value)}
-            placeholder={
-              selectedPlan
-                ? "계획 외에 이번 거래에서 추가로 본 점을 기록하세요."
-                : "예: 돌파 이후 지지를 확인해 진입"
-            }
+            placeholder="추가로 본 근거가 있다면 짧게 기록하세요. (선택)"
             className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
           />
         </fieldset>
@@ -346,9 +229,11 @@ export function TradeDialogContent({
         )}
         {unavailable && (
           <p className="text-xs text-muted-foreground">
-            {buying
-              ? "현금 잔액 내에서 주문 수량을 설정해주세요."
-              : "보유수량 내에서 매도 수량을 설정해주세요."}
+            {!canSubmitDecisionAction(tradeForm)
+              ? "이번 행동이 기존 계획과 어떤 관계인지 선택해주세요."
+              : buying
+                ? "현금 잔액 내에서 주문 수량을 설정해주세요."
+                : "보유수량 내에서 매도 수량을 설정해주세요."}
           </p>
         )}
       </div>

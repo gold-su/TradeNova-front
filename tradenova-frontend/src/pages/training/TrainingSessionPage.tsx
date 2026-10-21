@@ -165,6 +165,7 @@ export default function TrainingSessionPage() {
         setTradeForm={page.setTradeForm}
         executeBuy={page.executeBuy}
         executeSell={page.executeSell}
+        executeWait={page.executeWait}
         lastSavedMessage={page.lastSavedMessage}
         riskRule={page.riskRule}
         riskSaving={page.riskSaving}

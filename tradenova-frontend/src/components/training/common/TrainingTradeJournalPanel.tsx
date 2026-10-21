@@ -25,13 +25,16 @@ import {
   submitRiskRuleDraft,
 } from "./riskRuleForm";
 import {
+  canSubmitDecisionAction,
   reconcileScenarioSelection,
 } from "@/hooks/training/trainingTradeReason";
 import { getScenarioHistory } from "@/hooks/training/trainingDecisionHistory";
 import {
+  updateActionReason,
   transitionOrderMode,
   type TrainingOrderMode,
 } from "@/hooks/training/trainingWorkspaceState";
+import { PlanRelationSection } from "./PlanRelationSection";
 
 type Props = {
   tradeForm: TradeForm;
@@ -48,11 +51,12 @@ type Props = {
 
   lastSavedMessage?: {
     text: string;
-    side: "BUY" | "SELL";
+    side: "BUY" | "SELL" | "WAIT";
   } | null;
 
   onBuy: () => Promise<boolean>;
   onSell: () => Promise<boolean>;
+  onWait: () => Promise<boolean>;
   onSellAll: () => Promise<boolean>;
   onNext: () => void;
 
@@ -87,6 +91,7 @@ export function TrainingTradeJournalPanel({
   lastSavedMessage,
   onBuy,
   onSell,
+  onWait,
   onSellAll,
   onNext,
   advanceSteps,
@@ -102,6 +107,7 @@ export function TrainingTradeJournalPanel({
   chartId,
 }: Props) {
   const [orderMode, setOrderMode] = useState<TrainingOrderMode>(null);
+  const [waitOpen, setWaitOpen] = useState(false);
   const [sellAllSelected, setSellAllSelected] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
@@ -166,7 +172,13 @@ export function TrainingTradeJournalPanel({
       <div className="pb-2">
         {lastSavedMessage && (
           <div
-            className={`mb-3 flex h-9 items-center gap-2 rounded-lg border px-3 text-xs ${lastSavedMessage.side === "BUY" ? "border-primary/20 bg-primary/[0.06] text-primary" : "border-red-500/20 bg-red-500/10 text-red-300"}`}
+            className={`mb-3 flex h-9 items-center gap-2 rounded-lg border px-3 text-xs ${
+              lastSavedMessage.side === "BUY"
+                ? "border-primary/20 bg-primary/[0.06] text-primary"
+                : lastSavedMessage.side === "SELL"
+                  ? "border-red-500/20 bg-red-500/10 text-red-300"
+                  : "border-sky-500/20 bg-sky-500/10 text-sky-200"
+            }`}
             role="status"
             aria-live="polite"
           >
@@ -183,7 +195,7 @@ export function TrainingTradeJournalPanel({
               </div>
               <div className="text-sm font-semibold">거래 실행</div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => openOrder("BUY")}
@@ -191,6 +203,14 @@ export function TrainingTradeJournalPanel({
                 className={`h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
                 BUY
+              </button>
+              <button
+                type="button"
+                onClick={() => setWaitOpen(true)}
+                disabled={disabled}
+                className={`h-9 rounded-lg bg-sky-500/10 text-sm font-bold text-sky-300 transition hover:bg-sky-500/15 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
+              >
+                WAIT
               </button>
               <button
                 type="button"
@@ -319,6 +339,56 @@ export function TrainingTradeJournalPanel({
             onSubmit={executeOrder}
             validQuantity={validQuantity}
           />
+        </WorkspaceDialog>
+      )}
+      {waitOpen && (
+        <WorkspaceDialog
+          medium
+          title="WAIT"
+          description="지금 거래하지 않는 판단과 계획의 관계를 기록합니다."
+          busy={loading}
+          onClose={() => setWaitOpen(false)}
+        >
+          <div className="thin-scrollbar min-h-0 space-y-4 overflow-y-auto px-6 pb-5">
+            <PlanRelationSection
+              tradeForm={tradeForm}
+              setTradeForm={setTradeForm}
+              scenarios={scenarios}
+              disabled={loading}
+            />
+            <label className="block text-sm font-semibold">
+              관망 이유 <span className="font-normal text-muted-foreground">(선택)</span>
+              <textarea
+                rows={3}
+                value={tradeForm.reasons.find((reason) => reason.id === "action-input")?.entryReason ?? ""}
+                onChange={(event) =>
+                  setTradeForm((previous) => updateActionReason(previous, event.target.value))
+                }
+                placeholder="예: 진입 조건이 아직 충족되지 않음"
+                className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm font-normal leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
+              />
+            </label>
+          </div>
+          <footer className="flex shrink-0 justify-end gap-2 border-t border-border/35 px-6 py-4">
+            <button
+              type="button"
+              onClick={() => setWaitOpen(false)}
+              disabled={loading}
+              className="h-10 rounded-lg px-5 text-sm text-muted-foreground hover:bg-muted/40"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              disabled={loading || !canSubmitDecisionAction(tradeForm)}
+              onClick={async () => {
+                if (await onWait()) setWaitOpen(false);
+              }}
+              className="h-10 rounded-lg bg-sky-500/15 px-6 text-sm font-semibold text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+            >
+              {loading ? "저장 중..." : "WAIT 기록"}
+            </button>
+          </footer>
         </WorkspaceDialog>
       )}
       {riskOpen && (

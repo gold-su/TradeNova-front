@@ -5,34 +5,16 @@ import type {
 
 export const SCENARIO_FIELDS = [
   {
-    key: "thesis",
-    label: "현재 판단",
-    helper: "지금 차트에서 가장 중요하게 보고 있는 흐름이나 신호는 무엇인가요?",
-    example: "예: 저점이 높아지고 있지만 거래량이 약해 반등 확인이 더 필요함",
-  },
-  {
     key: "entryReason",
-    label: "진입 기준",
-    helper: "어떤 조건이 충족되면 매수할 생각인가요?",
-    example: "예: 최근 고점 돌파와 함께 거래량이 최근 평균보다 뚜렷하게 증가할 때",
-  },
-  {
-    key: "exitPlan",
-    label: "리스크·청산 기준",
-    helper: "판단이 틀렸다고 볼 조건과 이익을 실현할 조건은 무엇인가요?",
-    example: "예: 최근 저점 이탈 시 손절, 이전 고점 부근에서 일부 익절",
+    label: "진입 조건",
+    helper: "어떤 조건이 되면 진입할 건가요?",
+    example: "예: 최근 고점 돌파와 거래량 증가를 함께 확인할 때",
   },
   {
     key: "riskNote",
-    label: "계획 변경 조건",
-    helper: "어떤 변화가 생기면 지금 계획을 다시 검토할 건가요?",
-    example: "예: 돌파 후 다시 박스권 안으로 내려오면 기존 상승 가정 재검토",
-  },
-  {
-    key: "freeNote",
-    label: "메모",
-    helper: "추가로 기억할 판단 근거나 조건을 기록하세요. (선택)",
-    example: "추가로 기억할 판단 근거나 조건을 기록하세요. (선택)",
+    label: "무효화 조건",
+    helper: "어떤 변화가 생기면 지금 판단이 틀렸다고 볼 건가요?",
+    example: "예: 종가가 최근 저점 아래로 내려가면 현재 관점 무효화",
   },
 ] as const;
 
@@ -91,9 +73,18 @@ export function getTradeReasonHistory(
         id: item.id,
         createdAt: item.createdAt,
         side:
-          payload.side === "SELL" || item.title.includes("SELL")
-            ? "SELL"
-            : "BUY",
+          payload.side === "WAIT"
+            ? "WAIT"
+            : payload.side === "SELL" || item.title.includes("SELL")
+              ? "SELL"
+              : "BUY",
+        planRelation:
+          payload.planRelation === "FOLLOWED_PLAN" ||
+          payload.planRelation === "CHANGED_PLAN" ||
+          payload.planRelation === "UNPLANNED"
+            ? payload.planRelation
+            : null,
+        changeReason: text(payload.changeReason),
         label: linked
           ? `계획 연결${manualCount ? ` · 추가 근거 ${manualCount}개` : ""}`
           : "계획 없이 거래",
@@ -109,5 +100,10 @@ export function getTradeReasonHistory(
         reasons,
       };
     })
-    .filter((item) => item.reasons.length > 0 || item.scenarioId != null);
+    .filter(
+      (item) =>
+        item.reasons.length > 0 ||
+        item.scenarioId != null ||
+        item.planRelation != null,
+    );
 }

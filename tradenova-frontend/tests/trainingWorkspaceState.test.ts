@@ -99,6 +99,8 @@ const form: TradeForm = {
   riskNote: "",
   reasonMode: "MANUAL",
   scenarioSnapshotId: null,
+  planRelation: null,
+  changeReason: "",
 };
 test("visible action text is included without a separate add action; typing never selects a plan", () => {
   const typed = updateActionReason(form, "거래량 확인");
@@ -116,7 +118,7 @@ test("visible action text is included without a separate add action; typing neve
 });
 test("plan plus visible action retains explicit selection and resets pending reasons on success", () => {
   const typed = updateActionReason(
-    { ...form, reasonMode: "SCENARIO", scenarioSnapshotId: 7 },
+    { ...form, reasonMode: "SCENARIO", scenarioSnapshotId: 7, planRelation: "FOLLOWED_PLAN" },
     "지지 확인",
   );
   const payload = buildTradeEventPayload({
@@ -126,6 +128,6 @@ test("plan plus visible action retains explicit selection and resets pending rea
   });
   assert.equal(payload.scenarioSnapshotId, 7);
   assert.equal(payload.reasons.length, 2);
-  assert.equal(payload.reasons[0].title, "사전 계획대로 청산");
+  assert.equal(payload.reasons[0].title, "기존 계획 실행");
   assert.equal(clearPendingTradeReason(typed).reasons?.length, 0);
 });

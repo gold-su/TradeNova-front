@@ -23,6 +23,13 @@ import {
   type ScenarioContent,
 } from "./scenarioDraftState";
 import { resizeScenarioTextarea } from "./scenarioTextarea";
+import {
+  CURRENT_VIEW_OPTIONS,
+  decisionCurrentViewLabel,
+  fromDecisionCaptureContent,
+  INVALIDATION_ACTION_OPTIONS,
+  isDecisionCaptureComplete,
+} from "@/hooks/training/decisionCapture";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -44,6 +51,8 @@ const time = (value: string) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+const invalidationActionLabel = (value?: string) =>
+  INVALIDATION_ACTION_OPTIONS.find((option) => option.value === value)?.label ?? value ?? "—";
 
 function AutoGrowTextarea({
   value,
@@ -118,13 +127,7 @@ export function TrainingPlanSection({
   };
   const loadCurrent = () => {
     if (!latestScenario) return;
-    const current = {
-      thesis: latestScenario?.contentJson.thesis ?? "",
-      entryReason: latestScenario?.contentJson.entryReason ?? "",
-      exitPlan: latestScenario?.contentJson.exitPlan ?? "",
-      riskNote: latestScenario?.contentJson.riskNote ?? "",
-      freeNote: latestScenario?.contentJson.freeNote ?? "",
-    };
+    const current = fromDecisionCaptureContent(latestScenario.contentJson);
     setForm(current);
     if (activeChart) {
       setDraftsByChart((prev) => storeScenarioDraft(prev, activeChart.chartId, current));
@@ -133,7 +136,7 @@ export function TrainingPlanSection({
     setSuccess(null);
   };
   const save = async () => {
-    if (!activeChart || !form.thesis.trim() || saving) return;
+    if (!activeChart || !isDecisionCaptureComplete(form) || saving) return;
     setSaving(true);
     setError(null);
     try {
@@ -157,6 +160,15 @@ export function TrainingPlanSection({
     setSuccess(null);
     setExpandedId(null);
     onSelectChart(chartId);
+  };
+  const updateForm = (next: ScenarioContent) => {
+    setSuccess(null);
+    setForm(next);
+    if (activeChart) {
+      setDraftsByChart((drafts) =>
+        storeScenarioDraft(drafts, activeChart.chartId, next),
+      );
+    }
   };
   return (
     <>
@@ -188,7 +200,9 @@ export function TrainingPlanSection({
         {latestScenario ? (
           <div className="mt-2.5 space-y-1 text-[13px] leading-5">
             <p className="line-clamp-2 text-foreground/90">
-              {latestScenario.contentJson.thesis}
+              {decisionCurrentViewLabel(
+                latestScenario.contentJson.currentView ?? latestScenario.contentJson.thesis,
+              )}
             </p>
             {latestScenario.contentJson.entryReason && (
               <p className="line-clamp-1 text-muted-foreground">
@@ -283,47 +297,44 @@ export function TrainingPlanSection({
           >
             {tab === 0 && (
               <fieldset disabled={saving} className="space-y-4">
-                {SCENARIO_FIELDS.map(
-                  ({ key, label, helper, example }, index) => (
-                    <label key={key} className="block">
-                      <span className="flex items-baseline gap-2">
-                        <span className="w-6 text-sm tabular-nums text-muted-foreground">
-                          {key === "freeNote" ? "·" : `0${index + 1}`}
-                        </span>
-                        <span className="text-[17px] font-semibold">
-                          {label}
-                          {key === "thesis" && (
-                            <span className="text-primary"> *</span>
-                          )}
-                        </span>
+                <DecisionChoice
+                  index="01"
+                  label="현재 관점"
+                  helper="지금 차트를 어느 방향으로 보고 있나요?"
+                  value={form.thesis}
+                  options={CURRENT_VIEW_OPTIONS}
+                  onChange={(value) => updateForm({ ...form, thesis: value })}
+                />
+                {SCENARIO_FIELDS.map(({ key, label, helper, example }, index) => (
+                  <label key={key} className="block">
+                    <span className="flex items-baseline gap-2">
+                      <span className="w-6 text-sm tabular-nums text-muted-foreground">
+                        0{index + 2}
                       </span>
-                      <span className="mb-1 ml-8 block text-[13px] leading-5 text-muted-foreground">
-                        {helper}
+                      <span className="text-[17px] font-semibold">
+                        {label}<span className="text-primary"> *</span>
                       </span>
-                      <AutoGrowTextarea
-                        value={form[key]}
-                        placeholder={example}
-                        onChange={(event) => {
-                          setSuccess(null);
-                          const next = {
-                            ...form,
-                            [key]: event.target.value,
-                          };
-                          setForm(next);
-                          if (activeChart) {
-                            setDraftsByChart((drafts) =>
-                              storeScenarioDraft(
-                                drafts,
-                                activeChart.chartId,
-                                next,
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                    </label>
-                  ),
-                )}
+                    </span>
+                    <span className="mb-1 ml-8 block text-[13px] leading-5 text-muted-foreground">
+                      {helper}
+                    </span>
+                    <AutoGrowTextarea
+                      value={form[key]}
+                      placeholder={example}
+                      onChange={(event) =>
+                        updateForm({ ...form, [key]: event.target.value })
+                      }
+                    />
+                  </label>
+                ))}
+                <DecisionChoice
+                  index="04"
+                  label="무효화되면"
+                  helper="판단이 틀렸다면 어떻게 행동할 건가요?"
+                  value={form.exitPlan}
+                  options={INVALIDATION_ACTION_OPTIONS}
+                  onChange={(value) => updateForm({ ...form, exitPlan: value })}
+                />
                 {error && (
                   <p role="alert" className="text-xs text-red-300">
                     {error}
@@ -363,7 +374,9 @@ export function TrainingPlanSection({
                         </time>
                       </div>
                       <p className="mt-2 truncate text-[13px] leading-5">
-                        {scenario.contentJson.thesis || "관점 미작성"}
+                        {decisionCurrentViewLabel(
+                          scenario.contentJson.currentView ?? scenario.contentJson.thesis,
+                        )}
                       </p>
                       <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">
                         진입:{" "}
@@ -383,14 +396,14 @@ export function TrainingPlanSection({
                       </button>
                       {expandedId === scenario.id && (
                         <dl className="mt-3 grid grid-cols-[72px_1fr] gap-x-2 gap-y-2 border-l border-border/50 pl-3 text-xs leading-5">
-                          {SCENARIO_FIELDS.map(({ key, label }) => (
-                            <div key={key} className="contents">
-                              <dt className="text-muted-foreground">{label}</dt>
-                              <dd className="whitespace-pre-wrap break-words">
-                                {scenario.contentJson[key] || "—"}
-                              </dd>
-                            </div>
-                          ))}
+                          <dt className="text-muted-foreground">현재 관점</dt>
+                          <dd>{decisionCurrentViewLabel(scenario.contentJson.currentView ?? scenario.contentJson.thesis)}</dd>
+                          <dt className="text-muted-foreground">진입 조건</dt>
+                          <dd className="whitespace-pre-wrap break-words">{scenario.contentJson.entryCondition ?? scenario.contentJson.entryReason ?? "—"}</dd>
+                          <dt className="text-muted-foreground">무효화 조건</dt>
+                          <dd className="whitespace-pre-wrap break-words">{scenario.contentJson.invalidationCondition ?? scenario.contentJson.riskNote ?? "—"}</dd>
+                          <dt className="text-muted-foreground">무효화되면</dt>
+                          <dd>{invalidationActionLabel(scenario.contentJson.ifInvalidated ?? scenario.contentJson.exitPlan)}</dd>
                         </dl>
                       )}
                     </article>
@@ -403,7 +416,7 @@ export function TrainingPlanSection({
                 {trades.length === 0 ? (
                   <Empty
                     title="아직 기록된 매매 근거가 없습니다."
-                    detail="BUY 또는 SELL 후 작성한 판단이 여기에 표시됩니다."
+                    detail="BUY, SELL 또는 WAIT 후 기록한 판단이 여기에 표시됩니다."
                   />
                 ) : (
                   trades.map((trade) => (
@@ -413,7 +426,7 @@ export function TrainingPlanSection({
                     >
                       <div className="flex items-center gap-2">
                         <strong
-                          className={`text-sm ${trade.side === "BUY" ? "text-primary" : "text-red-300"}`}
+                          className={`text-sm ${trade.side === "BUY" ? "text-primary" : trade.side === "SELL" ? "text-red-300" : "text-sky-300"}`}
                         >
                           {trade.side}
                         </strong>
@@ -444,6 +457,15 @@ export function TrainingPlanSection({
                           ? ` · ${trade.label.split(" · ")[1]}`
                           : ""}
                       </p>
+                      {trade.planRelation && (
+                        <p className="mt-1 text-[11px] font-medium text-foreground/75">
+                          {trade.planRelation === "FOLLOWED_PLAN"
+                            ? "기존 계획 실행"
+                            : trade.planRelation === "CHANGED_PLAN"
+                              ? `계획 변경${trade.changeReason ? ` · ${trade.changeReason}` : ""}`
+                              : "즉석 판단"}
+                        </p>
+                      )}
                       {trade.reasons.map((reason, index) => (
                         <p
                           key={index}
@@ -485,7 +507,7 @@ export function TrainingPlanSection({
                 <button
                   type="button"
                   onClick={save}
-                  disabled={saving || !form.thesis.trim()}
+                  disabled={saving || !isDecisionCaptureComplete(form)}
                   className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {saving ? "저장 중..." : "새 버전 저장"}
@@ -496,6 +518,50 @@ export function TrainingPlanSection({
         </WorkspaceDialog>
       )}
     </>
+  );
+}
+function DecisionChoice<T extends string>({
+  index,
+  label,
+  helper,
+  value,
+  options,
+  onChange,
+}: {
+  index: string;
+  label: string;
+  helper: string;
+  value: string;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-2">
+        <span className="w-6 text-sm tabular-nums text-muted-foreground">{index}</span>
+        <span className="text-[17px] font-semibold">
+          {label}<span className="text-primary"> *</span>
+        </span>
+      </div>
+      <p className="mb-2 ml-8 text-[13px] leading-5 text-muted-foreground">{helper}</p>
+      <div className={`ml-7 grid grid-cols-2 gap-1.5 ${options.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={value === option.value}
+            onClick={() => onChange(option.value)}
+            className={`h-9 rounded-md border px-2 text-xs font-semibold transition ${
+              value === option.value
+                ? "border-primary/45 bg-primary/10 text-primary"
+                : "border-border/45 bg-muted/10 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 function Empty({ title, detail }: { title: string; detail: string }) {

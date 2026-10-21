@@ -19,6 +19,8 @@ const form: TradeForm = {
   reasons: [],
   reasonMode: "MANUAL",
   scenarioSnapshotId: null,
+  planRelation: null,
+  changeReason: "",
 };
 const phrase: QuickPhraseResponse = {
   id: 4,
@@ -55,6 +57,8 @@ test("manual text and scenario selection remain intact beside quick phrases", ()
     ...form,
     reasonMode: "SCENARIO" as const,
     scenarioSnapshotId: 12,
+    planRelation: "FOLLOWED_PLAN" as const,
+    changeReason: "",
   };
   const selected = toggleQuickPhraseReason(scenarioForm, phrase);
   const typed = updateActionReason(selected, "직접 확인한 지지선");

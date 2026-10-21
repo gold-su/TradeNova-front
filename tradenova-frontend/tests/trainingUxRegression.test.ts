@@ -12,15 +12,12 @@ import {
 } from "../src/components/training/chart/trainingChartTileState.ts";
 import { getEventLogBodyMode } from "../src/components/training/report/eventLogDisplay.ts";
 
-test("scenario fields expose the beta QA labels and prompts without changing field keys", () => {
+test("decision capture keeps only the two short free-text prompts", () => {
   assert.deepEqual(SCENARIO_FIELDS.map(({ key, label }) => [key, label]), [
-    ["thesis", "현재 판단"],
-    ["entryReason", "진입 기준"],
-    ["exitPlan", "리스크·청산 기준"],
-    ["riskNote", "계획 변경 조건"],
-    ["freeNote", "메모"],
+    ["entryReason", "진입 조건"],
+    ["riskNote", "무효화 조건"],
   ]);
-  assert.ok(SCENARIO_FIELDS.every(({ helper, example }) => helper.length > 10 && example.length > 10));
+  assert.ok(SCENARIO_FIELDS.every(({ helper, example }) => helper.length > 8 && example.length > 10));
 });
 
 test("scenario drafts remain isolated while switching charts", () => {

@@ -46,9 +46,10 @@ type Props = {
   setTradeForm: React.Dispatch<React.SetStateAction<TradeForm>>;
   executeBuy: () => Promise<boolean>;
   executeSell: () => Promise<boolean>;
+  executeWait: () => Promise<boolean>;
   lastSavedMessage: {
     text: string;
-    side: "BUY" | "SELL";
+    side: "BUY" | "SELL" | "WAIT";
   } | null;
   advanceSteps: number;
   setAdvanceSteps: React.Dispatch<React.SetStateAction<number>>;
@@ -80,6 +81,7 @@ export function TrainingRightPanel({
   setTradeForm,
   executeBuy,
   executeSell,
+  executeWait,
   lastSavedMessage,
   advanceSteps,
   setAdvanceSteps,
@@ -124,6 +126,7 @@ export function TrainingRightPanel({
           lastSavedMessage={lastSavedMessage}
           onBuy={executeBuy}
           onSell={executeSell}
+          onWait={executeWait}
           onSellAll={onSellAll}
           onNext={onNext}
           advanceSteps={advanceSteps}

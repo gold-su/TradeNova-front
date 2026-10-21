@@ -31,6 +31,8 @@ const form: TradeForm = {
   qty: 2,
   reasonMode: "MANUAL",
   scenarioSnapshotId: null,
+  planRelation: null,
+  changeReason: "",
   reasons: [],
   entryReason: "",
   riskNote: "",

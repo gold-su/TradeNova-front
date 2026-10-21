@@ -6,6 +6,7 @@ import type {
   ReportDraftContent,
   TrainingEventResponse,
 } from "@/types/training";
+import { toDecisionCaptureContent } from "./decisionCapture";
 import { emptyDraft } from "./training.utils";
 import { useQuickPhrases } from "@/hooks/useQuickPhrases";
 import {
@@ -214,14 +215,7 @@ export function useTrainingReport(activeChartId: number | null) {
     try {
       setError(null);
 
-      const scenarioContent: ReportDraftContent = {
-        thesis: content.thesis,
-        entryReason: content.entryReason,
-        exitPlan: content.exitPlan,
-        riskNote: content.riskNote,
-        freeNote: content.freeNote,
-        tags: ["SCENARIO"],
-      };
+      const scenarioContent: ReportDraftContent = toDecisionCaptureContent(content);
 
       const saved = await reportApi.createSnapshot(targetChartId, {
         linkedEventId: null,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import { trainingApi } from "@/api/trainingApi";
@@ -9,7 +9,9 @@ import type {
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
 import {
+  buildWaitEventPayload,
   buildTradeEventPayload,
+  canSubmitDecisionAction,
   clearPendingTradeReason,
 } from "./trainingTradeReason";
 
@@ -21,6 +23,8 @@ type UseTrainingTradeParams = {
   setError: React.Dispatch<React.SetStateAction<string | null>>;
   applyTrade: (res: TradeResponse) => void;
   currentPositionQty?: number;
+  currentPrice?: number;
+  currentCandleTime?: number | null;
   onTradeExecuted?: (input: {
     side: "BUY" | "SELL";
     res: TradeResponse;
@@ -34,12 +38,14 @@ function formatPrice(value: number) {
 }
 
 export function useTrainingTrade({
-  mutationGuard,
+  mutationGuard: mutationGuardRef,
   activeChartId,
   setError,
   applyTrade,
   onTradeExecuted,
   currentPositionQty,
+  currentPrice,
+  currentCandleTime,
   appendEvent,
 }: UseTrainingTradeParams) {
 
@@ -50,16 +56,24 @@ export function useTrainingTrade({
     reasons: [],
     reasonMode: "MANUAL",
     scenarioSnapshotId: null,
+    planRelation: null,
+    changeReason: "",
   });
+  const [tradeFormChartId, setTradeFormChartId] = useState(activeChartId);
+
+  if (tradeFormChartId !== activeChartId) {
+    setTradeFormChartId(activeChartId);
+    setTradeForm(clearPendingTradeReason);
+  }
 
   const [loading, setLoading] = useState(false);
 
   const [lastSavedMessage, setLastSavedMessage] = useState<{
     text: string;
-    side: "BUY" | "SELL";
+    side: "BUY" | "SELL" | "WAIT";
   } | null>(null);
 
-  const showSavedMessage = (text: string, side: "BUY" | "SELL") => {
+  const showSavedMessage = (text: string, side: "BUY" | "SELL" | "WAIT") => {
     setLastSavedMessage({ text, side });
 
     window.setTimeout(() => {
@@ -92,12 +106,12 @@ export function useTrainingTrade({
     setTradeForm(clearPendingTradeReason);
   };
 
-  useEffect(() => {
-    setTradeForm(clearPendingTradeReason);
-  }, [activeChartId]);
-
   const executeTrade = async (side: "BUY" | "SELL") => {
     if (!activeChartId) return false;
+    if (!canSubmitDecisionAction(tradeForm)) {
+      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      return false;
+    }
 
     const qty = Number(tradeForm.qty);
 
@@ -106,8 +120,8 @@ export function useTrainingTrade({
       return false;
     }
 
-    if (mutationGuard.current) return false;
-    mutationGuard.current = true;
+    if (mutationGuardRef.current) return false;
+    mutationGuardRef.current = true;
 
     try {
       setLoading(true);
@@ -168,15 +182,48 @@ export function useTrainingTrade({
       return true;
     } finally {
       setLoading(false);
-      mutationGuard.current = false;
+      mutationGuardRef.current = false;
+    }
+  };
+
+  const executeWait = async () => {
+    if (!activeChartId) return false;
+    if (!canSubmitDecisionAction(tradeForm)) {
+      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      return false;
+    }
+    if (mutationGuardRef.current) return false;
+    mutationGuardRef.current = true;
+    try {
+      setLoading(true);
+      setError(null);
+      const event = await reportApi.createEvent(activeChartId, {
+        type: "TRADE",
+        title: "WAIT 기록",
+        payloadJson: buildWaitEventPayload({
+          candleTime: currentCandleTime ?? null,
+          price: currentPrice ?? null,
+          tradeForm,
+        }),
+      });
+      appendEvent(event);
+      showSavedMessage("WAIT 저장됨 · 판단 기록이 AI 리뷰에 반영됩니다.", "WAIT");
+      resetReasonOnly();
+      return true;
+    } catch {
+      setError("WAIT 판단을 저장하지 못했습니다. 다시 시도해주세요.");
+      return false;
+    } finally {
+      setLoading(false);
+      mutationGuardRef.current = false;
     }
   };
 
   const onSellAll = async () => {
     if (!activeChartId) return false;
 
-    if (mutationGuard.current) return false;
-    mutationGuard.current = true;
+    if (mutationGuardRef.current) return false;
+    mutationGuardRef.current = true;
 
     try {
       setLoading(true);
@@ -236,7 +283,7 @@ export function useTrainingTrade({
       return true;
     } finally {
       setLoading(false);
-      mutationGuard.current = false;
+      mutationGuardRef.current = false;
     }
   };
 
@@ -248,6 +295,7 @@ export function useTrainingTrade({
     onSellAll,
     executeBuy: () => executeTrade("BUY"),
     executeSell: () => executeTrade("SELL"),
+    executeWait,
 
     lastSavedMessage,
 

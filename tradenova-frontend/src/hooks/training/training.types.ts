@@ -51,6 +51,7 @@ export type TradeReasonItem = {
 };
 
 export type TradeReasonMode = "MANUAL" | "SCENARIO";
+export type PlanRelation = "FOLLOWED_PLAN" | "CHANGED_PLAN" | "UNPLANNED";
 
 /**
  * 매수/매도 모달 입력 폼 상태
@@ -62,6 +63,8 @@ export type TradeForm = {
   reasons: TradeReasonItem[];
   reasonMode: TradeReasonMode;
   scenarioSnapshotId: number | null;
+  planRelation: PlanRelation | null;
+  changeReason: string;
 };
 
 /**

@@ -10,6 +10,7 @@ import {
   Bot,
   AlertTriangle,
   Activity,
+  Pause,
 } from "lucide-react";
 
 type Props = {
@@ -26,7 +27,7 @@ type TradeReasonPayload = {
 };
 
 type TradePayload = {
-  side?: "BUY" | "SELL";
+  side?: "BUY" | "SELL" | "WAIT";
   qty?: number;
   price?: number;
   executedPrice?: number;
@@ -63,8 +64,10 @@ function getTradePayload(item: TrainingEventResponse): TradePayload {
   return (item.payloadJson ?? {}) as TradePayload;
 }
 
-function getTradeSide(item: TrainingEventResponse): "BUY" | "SELL" {
+function getTradeSide(item: TrainingEventResponse): "BUY" | "SELL" | "WAIT" {
   const payload = getTradePayload(item);
+
+  if (payload.side === "WAIT") return "WAIT";
 
   if (payload.side === "SELL" || item.title.includes("SELL")) {
     return "SELL";
@@ -127,6 +130,7 @@ function EventIcon({ item }: { item: TrainingEventResponse }) {
   const payload = getTradePayload(item);
 
   if (item.type === "TRADE") {
+    if (payload.side === "WAIT") return <Pause className="h-3.5 w-3.5" />;
     if (payload.side === "SELL") {
       return <ArrowDownRight className="h-3.5 w-3.5" />;
     }
@@ -149,6 +153,9 @@ function eventTone(item: TrainingEventResponse) {
 
     if (side === "SELL") {
       return "border-red-500/25 bg-red-500/10 text-red-300";
+    }
+    if (side === "WAIT") {
+      return "border-sky-500/25 bg-sky-500/10 text-sky-300";
     }
 
     return "border-primary/25 bg-primary/10 text-primary";
@@ -187,6 +194,8 @@ function EventSummary({ item, compact = false }: { item: TrainingEventResponse; 
               "inline-flex h-5 items-center rounded-md border px-1.5 text-[10px] font-bold",
               side === "SELL"
                 ? "border-red-500/30 bg-red-500/10 text-red-300"
+                : side === "WAIT"
+                  ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
                 : "border-primary/30 bg-primary/10 text-primary",
             ].join(" ")}
           >
@@ -194,8 +203,11 @@ function EventSummary({ item, compact = false }: { item: TrainingEventResponse; 
           </span>
 
           <span className="truncate text-xs font-semibold leading-none text-foreground">
-            {formatNumber(tradePayload.qty)}주 ·{" "}
-            {formatNumber(tradePayload.price ?? tradePayload.executedPrice)}원
+            {side === "WAIT"
+              ? "현재 구간 관망"
+              : `${formatNumber(tradePayload.qty)}주 · ${formatNumber(
+                  tradePayload.price ?? tradePayload.executedPrice,
+                )}원`}
           </span>
         </div>
 
