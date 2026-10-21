@@ -20,10 +20,10 @@ export function decisionCurrentViewLabel(value?: string) {
 
 export function isDecisionCaptureComplete(content: ScenarioContent) {
   return Boolean(
-    content.thesis.trim() &&
+    CURRENT_VIEW_OPTIONS.some((option) => option.value === content.thesis) &&
       content.entryReason.trim() &&
       content.riskNote.trim() &&
-      content.exitPlan.trim(),
+      INVALIDATION_ACTION_OPTIONS.some((option) => option.value === content.exitPlan),
   );
 }
 

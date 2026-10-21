@@ -229,6 +229,10 @@ test("a reconciled stale selection emits a manual payload without its old id", (
 
 test("plan relation requires a plan and CHANGED_PLAN requires a reason", () => {
   const scenarios = [snapshot(55, 7, ["SCENARIO"], "2026-01-01T00:00:00Z")];
+  const followedWithoutPlan = selectPlanRelation(form(), "FOLLOWED_PLAN", []);
+  assert.equal(followedWithoutPlan.scenarioSnapshotId, null);
+  assert.equal(canSubmitDecisionAction(followedWithoutPlan), false);
+
   const followed = selectPlanRelation(form(), "FOLLOWED_PLAN", scenarios);
   assert.equal(followed.scenarioSnapshotId, 55);
   assert.equal(canSubmitDecisionAction(followed), true);

@@ -26,7 +26,14 @@ test("decision plan persists explicit fields and legacy review aliases", () => {
 
 test("decision plan restore supports v1 and legacy snapshots", () => {
   assert.deepEqual(fromDecisionCaptureContent(toDecisionCaptureContent(complete)), complete);
-  assert.equal(fromDecisionCaptureContent({ thesis: "legacy view" }).thesis, "legacy view");
+  const legacy = fromDecisionCaptureContent({
+    thesis: "legacy view",
+    entryReason: "legacy entry",
+    riskNote: "legacy invalidation",
+    exitPlan: "legacy exit plan",
+  });
+  assert.equal(legacy.thesis, "legacy view");
+  assert.equal(isDecisionCaptureComplete(legacy), false);
 });
 
 test("all four concise decisions are required before save", () => {

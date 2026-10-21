@@ -26,6 +26,7 @@ import {
 } from "./riskRuleForm";
 import {
   canSubmitDecisionAction,
+  clearPendingTradeReason,
   reconcileScenarioSelection,
 } from "@/hooks/training/trainingTradeReason";
 import { getScenarioHistory } from "@/hooks/training/trainingDecisionHistory";
@@ -146,6 +147,17 @@ export function TrainingTradeJournalPanel({
   const setQuantity = (qty: number) => {
     setSellAllSelected(false);
     setTradeForm((prev) => ({ ...prev, qty }));
+  };
+  const clearDecisionAction = () => setTradeForm(clearPendingTradeReason);
+  const closeOrder = () => {
+    clearDecisionAction();
+    setOrderMode(null);
+    setSellAllSelected(false);
+    setOrderError(null);
+  };
+  const closeWait = () => {
+    clearDecisionAction();
+    setWaitOpen(false);
   };
 
   const executeOrder = async () => {
@@ -304,11 +316,7 @@ export function TrainingTradeJournalPanel({
           title={orderMode}
           description="현재 차트의 주문과 판단을 함께 기록합니다."
           busy={loading}
-          onClose={() => {
-            setOrderMode(null);
-            setSellAllSelected(false);
-            setOrderError(null);
-          }}
+          onClose={closeOrder}
         >
           <TradeDialogContent
             side={orderMode}
@@ -331,11 +339,7 @@ export function TrainingTradeJournalPanel({
             disabled={disabled}
             loading={loading}
             error={orderError}
-            onCancel={() => {
-              setOrderMode(null);
-              setSellAllSelected(false);
-              setOrderError(null);
-            }}
+            onCancel={closeOrder}
             onSubmit={executeOrder}
             validQuantity={validQuantity}
           />
@@ -347,7 +351,7 @@ export function TrainingTradeJournalPanel({
           title="WAIT"
           description="지금 거래하지 않는 판단과 계획의 관계를 기록합니다."
           busy={loading}
-          onClose={() => setWaitOpen(false)}
+          onClose={closeWait}
         >
           <div className="thin-scrollbar min-h-0 space-y-4 overflow-y-auto px-6 pb-5">
             <PlanRelationSection
@@ -372,7 +376,7 @@ export function TrainingTradeJournalPanel({
           <footer className="flex shrink-0 justify-end gap-2 border-t border-border/35 px-6 py-4">
             <button
               type="button"
-              onClick={() => setWaitOpen(false)}
+              onClick={closeWait}
               disabled={loading}
               className="h-10 rounded-lg px-5 text-sm text-muted-foreground hover:bg-muted/40"
             >
