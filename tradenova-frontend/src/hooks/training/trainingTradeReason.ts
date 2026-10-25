@@ -54,7 +54,10 @@ export function selectPlanRelation(
       changeReason: "",
     };
   }
-  const selected = scenarios.some((item) => item.id === tradeForm.scenarioSnapshotId)
+  const keepsExplicitSelection =
+    tradeForm.planRelation === planRelation &&
+    scenarios.some((item) => item.id === tradeForm.scenarioSnapshotId);
+  const selected = keepsExplicitSelection
     ? tradeForm.scenarioSnapshotId
     : scenarios[0]?.id ?? null;
   return {

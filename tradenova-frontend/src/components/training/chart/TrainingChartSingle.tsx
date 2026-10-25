@@ -129,33 +129,40 @@ export function TrainingChartSingle({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         {candles.length > 0 ? (
-          <CandleChart
-            chartId={chart.chartId}
-            candles={candles}
-            height={520}
-            indicatorSettings={indicatorSettings}
-            indicatorDisplayMode="FULL"
-            tradeMarkers={tradeMarkers}
-            drawings={drawings}
-            drawingTool={drawingTool}
-            pendingDrawing={pendingDrawing}
-            selectedDrawing={selectedDrawing}
-            onAddDrawingPoint={onAddDrawingPoint}
-            onCommitDrawingText={onCommitDrawingText}
-            onCancelDrawingDraft={onCancelDrawingDraft}
-            onSelectDrawing={onSelectDrawing}
-            showDrawingToolbar
-            onSelectDrawingTool={onSelectDrawingTool}
-            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
-            canDeleteDrawing={selectedDrawing?.chartId === chart.chartId}
-            onClearDrawings={() => onClearChartDrawings(chart.chartId)}
-            canClearDrawings={drawings.length > 0}
-            drawingEditingEnabled
-            drawingRailCollapsed={drawingRailCollapsed}
-            onToggleDrawingRail={onToggleDrawingRail}
-          />
+          <>
+            <CandleChart
+              chartId={chart.chartId}
+              candles={candles}
+              height={520}
+              indicatorSettings={indicatorSettings}
+              indicatorDisplayMode="FULL"
+              tradeMarkers={tradeMarkers}
+              drawings={drawings}
+              drawingTool={drawingTool}
+              pendingDrawing={pendingDrawing}
+              selectedDrawing={selectedDrawing}
+              onAddDrawingPoint={onAddDrawingPoint}
+              onCommitDrawingText={onCommitDrawingText}
+              onCancelDrawingDraft={onCancelDrawingDraft}
+              onSelectDrawing={onSelectDrawing}
+              showDrawingToolbar
+              onSelectDrawingTool={onSelectDrawingTool}
+              onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+              canDeleteDrawing={selectedDrawing?.chartId === chart.chartId}
+              onClearDrawings={() => onClearChartDrawings(chart.chartId)}
+              canClearDrawings={drawings.length > 0}
+              drawingEditingEnabled
+              drawingRailCollapsed={drawingRailCollapsed}
+              onToggleDrawingRail={onToggleDrawingRail}
+            />
+            <div
+              key={`${chart.chartId}-${candles.length}`}
+              aria-hidden="true"
+              className="candle-append-pulse pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-primary/20"
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
             no data

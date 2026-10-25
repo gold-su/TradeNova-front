@@ -45,9 +45,12 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
               aria-pressed={tradeForm.planRelation === relation.value}
               disabled={disabled || (needsPlan && scenarios.length === 0)}
               title={needsPlan && scenarios.length === 0 ? "먼저 계획을 저장해주세요" : undefined}
-              onClick={() =>
-                setTradeForm((previous) => selectPlanRelation(previous, relation.value, scenarios))
-              }
+              onClick={() => {
+                setPlanOpen(false);
+                setTradeForm((previous) =>
+                  selectPlanRelation(previous, relation.value, scenarios),
+                );
+              }}
               className={`min-h-[54px] rounded-md border px-2 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-35 ${
                 tradeForm.planRelation === relation.value
                   ? "border-primary/45 bg-primary/10 text-primary"
@@ -65,63 +68,75 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
 
       {tradeForm.planRelation && tradeForm.planRelation !== "UNPLANNED" && (
         <div className="mt-3">
-          <label htmlFor="trade-plan" className="mb-1.5 block text-xs font-semibold text-muted-foreground">
-            연결할 계획
-          </label>
-          <div
-            className="relative"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) setPlanOpen(false);
-            }}
-          >
-            <button
-              id="trade-plan"
-              type="button"
-              role="combobox"
-              aria-haspopup="listbox"
-              aria-expanded={planOpen}
-              disabled={disabled}
-              onClick={() => setPlanOpen((open) => !open)}
-              className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-border/65 bg-card px-3 text-left text-sm outline-none hover:border-primary/45 focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-40"
-            >
-              <span className="truncate">
-                {selectedPlan
-                  ? `v${selectedVersion} · ${decisionCurrentViewLabel(selectedPlan.contentJson.currentView ?? selectedPlan.contentJson.thesis)}`
-                  : "계획을 선택해주세요"}
-              </span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-primary" />
-            </button>
-            {planOpen && (
-              <div role="listbox" className="thin-scrollbar absolute inset-x-0 top-[calc(100%+4px)] z-20 max-h-48 overflow-y-auto rounded-md border border-border/75 bg-popover p-1 shadow-xl shadow-black/40">
-                {scenarios.map((scenario, index) => (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selectedPlan?.id === scenario.id}
-                    onClick={() => {
-                      setTradeForm((previous) => selectTradeScenario(previous, scenario.id, scenarios));
-                      setPlanOpen(false);
-                    }}
-                    className="flex w-full items-center justify-between gap-2 rounded px-2.5 py-2 text-left text-[13px] hover:bg-primary/10 hover:text-primary"
-                  >
-                    <span className="truncate">v{scenarios.length - index} · {decisionCurrentViewLabel(scenario.contentJson.currentView ?? scenario.contentJson.thesis)}</span>
-                    {selectedPlan?.id === scenario.id && <Check className="h-4 w-4 shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           {selectedPlan && (
-            <div className="mt-2 border-l border-primary/30 pl-3 text-xs leading-5">
-              <p className="font-medium text-foreground/85">
-                {decisionCurrentViewLabel(
-                  selectedPlan.contentJson.currentView ?? selectedPlan.contentJson.thesis,
-                )}
-              </p>
-              <p className="line-clamp-1 text-muted-foreground">
-                진입: {selectedPlan.contentJson.entryCondition ?? selectedPlan.contentJson.entryReason ?? "조건 미작성"}
-              </p>
+            <div className="flex items-start justify-between gap-3 border-l border-primary/30 pl-3 text-xs leading-5">
+              <div className="min-w-0">
+                <p className="font-medium text-foreground/85">
+                  {selectedIndex === 0 ? "최신 PLAN 자동 연결" : "선택한 PLAN"} · v
+                  {selectedVersion}
+                </p>
+                <p className="truncate text-muted-foreground">
+                  {decisionCurrentViewLabel(
+                    selectedPlan.contentJson.currentView ?? selectedPlan.contentJson.thesis,
+                  )}
+                  {" · "}
+                  {selectedPlan.contentJson.entryCondition ??
+                    selectedPlan.contentJson.entryReason ??
+                    "진입 조건 미작성"}
+                </p>
+              </div>
+              {scenarios.length > 1 && (
+                <div
+                  className="relative shrink-0"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setPlanOpen(false);
+                  }}
+                >
+                  <button
+                    id="trade-plan"
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={planOpen}
+                    disabled={disabled}
+                    onClick={() => setPlanOpen((open) => !open)}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground disabled:opacity-40"
+                  >
+                    다른 계획
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  {planOpen && (
+                    <div
+                      role="listbox"
+                      className="thin-scrollbar absolute right-0 top-[calc(100%+4px)] z-20 max-h-48 w-64 overflow-y-auto rounded-md border border-border/75 bg-popover p-1 shadow-xl shadow-black/40"
+                    >
+                      {scenarios.map((scenario, index) => (
+                        <button
+                          key={scenario.id}
+                          type="button"
+                          role="option"
+                          aria-selected={selectedPlan.id === scenario.id}
+                          onClick={() => {
+                            setTradeForm((previous) =>
+                              selectTradeScenario(previous, scenario.id, scenarios),
+                            );
+                            setPlanOpen(false);
+                          }}
+                          className="flex w-full items-center justify-between gap-2 rounded px-2.5 py-2 text-left text-[13px] hover:bg-primary/10 hover:text-primary"
+                        >
+                          <span className="truncate">
+                            v{scenarios.length - index} · {decisionCurrentViewLabel(
+                              scenario.contentJson.currentView ?? scenario.contentJson.thesis,
+                            )}
+                          </span>
+                          {selectedPlan.id === scenario.id && (
+                            <Check className="h-4 w-4 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

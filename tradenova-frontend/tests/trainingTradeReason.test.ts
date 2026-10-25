@@ -11,6 +11,7 @@ import {
   findLatestScenarioSnapshot,
   reconcileScenarioSelection,
   selectPlanRelation,
+  selectTradeScenario,
 } from "../src/hooks/training/trainingTradeReason.ts";
 
 const snapshot = (
@@ -242,6 +243,33 @@ test("plan relation requires a plan and CHANGED_PLAN requires a reason", () => {
   assert.equal(canSubmitDecisionAction(changed), false);
   assert.equal(canSubmitDecisionAction({ ...changed, changeReason: "돌파 확인" }), true);
   assert.equal(canSubmitDecisionAction(selectPlanRelation(form(), "UNPLANNED", scenarios)), true);
+});
+
+test("plan relations auto-link the latest plan and still allow an older plan", () => {
+  const latest = snapshot(56, 7, ["SCENARIO"], "2026-02-01T00:00:00Z");
+  const previous = snapshot(55, 7, ["SCENARIO"], "2026-01-01T00:00:00Z");
+  const scenarios = [latest, previous];
+
+  const followed = selectPlanRelation(form(), "FOLLOWED_PLAN", scenarios);
+  assert.equal(followed.scenarioSnapshotId, latest.id);
+  assert.equal(canSubmitDecisionAction(followed), true);
+
+  const changed = selectPlanRelation(form(), "CHANGED_PLAN", scenarios);
+  assert.equal(changed.scenarioSnapshotId, latest.id);
+  assert.equal(canSubmitDecisionAction(changed), false);
+  assert.equal(
+    canSubmitDecisionAction({ ...changed, changeReason: "새로운 저항 확인" }),
+    true,
+  );
+
+  const unplanned = selectPlanRelation(form(), "UNPLANNED", scenarios);
+  assert.equal(unplanned.scenarioSnapshotId, null);
+  assert.equal(unplanned.reasonMode, "MANUAL");
+  assert.equal(canSubmitDecisionAction(unplanned), true);
+
+  const selectedPrevious = selectTradeScenario(followed, previous.id, scenarios);
+  assert.equal(selectedPrevious.scenarioSnapshotId, previous.id);
+  assert.equal(selectedPrevious.planRelation, "FOLLOWED_PLAN");
 });
 
 test("SELL ALL uses the shared decision gate before calling the trade API", () => {

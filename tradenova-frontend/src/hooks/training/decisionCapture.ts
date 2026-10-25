@@ -3,16 +3,16 @@ import type { ScenarioContent } from "@/components/training/common/scenarioDraft
 import type { PlanRelation } from "./training.types";
 
 export const CURRENT_VIEW_OPTIONS = [
-  { value: "BULLISH", label: "Bullish · 상승" },
-  { value: "NEUTRAL", label: "Neutral · 중립" },
-  { value: "BEARISH", label: "Bearish · 하락" },
+  { value: "BULLISH", label: "상승 관점" },
+  { value: "NEUTRAL", label: "중립" },
+  { value: "BEARISH", label: "하락 관점" },
 ] as const;
 
 export const INVALIDATION_ACTION_OPTIONS = [
-  { value: "EXIT", label: "Exit · 청산" },
-  { value: "REDUCE", label: "Reduce · 축소" },
-  { value: "WAIT", label: "Wait · 관망" },
-  { value: "REASSESS", label: "Reassess · 재검토" },
+  { value: "EXIT", label: "청산" },
+  { value: "REDUCE", label: "비중 축소" },
+  { value: "WAIT", label: "관망" },
+  { value: "REASSESS", label: "다시 판단" },
 ] as const;
 
 export const PLAN_RELATION_OPTIONS: readonly {
@@ -41,9 +41,13 @@ export function decisionPlanRelationLabel(value?: string | null) {
   return PLAN_RELATION_OPTIONS.find((option) => option.value === value)?.label ?? "판단";
 }
 
-export function decisionPlanRelationFeedback(value?: PlanRelation | null) {
+export function decisionPlanRelationActionLabel(value?: PlanRelation | null) {
   const label = decisionPlanRelationLabel(value);
-  return `${label}${value === "FOLLOWED_PLAN" ? " 실행" : ""}으로 기록했습니다.`;
+  return `${label}${value === "FOLLOWED_PLAN" ? " 실행" : ""}`;
+}
+
+export function decisionPlanRelationFeedback(value?: PlanRelation | null) {
+  return `${decisionPlanRelationActionLabel(value)}으로 기록했습니다.`;
 }
 
 export function decisionCurrentViewLabel(value?: string) {

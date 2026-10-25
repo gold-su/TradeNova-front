@@ -8,7 +8,10 @@ import type {
   TrainingEventResponse,
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
-import { decisionPlanRelationFeedback } from "./decisionCapture";
+import {
+  decisionPlanRelationActionLabel,
+  decisionPlanRelationLabel,
+} from "./decisionCapture";
 import {
   buildWaitEventPayload,
   buildTradeEventPayload,
@@ -170,7 +173,9 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? decisionPlanRelationFeedback(tradeForm.planRelation)
+          ? `${side} 체결\n${qty.toLocaleString()}주 · ${formatPrice(
+            tradeRes.executedPrice,
+          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
           : `${side} 체결됨 · ${qty}주 · ${formatPrice(
             tradeRes.executedPrice,
           )}원 · 매매 로그 저장 실패`,
@@ -206,7 +211,10 @@ export function useTrainingTrade({
         }),
       });
       appendEvent(event);
-      showSavedMessage(decisionPlanRelationFeedback(tradeForm.planRelation), "WAIT");
+      showSavedMessage(
+        `WAIT 기록\n${decisionPlanRelationLabel(tradeForm.planRelation)}`,
+        "WAIT",
+      );
       resetReasonOnly();
       return true;
     } catch {
@@ -277,7 +285,9 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? decisionPlanRelationFeedback(tradeForm.planRelation)
+          ? `SELL 체결\n${sellQty == null ? "전량" : `${sellQty.toLocaleString()}주`} · ${formatPrice(
+            res.executedPrice,
+          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
           : `SELL ALL 체결됨 · ${formatPrice(res.executedPrice)}원 · 매매 로그 저장 실패`,
         "SELL",
       );

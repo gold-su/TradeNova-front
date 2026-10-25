@@ -180,7 +180,7 @@ export function TrainingPlanSection({
               01 · PLAN
             </div>
             <div className="mt-1 flex items-center gap-2">
-              <h2 className="text-sm font-semibold">Decision Plan</h2>
+              <h2 className="text-sm font-semibold">판단 계획</h2>
               {latestScenario && (
                 <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                   Saved
@@ -239,7 +239,7 @@ export function TrainingPlanSection({
       {open && (
         <WorkspaceDialog
           wide
-          title="Decision Plan"
+          title="판단 계획"
           description={`Chart ${(activeChart?.chartIndex ?? 0) + 1} · 먼저 계획하고, 행동할 때 PLAN과 비교합니다.`}
           busy={saving}
           onClose={() => setOpen(false)}
@@ -316,9 +316,9 @@ export function TrainingPlanSection({
             className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-2.5"
           >
             {tab === 0 && (
-              <fieldset disabled={saving} className="space-y-4">
+              <fieldset disabled={saving} className="space-y-5">
                 <DecisionChoice
-                  label="Current View"
+                  label="현재 관점"
                   helper="지금 차트를 어느 방향으로 보고 있나요?"
                   value={form.thesis}
                   options={CURRENT_VIEW_OPTIONS}
@@ -327,7 +327,7 @@ export function TrainingPlanSection({
                 {SCENARIO_FIELDS.map(({ key, helper, example }) => (
                   <label key={key} className="block">
                     <span className="text-sm font-semibold">
-                      {key === "entryReason" ? "Entry Condition" : "Invalidation Condition"}
+                      {key === "entryReason" ? "진입 조건" : "판단 무효화 조건"}
                       <span className="text-primary"> *</span>
                     </span>
                     <span className="mb-1.5 mt-1 block text-xs leading-5 text-muted-foreground">
@@ -343,7 +343,7 @@ export function TrainingPlanSection({
                   </label>
                 ))}
                 <DecisionChoice
-                  label="If Invalidated"
+                  label="무효화되면"
                   helper="판단이 틀렸다면 어떻게 행동할 건가요?"
                   value={form.exitPlan}
                   options={INVALIDATION_ACTION_OPTIONS}

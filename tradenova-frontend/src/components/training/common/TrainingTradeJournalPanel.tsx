@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Check,
   ChevronDown,
+  ChevronUp,
   ChevronsRight,
   ShieldAlert,
 } from "lucide-react";
@@ -109,6 +110,7 @@ export function TrainingTradeJournalPanel({
 }: Props) {
   const [orderMode, setOrderMode] = useState<TrainingOrderMode>(null);
   const [waitOpen, setWaitOpen] = useState(false);
+  const [waitReasonOpen, setWaitReasonOpen] = useState(false);
   const [sellAllSelected, setSellAllSelected] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
@@ -157,8 +159,10 @@ export function TrainingTradeJournalPanel({
   };
   const closeWait = () => {
     clearDecisionAction();
+    setWaitReasonOpen(false);
     setWaitOpen(false);
   };
+  const savedMessageLines = lastSavedMessage?.text.split("\n") ?? [];
 
   const executeOrder = async () => {
     setOrderError(null);
@@ -182,22 +186,29 @@ export function TrainingTradeJournalPanel({
   return (
     <>
       <div className="pb-2">
-        {lastSavedMessage && (
-          <div
-            className={`mb-3 flex h-9 items-center gap-2 rounded-lg border px-3 text-xs ${
-              lastSavedMessage.side === "BUY"
-                ? "border-primary/20 bg-primary/[0.06] text-primary"
-                : lastSavedMessage.side === "SELL"
-                  ? "border-red-500/20 bg-red-500/10 text-red-300"
-                  : "border-sky-500/20 bg-sky-500/10 text-sky-200"
-            }`}
-            role="status"
-            aria-live="polite"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{lastSavedMessage.text}</span>
-          </div>
-        )}
+        <div className="mb-3 h-12">
+          {lastSavedMessage && (
+            <div
+              className={`flex h-full items-center gap-2 rounded-lg border px-3 text-xs ${
+                lastSavedMessage.side === "BUY"
+                  ? "border-primary/20 bg-primary/[0.06] text-primary"
+                  : lastSavedMessage.side === "SELL"
+                    ? "border-red-500/20 bg-red-500/10 text-red-300"
+                    : "border-sky-500/20 bg-sky-500/10 text-sky-200"
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <div className="min-w-0 leading-4">
+                <div className="truncate font-semibold">{savedMessageLines[0]}</div>
+                {savedMessageLines[1] && (
+                  <div className="truncate opacity-80">{savedMessageLines[1]}</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {
           <div className="space-y-3">
@@ -221,7 +232,10 @@ export function TrainingTradeJournalPanel({
               </button>
               <button
                 type="button"
-                onClick={() => setWaitOpen(true)}
+                onClick={() => {
+                  setWaitReasonOpen(false);
+                  setWaitOpen(true);
+                }}
                 disabled={disabled}
                 className={`h-9 rounded-lg bg-sky-500/10 text-sm font-bold text-sky-300 transition hover:bg-sky-500/15 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
@@ -363,18 +377,37 @@ export function TrainingTradeJournalPanel({
               scenarios={scenarios}
               disabled={loading}
             />
-            <label className="block text-sm font-semibold">
-              관망 이유 <span className="font-normal text-muted-foreground">(선택)</span>
-              <textarea
-                rows={3}
-                value={tradeForm.reasons.find((reason) => reason.id === "action-input")?.entryReason ?? ""}
-                onChange={(event) =>
-                  setTradeForm((previous) => updateActionReason(previous, event.target.value))
-                }
-                placeholder="예: 진입 조건이 아직 충족되지 않음"
-                className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm font-normal leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
-              />
-            </label>
+            <div className="border-t border-border/35 pt-3">
+              <button
+                type="button"
+                aria-expanded={waitReasonOpen}
+                onClick={() => setWaitReasonOpen((open) => !open)}
+                className="flex w-full items-center justify-between rounded-md py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <span>{waitReasonOpen ? "관망 이유 접기" : "+ 관망 이유 남기기"}</span>
+                {waitReasonOpen ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </button>
+              {waitReasonOpen && (
+                <label className="mt-2 block text-xs font-semibold">
+                  관망 이유 <span className="font-normal text-muted-foreground">(선택)</span>
+                  <textarea
+                    rows={3}
+                    value={tradeForm.reasons.find((reason) => reason.id === "action-input")?.entryReason ?? ""}
+                    onChange={(event) =>
+                      setTradeForm((previous) =>
+                        updateActionReason(previous, event.target.value),
+                      )
+                    }
+                    placeholder="예: 진입 조건이 아직 충족되지 않음"
+                    className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm font-normal leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
+                  />
+                </label>
+              )}
+            </div>
           </div>
           <footer className="flex shrink-0 justify-end gap-2 border-t border-border/35 px-6 py-4">
             <button
