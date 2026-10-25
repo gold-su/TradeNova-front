@@ -9,6 +9,10 @@ import type {
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
 import {
+  decisionPlanRelationActionLabel,
+  decisionPlanRelationLabel,
+} from "./decisionCapture";
+import {
   buildWaitEventPayload,
   buildTradeEventPayload,
   canSubmitDecisionAction,
@@ -169,9 +173,9 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? `${side} 저장됨 · ${qty}주 · ${formatPrice(
+          ? `${side} 체결\n${qty.toLocaleString()}주 · ${formatPrice(
             tradeRes.executedPrice,
-          )}원 · AI 리뷰 반영`
+          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
           : `${side} 체결됨 · ${qty}주 · ${formatPrice(
             tradeRes.executedPrice,
           )}원 · 매매 로그 저장 실패`,
@@ -207,7 +211,10 @@ export function useTrainingTrade({
         }),
       });
       appendEvent(event);
-      showSavedMessage("WAIT 저장됨 · 판단 기록이 AI 리뷰에 반영됩니다.", "WAIT");
+      showSavedMessage(
+        `WAIT 기록\n${decisionPlanRelationLabel(tradeForm.planRelation)}`,
+        "WAIT",
+      );
       resetReasonOnly();
       return true;
     } catch {
@@ -221,6 +228,10 @@ export function useTrainingTrade({
 
   const onSellAll = async () => {
     if (!activeChartId) return false;
+    if (!canSubmitDecisionAction(tradeForm)) {
+      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      return false;
+    }
 
     if (mutationGuardRef.current) return false;
     mutationGuardRef.current = true;
@@ -274,7 +285,9 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`
+          ? `SELL 체결\n${sellQty == null ? "전량" : `${sellQty.toLocaleString()}주`} · ${formatPrice(
+            res.executedPrice,
+          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
           : `SELL ALL 체결됨 · ${formatPrice(res.executedPrice)}원 · 매매 로그 저장 실패`,
         "SELL",
       );

@@ -369,9 +369,9 @@ export function EventLogPanel({ items, loading }: Props) {
       <div className="py-1">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">RECENT LOGS</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">03 · REVIEW</div>
             <div className="text-[11px] text-muted-foreground">
-              최신 기록 {recent.length}개{loading ? " · 동기화 중" : ""}
+              최근 판단 {recent.length}개{loading ? " · 동기화 중" : ""}
             </div>
           </div>
 

@@ -92,6 +92,31 @@
   -moz-appearance: textfield;
 }
 
+@keyframes candle-append-pulse {
+  0% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  45% {
+    opacity: 0.18;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+}
+
+.candle-append-pulse {
+  animation: candle-append-pulse 140ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candle-append-pulse {
+    animation: none;
+  }
+}
+
   * {
     @apply border-border;
   }

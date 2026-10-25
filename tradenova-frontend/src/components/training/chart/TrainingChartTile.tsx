@@ -171,31 +171,38 @@ export function TrainingChartTile({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1" style={{ height: chartHeight }}>
+      <div className="relative min-h-0 flex-1" style={{ height: chartHeight }}>
         {visible.length > 0 ? (
-          <CandleChart
-            chartId={chart.chartId}
-            candles={visible}
-            height={chartHeight}
-            indicatorSettings={indicatorSettings}
-            indicatorDisplayMode="COMPACT"
-            tradeMarkers={tradeMarkers}
-            drawings={drawings}
-            drawingTool={drawingTool}
-            pendingDrawing={pendingDrawing}
-            selectedDrawing={selectedDrawing}
-            onAddDrawingPoint={onAddDrawingPoint}
-            onCommitDrawingText={onCommitDrawingText}
-            onCancelDrawingDraft={onCancelDrawingDraft}
-            onSelectDrawing={onSelectDrawing}
-            showDrawingToolbar={showDrawingToolbar}
-            onSelectDrawingTool={onSelectDrawingTool}
-            onDeleteSelectedDrawing={onDeleteSelectedDrawing}
-            canDeleteDrawing={canDeleteDrawing}
-            onClearDrawings={onClearDrawings}
-            canClearDrawings={canClearDrawings}
-            drawingEditingEnabled={drawingEditingEnabled}
-          />
+          <>
+            <CandleChart
+              chartId={chart.chartId}
+              candles={visible}
+              height={chartHeight}
+              indicatorSettings={indicatorSettings}
+              indicatorDisplayMode="COMPACT"
+              tradeMarkers={tradeMarkers}
+              drawings={drawings}
+              drawingTool={drawingTool}
+              pendingDrawing={pendingDrawing}
+              selectedDrawing={selectedDrawing}
+              onAddDrawingPoint={onAddDrawingPoint}
+              onCommitDrawingText={onCommitDrawingText}
+              onCancelDrawingDraft={onCancelDrawingDraft}
+              onSelectDrawing={onSelectDrawing}
+              showDrawingToolbar={showDrawingToolbar}
+              onSelectDrawingTool={onSelectDrawingTool}
+              onDeleteSelectedDrawing={onDeleteSelectedDrawing}
+              canDeleteDrawing={canDeleteDrawing}
+              onClearDrawings={onClearDrawings}
+              canClearDrawings={canClearDrawings}
+              drawingEditingEnabled={drawingEditingEnabled}
+            />
+            <div
+              key={`${chart.chartId}-${visible.length}`}
+              aria-hidden="true"
+              className="candle-append-pulse pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-primary/20"
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
             no data
