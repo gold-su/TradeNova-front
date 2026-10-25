@@ -220,6 +220,10 @@ export function useTrainingTrade({
 
   const onSellAll = async () => {
     if (!activeChartId) return false;
+    if (!canSubmitDecisionAction(tradeForm)) {
+      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      return false;
+    }
 
     if (mutationGuardRef.current) return false;
     mutationGuardRef.current = true;
