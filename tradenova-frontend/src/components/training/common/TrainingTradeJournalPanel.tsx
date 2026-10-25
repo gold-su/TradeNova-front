@@ -202,10 +202,13 @@ export function TrainingTradeJournalPanel({
         {
           <div className="space-y-3">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">
-                TRADE
+              <div className="text-[10px] font-bold tracking-[0.14em] text-primary/80">
+                02 · ACTION
               </div>
-              <div className="text-sm font-semibold">거래 실행</div>
+              <div className="mt-1 text-sm font-semibold">이번 판단 기록</div>
+              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                PLAN과 비교한 뒤 행동을 기록합니다.
+              </p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <button

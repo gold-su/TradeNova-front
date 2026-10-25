@@ -189,12 +189,9 @@ export function TradeDialogContent({
           disabled={loading}
         />
         <fieldset disabled={loading} className="border-t border-border/35 pt-4">
-          <div className="text-[10px] font-bold tracking-widest text-muted-foreground">
-            ACTION
-          </div>
-          <div className="mb-2 mt-1 flex items-center justify-between gap-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <label htmlFor="trade-action" className="text-sm font-semibold">
-              이번 {buying ? "매수" : "매도"} 근거
+              추가 근거 <span className="font-normal text-muted-foreground">(선택)</span>
             </label>
             <button
               type="button"
@@ -218,7 +215,7 @@ export function TradeDialogContent({
             rows={3}
             value={action?.entryReason ?? ""}
             onChange={(event) => updateReason(event.target.value)}
-            placeholder="추가로 본 근거가 있다면 짧게 기록하세요. (선택)"
+            placeholder={`이번 ${buying ? "매수" : "매도"}에서 추가로 본 근거가 있다면 기록`}
             className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
           />
         </fieldset>

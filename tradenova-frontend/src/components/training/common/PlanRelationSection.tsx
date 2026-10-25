@@ -1,18 +1,15 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import type { ReportDocumentResponse } from "@/types/training";
-import type { PlanRelation, TradeForm } from "@/hooks/training/training.types";
+import type { TradeForm } from "@/hooks/training/training.types";
 import {
   selectPlanRelation,
   selectTradeScenario,
 } from "@/hooks/training/trainingTradeReason";
-import { decisionCurrentViewLabel } from "@/hooks/training/decisionCapture";
-
-const RELATIONS: { value: PlanRelation; label: string }[] = [
-  { value: "FOLLOWED_PLAN", label: "기존 계획 실행" },
-  { value: "CHANGED_PLAN", label: "계획 변경" },
-  { value: "UNPLANNED", label: "즉석 판단" },
-];
+import {
+  decisionCurrentViewLabel,
+  PLAN_RELATION_OPTIONS,
+} from "@/hooks/training/decisionCapture";
 
 type Props = {
   tradeForm: TradeForm;
@@ -29,12 +26,17 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
 
   return (
     <section className="border-t border-border/30 pt-4">
-      <div className="mb-2">
-        <h3 className="text-sm font-semibold">이번 행동과 계획의 관계</h3>
-        <p className="mt-1 text-xs text-muted-foreground">AI가 추측하지 않도록 직접 선택합니다.</p>
+      <div className="mb-3">
+        <div className="text-[10px] font-bold tracking-[0.14em] text-primary/80">
+          02 · ACTION
+        </div>
+        <h3 className="mt-1 text-sm font-semibold">이번 판단은 계획과 어땠나요?</h3>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          행동 결과가 아니라, 저장한 PLAN과의 관계를 기록합니다.
+        </p>
       </div>
       <div className="grid grid-cols-3 gap-1.5">
-        {RELATIONS.map((relation) => {
+        {PLAN_RELATION_OPTIONS.map((relation) => {
           const needsPlan = relation.value !== "UNPLANNED";
           return (
             <button
@@ -46,13 +48,16 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
               onClick={() =>
                 setTradeForm((previous) => selectPlanRelation(previous, relation.value, scenarios))
               }
-              className={`min-h-10 rounded-md border px-2 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 ${
+              className={`min-h-[54px] rounded-md border px-2 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-35 ${
                 tradeForm.planRelation === relation.value
                   ? "border-primary/45 bg-primary/10 text-primary"
                   : "border-border/45 bg-muted/10 text-muted-foreground hover:text-foreground"
               }`}
             >
-              {relation.label}
+              <span className="block font-semibold">{relation.label}</span>
+              <span className="mt-0.5 block text-[10px] font-normal leading-3.5 opacity-75">
+                {relation.description}
+              </span>
             </button>
           );
         })}
@@ -108,16 +113,23 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
             )}
           </div>
           {selectedPlan && (
-            <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-              진입: {selectedPlan.contentJson.entryCondition ?? selectedPlan.contentJson.entryReason ?? "조건 미작성"}
-            </p>
+            <div className="mt-2 border-l border-primary/30 pl-3 text-xs leading-5">
+              <p className="font-medium text-foreground/85">
+                {decisionCurrentViewLabel(
+                  selectedPlan.contentJson.currentView ?? selectedPlan.contentJson.thesis,
+                )}
+              </p>
+              <p className="line-clamp-1 text-muted-foreground">
+                진입: {selectedPlan.contentJson.entryCondition ?? selectedPlan.contentJson.entryReason ?? "조건 미작성"}
+              </p>
+            </div>
           )}
         </div>
       )}
 
       {tradeForm.planRelation === "CHANGED_PLAN" && (
         <label className="mt-3 block text-xs font-semibold text-muted-foreground">
-          왜 계획을 변경했나요? <span className="text-primary">*</span>
+          계획을 바꾼 이유 <span className="text-primary">*</span>
           <textarea
             rows={2}
             maxLength={500}
@@ -125,7 +137,7 @@ export function PlanRelationSection({ tradeForm, setTradeForm, scenarios, disabl
             onChange={(event) =>
               setTradeForm((previous) => ({ ...previous, changeReason: event.target.value }))
             }
-            placeholder="예: 예상보다 강한 거래량 돌파를 확인함"
+            placeholder="예: 예상보다 강한 거래량이 붙어 진입 기준을 조정함"
             className="mt-1.5 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm font-normal leading-5 text-foreground outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
           />
         </label>

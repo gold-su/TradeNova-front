@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  decisionPlanRelationFeedback,
+  decisionPlanRelationLabel,
   fromDecisionCaptureContent,
   isDecisionCaptureComplete,
+  PLAN_RELATION_OPTIONS,
   toDecisionCaptureContent,
 } from "../src/hooks/training/decisionCapture.ts";
 
@@ -39,4 +42,32 @@ test("decision plan restore supports v1 and legacy snapshots", () => {
 test("all four concise decisions are required before save", () => {
   assert.equal(isDecisionCaptureComplete(complete), true);
   assert.equal(isDecisionCaptureComplete({ ...complete, riskNote: "" }), false);
+});
+
+test("decision relation presentation uses product language instead of enum names", () => {
+  assert.deepEqual(
+    PLAN_RELATION_OPTIONS.map(({ value, label }) => [value, label]),
+    [
+      ["FOLLOWED_PLAN", "계획대로"],
+      ["CHANGED_PLAN", "계획 변경"],
+      ["UNPLANNED", "즉흥 판단"],
+    ],
+  );
+  assert.equal(decisionPlanRelationLabel("FOLLOWED_PLAN"), "계획대로");
+  assert.equal(decisionPlanRelationLabel("CHANGED_PLAN"), "계획 변경");
+});
+
+test("successful action feedback names the recorded plan relation", () => {
+  assert.equal(
+    decisionPlanRelationFeedback("FOLLOWED_PLAN"),
+    "계획대로 실행으로 기록했습니다.",
+  );
+  assert.equal(
+    decisionPlanRelationFeedback("CHANGED_PLAN"),
+    "계획 변경으로 기록했습니다.",
+  );
+  assert.equal(
+    decisionPlanRelationFeedback("UNPLANNED"),
+    "즉흥 판단으로 기록했습니다.",
+  );
 });

@@ -26,6 +26,7 @@ import { resizeScenarioTextarea } from "./scenarioTextarea";
 import {
   CURRENT_VIEW_OPTIONS,
   decisionCurrentViewLabel,
+  decisionPlanRelationLabel,
   fromDecisionCaptureContent,
   INVALIDATION_ACTION_OPTIONS,
   isDecisionCaptureComplete,
@@ -43,7 +44,7 @@ type Props = {
     content: ScenarioContent,
   ) => Promise<unknown>;
 };
-const tabs = ["작성 / 수정", "시나리오 기록", "매매 근거 기록"] as const;
+const tabs = ["계획 작성", "PLAN 기록", "ACTION 기록"] as const;
 const time = (value: string) =>
   new Date(value).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -87,7 +88,7 @@ function AutoGrowTextarea({
       placeholder={placeholder}
       onInput={(event) => resizeScenarioTextarea(event.currentTarget)}
       onChange={onChange}
-      className="ml-7 min-h-[38px] max-h-40 w-[calc(100%-1.75rem)] resize-none overflow-y-hidden rounded-md border border-border/55 bg-muted/15 px-3.5 py-2 text-[13px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/75 focus:border-primary/65"
+      className="min-h-[38px] max-h-40 w-full resize-none overflow-y-hidden rounded-md border border-border/55 bg-muted/15 px-3.5 py-2 text-[13px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/75 focus:border-primary/65"
     />
   );
 }
@@ -174,13 +175,18 @@ export function TrainingPlanSection({
     <>
       <section className="border-b border-border/30 pb-4">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold">
-              PLAN{" "}
-              <span className="font-normal text-muted-foreground">
-                · 현재 계획
-              </span>
-            </h2>
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold tracking-[0.14em] text-primary/80">
+              01 · PLAN
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Decision Plan</h2>
+              {latestScenario && (
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                  Saved
+                </span>
+              )}
+            </div>
             {latestScenario && (
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {versionOf(latestScenario.id)} ·{" "}
@@ -194,33 +200,47 @@ export function TrainingPlanSection({
             disabled={!activeChart}
             className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-40"
           >
-            {latestScenario ? "계획 관리" : "+ 첫 계획 작성"}
+            {latestScenario ? "계획 수정" : "+ 계획 작성"}
           </button>
         </div>
         {latestScenario ? (
-          <div className="mt-2.5 space-y-1 text-[13px] leading-5">
-            <p className="line-clamp-2 text-foreground/90">
+          <dl className="mt-3 grid grid-cols-[52px_1fr] gap-x-2 gap-y-1.5 border-l border-primary/30 pl-3 text-xs leading-[18px]">
+            <dt className="text-muted-foreground">관점</dt>
+            <dd className="truncate font-medium text-foreground/90">
               {decisionCurrentViewLabel(
                 latestScenario.contentJson.currentView ?? latestScenario.contentJson.thesis,
               )}
-            </p>
-            {latestScenario.contentJson.entryReason && (
-              <p className="line-clamp-1 text-muted-foreground">
-                진입: {latestScenario.contentJson.entryReason}
-              </p>
-            )}
-          </div>
+            </dd>
+            <dt className="text-muted-foreground">진입</dt>
+            <dd className="line-clamp-1 text-foreground/80">
+              {latestScenario.contentJson.entryCondition ??
+                latestScenario.contentJson.entryReason ??
+                "—"}
+            </dd>
+            <dt className="text-muted-foreground">무효화</dt>
+            <dd className="line-clamp-1 text-foreground/80">
+              {latestScenario.contentJson.invalidationCondition ??
+                latestScenario.contentJson.riskNote ??
+                "—"}
+            </dd>
+            <dt className="text-muted-foreground">대응</dt>
+            <dd className="truncate text-foreground/80">
+              {invalidationActionLabel(
+                latestScenario.contentJson.ifInvalidated ?? latestScenario.contentJson.exitPlan,
+              )}
+            </dd>
+          </dl>
         ) : (
           <p className="mt-3 text-[13px] leading-5 text-muted-foreground">
-            아직 작성된 계획이 없습니다.
+            차트를 보기 전 판단 기준을 먼저 정해보세요.
           </p>
         )}
       </section>
       {open && (
         <WorkspaceDialog
           wide
-          title="시나리오 관리"
-          description={`Chart ${(activeChart?.chartIndex ?? 0) + 1} · 계획과 실행의 판단 기록`}
+          title="Decision Plan"
+          description={`Chart ${(activeChart?.chartIndex ?? 0) + 1} · 먼저 계획하고, 행동할 때 PLAN과 비교합니다.`}
           busy={saving}
           onClose={() => setOpen(false)}
         >
@@ -298,24 +318,19 @@ export function TrainingPlanSection({
             {tab === 0 && (
               <fieldset disabled={saving} className="space-y-4">
                 <DecisionChoice
-                  index="01"
-                  label="현재 관점"
+                  label="Current View"
                   helper="지금 차트를 어느 방향으로 보고 있나요?"
                   value={form.thesis}
                   options={CURRENT_VIEW_OPTIONS}
                   onChange={(value) => updateForm({ ...form, thesis: value })}
                 />
-                {SCENARIO_FIELDS.map(({ key, label, helper, example }, index) => (
+                {SCENARIO_FIELDS.map(({ key, helper, example }) => (
                   <label key={key} className="block">
-                    <span className="flex items-baseline gap-2">
-                      <span className="w-6 text-sm tabular-nums text-muted-foreground">
-                        0{index + 2}
-                      </span>
-                      <span className="text-[17px] font-semibold">
-                        {label}<span className="text-primary"> *</span>
-                      </span>
+                    <span className="text-sm font-semibold">
+                      {key === "entryReason" ? "Entry Condition" : "Invalidation Condition"}
+                      <span className="text-primary"> *</span>
                     </span>
-                    <span className="mb-1 ml-8 block text-[13px] leading-5 text-muted-foreground">
+                    <span className="mb-1.5 mt-1 block text-xs leading-5 text-muted-foreground">
                       {helper}
                     </span>
                     <AutoGrowTextarea
@@ -328,8 +343,7 @@ export function TrainingPlanSection({
                   </label>
                 ))}
                 <DecisionChoice
-                  index="04"
-                  label="무효화되면"
+                  label="If Invalidated"
                   helper="판단이 틀렸다면 어떻게 행동할 건가요?"
                   value={form.exitPlan}
                   options={INVALIDATION_ACTION_OPTIONS}
@@ -459,11 +473,10 @@ export function TrainingPlanSection({
                       </p>
                       {trade.planRelation && (
                         <p className="mt-1 text-[11px] font-medium text-foreground/75">
-                          {trade.planRelation === "FOLLOWED_PLAN"
-                            ? "기존 계획 실행"
-                            : trade.planRelation === "CHANGED_PLAN"
-                              ? `계획 변경${trade.changeReason ? ` · ${trade.changeReason}` : ""}`
-                              : "즉석 판단"}
+                          {decisionPlanRelationLabel(trade.planRelation)}
+                          {trade.planRelation === "CHANGED_PLAN" && trade.changeReason
+                            ? ` · ${trade.changeReason}`
+                            : ""}
                         </p>
                       )}
                       {trade.reasons.map((reason, index) => (
@@ -510,7 +523,7 @@ export function TrainingPlanSection({
                   disabled={saving || !isDecisionCaptureComplete(form)}
                   className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40"
                 >
-                  {saving ? "저장 중..." : "새 버전 저장"}
+                  {saving ? "저장 중..." : latestScenario ? "새 버전 저장" : "계획 저장"}
                 </button>
               </div>
             </footer>
@@ -521,14 +534,12 @@ export function TrainingPlanSection({
   );
 }
 function DecisionChoice<T extends string>({
-  index,
   label,
   helper,
   value,
   options,
   onChange,
 }: {
-  index: string;
   label: string;
   helper: string;
   value: string;
@@ -537,14 +548,11 @@ function DecisionChoice<T extends string>({
 }) {
   return (
     <div>
-      <div className="flex items-baseline gap-2">
-        <span className="w-6 text-sm tabular-nums text-muted-foreground">{index}</span>
-        <span className="text-[17px] font-semibold">
-          {label}<span className="text-primary"> *</span>
-        </span>
-      </div>
-      <p className="mb-2 ml-8 text-[13px] leading-5 text-muted-foreground">{helper}</p>
-      <div className={`ml-7 grid grid-cols-2 gap-1.5 ${options.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
+      <span className="text-sm font-semibold">
+        {label}<span className="text-primary"> *</span>
+      </span>
+      <p className="mb-2 mt-1 text-xs leading-5 text-muted-foreground">{helper}</p>
+      <div className={`grid grid-cols-2 gap-1.5 ${options.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
         {options.map((option) => (
           <button
             key={option.value}

@@ -8,6 +8,7 @@ import type {
   TrainingEventResponse,
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
+import { decisionPlanRelationFeedback } from "./decisionCapture";
 import {
   buildWaitEventPayload,
   buildTradeEventPayload,
@@ -169,9 +170,7 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? `${side} 저장됨 · ${qty}주 · ${formatPrice(
-            tradeRes.executedPrice,
-          )}원 · AI 리뷰 반영`
+          ? decisionPlanRelationFeedback(tradeForm.planRelation)
           : `${side} 체결됨 · ${qty}주 · ${formatPrice(
             tradeRes.executedPrice,
           )}원 · 매매 로그 저장 실패`,
@@ -207,7 +206,7 @@ export function useTrainingTrade({
         }),
       });
       appendEvent(event);
-      showSavedMessage("WAIT 저장됨 · 판단 기록이 AI 리뷰에 반영됩니다.", "WAIT");
+      showSavedMessage(decisionPlanRelationFeedback(tradeForm.planRelation), "WAIT");
       resetReasonOnly();
       return true;
     } catch {
@@ -274,7 +273,7 @@ export function useTrainingTrade({
 
       showSavedMessage(
         eventSaved
-          ? `SELL ALL 저장됨 · ${formatPrice(res.executedPrice)}원 · AI 리뷰 반영`
+          ? decisionPlanRelationFeedback(tradeForm.planRelation)
           : `SELL ALL 체결됨 · ${formatPrice(res.executedPrice)}원 · 매매 로그 저장 실패`,
         "SELL",
       );
