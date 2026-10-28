@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   DEFAULT_LANGUAGE,
@@ -42,4 +43,11 @@ test("localized labels never mutate API enum values", () => {
   assert.equal(trainingMessages.en.relation.followed, "Followed the plan");
   assert.equal(trainingMessages.ko.relation.followed, "계획대로");
   assert.deepEqual(payload, { side: "BUY", planRelation: "FOLLOWED_PLAN" });
+});
+
+test("the app document opts out of browser translation without changing its default language", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(html, /<html lang="en" translate="no" class="notranslate">/);
+  assert.match(html, /<meta name="google" content="notranslate" \/>/);
 });
