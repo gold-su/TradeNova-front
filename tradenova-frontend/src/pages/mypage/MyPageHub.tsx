@@ -24,42 +24,10 @@ import {
   summarizeTrainingHistory,
 } from "./myPageState";
 import { formatHistoryDate, trainingHistoryDetailPath } from "./trainingHistoryBrowser";
-
-const hubLinks: ReadonlyArray<{
-  to: string;
-  title: string;
-  description: string;
-  icon: ReactNode;
-  primary?: boolean;
-}> = [
-  {
-    to: "/training",
-    title: "훈련 시작",
-    description: "Blind Chart 훈련을 이어갑니다.",
-    icon: <Play className="h-4 w-4" aria-hidden="true" />,
-    primary: true,
-  },
-  {
-    to: "/mypage/history",
-    title: "훈련 기록",
-    description: "완료한 세션과 AI 리뷰를 확인합니다.",
-    icon: <History className="h-4 w-4" aria-hidden="true" />,
-  },
-  {
-    to: "/growth",
-    title: "성장 리포트",
-    description: "훈련 과정과 판단 습관의 변화를 봅니다.",
-    icon: <TrendingUp className="h-4 w-4" aria-hidden="true" />,
-  },
-  {
-    to: "/mypage/accounts",
-    title: "훈련 계좌",
-    description: "가상 훈련 계좌와 초기 자본을 관리합니다.",
-    icon: <WalletCards className="h-4 w-4" aria-hidden="true" />,
-  },
-];
+import { useI18n } from "@/i18n/LanguageProvider";
 
 export default function MyPageHub() {
+  const { language, t } = useI18n();
   const navigate = useNavigate();
   const [managerOpen, setManagerOpen] = useState(false);
   const profile = readStoredProfile(localStorage);
@@ -71,6 +39,12 @@ export default function MyPageHub() {
     itemCount: history.items.length,
   });
   const summary = summarizeTrainingHistory(history.items);
+  const hubLinks = [
+    { to: "/training", title: t("mypage.start"), description: t("mypage.startDescription"), icon: <Play className="h-4 w-4" aria-hidden="true" />, primary: true },
+    { to: "/mypage/history", title: t("mypage.history"), description: t("mypage.historyDescription"), icon: <History className="h-4 w-4" aria-hidden="true" /> },
+    { to: "/growth", title: t("mypage.growth"), description: t("mypage.growthDescription"), icon: <TrendingUp className="h-4 w-4" aria-hidden="true" /> },
+    { to: "/mypage/accounts", title: t("mypage.accounts"), description: t("mypage.accountsDescription"), icon: <WalletCards className="h-4 w-4" aria-hidden="true" /> },
+  ];
 
   const logout = () => {
     authApi.logoutLocal();
@@ -81,22 +55,22 @@ export default function MyPageHub() {
     <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 lg:py-10">
       <header className="flex flex-col justify-between gap-4 border-b border-border/45 pb-5 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary">MY PAGE</p>
-          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">계정과 훈련 허브</h1>
-          <p className="mt-1 text-sm text-muted-foreground">훈련을 시작하고, 기록과 성장 흐름을 다시 확인합니다.</p>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary">{t("mypage.eyebrow")}</p>
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">{t("mypage.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("mypage.description")}</p>
         </div>
         <div className="flex min-w-0 items-center gap-3 sm:max-w-xs sm:text-right">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
             <UserRound className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{profile.nickname || "사용자"}</p>
-            <p className="truncate text-xs text-muted-foreground">{profile.email || "저장된 로그인 정보 없음"}</p>
+            <p className="truncate text-sm font-medium">{profile.nickname || t("mypage.user")}</p>
+            <p className="truncate text-xs text-muted-foreground">{profile.email || t("mypage.noLoginInfo")}</p>
           </div>
         </div>
       </header>
 
-      <nav aria-label="마이페이지 주요 기능" className="grid gap-2 py-5 sm:grid-cols-2 lg:grid-cols-4">
+      <nav aria-label={t("mypage.navLabel")} className="grid gap-2 py-5 sm:grid-cols-2 lg:grid-cols-4">
         {hubLinks.map((item) => (
           <Link
             key={item.to}
@@ -123,44 +97,44 @@ export default function MyPageHub() {
             <div>
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
-                <h2 id="recent-training-heading" className="text-sm font-semibold">최근 훈련</h2>
+                <h2 id="recent-training-heading" className="text-sm font-semibold">{t("mypage.recent")}</h2>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">최근 완료한 세션과 저장된 AI 리뷰입니다.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("mypage.recentDescription")}</p>
             </div>
             {!history.loading && !history.error && (
               <dl className="grid grid-cols-3 gap-5">
-                <SummaryMetric label="완료" value={summary.completedSessions} />
-                <SummaryMetric label="거래" value={summary.totalTrades} />
-                <SummaryMetric label="AI 리뷰" value={summary.reviewedSessions} />
+                <SummaryMetric label={t("mypage.completed")} value={summary.completedSessions} />
+                <SummaryMetric label={t("mypage.trades")} value={summary.totalTrades} />
+                <SummaryMetric label={t("mypage.aiReviews")} value={summary.reviewedSessions} />
               </dl>
             )}
           </div>
 
           {historyState === "loading" && (
-            <div aria-label="훈련 기록 불러오는 중" className="divide-y divide-border/30">
+            <div aria-label={t("mypage.historyLoading")} className="divide-y divide-border/30">
               {[0, 1, 2].map((item) => <div key={item} className="h-16 animate-pulse bg-muted/15" />)}
             </div>
           )}
           {historyState === "error" && (
             <HistoryMessage
-              text="훈련 기록을 불러오지 못했습니다."
-              action={<Button size="sm" variant="outline" onClick={() => void history.load()}>다시 시도</Button>}
+              text={t("mypage.historyFailed")}
+              action={<Button size="sm" variant="outline" onClick={() => void history.load()}>{t("common.retry")}</Button>}
             />
           )}
           {historyState === "empty" && (
             <HistoryMessage
-              text="아직 완료한 훈련이 없습니다."
-              action={<Button asChild size="sm"><Link to="/training">첫 훈련 시작</Link></Button>}
+              text={t("mypage.noHistory")}
+              action={<Button asChild size="sm"><Link to="/training">{t("mypage.firstTraining")}</Link></Button>}
             />
           )}
           {historyState === "ready" && (
             <>
               <div className="divide-y divide-border/35">
-                {history.items.slice(0, 5).map((session) => <HistoryRow key={session.sessionId} session={session} />)}
+                {history.items.slice(0, 5).map((session) => <HistoryRow key={session.sessionId} session={session} locale={language === "ko" ? "ko-KR" : "en-US"} summaryLabel={t("mypage.chartCount", { completed: session.completedChartCount, total: session.totalChartCount, trades: session.totalTradeCount, snapshots: session.snapshotCount })} />)}
               </div>
               <div className="border-t border-border/40 px-4 py-2 sm:px-5">
                 <Button asChild variant="ghost" size="sm" className="w-full text-xs">
-                  <Link to="/mypage/history">전체 훈련 기록 보기 <ChevronRight className="h-3.5 w-3.5" /></Link>
+                  <Link to="/mypage/history">{t("mypage.viewAllHistory")} <ChevronRight className="h-3.5 w-3.5" /></Link>
                 </Button>
               </div>
             </>
@@ -172,29 +146,29 @@ export default function MyPageHub() {
             <div className="flex items-start gap-3">
               <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <h2 id="reason-heading" className="text-sm font-semibold">매매 근거 관리</h2>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">BUY/SELL에서 다시 사용할 짧은 판단 근거를 관리합니다.</p>
+                <h2 id="reason-heading" className="text-sm font-semibold">{t("mypage.reasonTitle")}</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("mypage.reasonDescription")}</p>
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3">
               <span className="text-xs text-muted-foreground">
-                {phrases.quickPhrasesLoading ? "불러오는 중" : phrases.quickPhrasesError ? "불러오기 실패" : `${phrases.quickPhrases.length}개 등록됨`}
+                {phrases.quickPhrasesLoading ? t("common.loading") : phrases.quickPhrasesError ? t("mypage.loadFailed") : t("mypage.registered", { count: phrases.quickPhrases.length })}
               </span>
-              <Button variant="outline" size="sm" onClick={() => setManagerOpen(true)} disabled={phrases.quickPhrasesLoading}>근거 관리</Button>
+              <Button variant="outline" size="sm" onClick={() => setManagerOpen(true)} disabled={phrases.quickPhrasesLoading}>{t("mypage.manageReasons")}</Button>
             </div>
             {phrases.quickPhrasesError && (
-              <button type="button" onClick={() => void phrases.loadQuickPhrases()} className="mt-3 text-xs font-medium text-primary hover:underline">다시 시도</button>
+              <button type="button" onClick={() => void phrases.loadQuickPhrases()} className="mt-3 text-xs font-medium text-primary hover:underline">{t("common.retry")}</button>
             )}
           </section>
 
           <section aria-labelledby="account-heading" className="rounded-xl bg-muted/[0.06] p-4 ring-1 ring-border/35 sm:p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 id="account-heading" className="text-sm font-semibold">로그인 계정</h2>
-              <span className="rounded-full border border-border/50 px-2 py-1 text-[10px] text-muted-foreground">읽기 전용</span>
+              <h2 id="account-heading" className="text-sm font-semibold">{t("mypage.loginAccount")}</h2>
+              <span className="rounded-full border border-border/50 px-2 py-1 text-[10px] text-muted-foreground">{t("mypage.readOnly")}</span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">현재 서버는 프로필·비밀번호 변경 API를 제공하지 않습니다. 로그인 정보만 확인할 수 있습니다.</p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{t("mypage.accountNotice")}</p>
             <Button variant="outline" size="sm" onClick={logout} className="mt-4 w-full">
-              <LogOut className="h-4 w-4" aria-hidden="true" />로그아웃
+              <LogOut className="h-4 w-4" aria-hidden="true" />{t("mypage.logout")}
             </Button>
           </section>
         </aside>
@@ -217,7 +191,7 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
   return <div><dd className="text-right text-base font-semibold tabular-nums">{value}</dd><dt className="text-[10px] text-muted-foreground">{label}</dt></div>;
 }
 
-function HistoryRow({ session }: { session: TrainingHistorySummaryResponse }) {
+function HistoryRow({ session, locale, summaryLabel }: { session: TrainingHistorySummaryResponse; locale: string; summaryLabel: string }) {
   const aiLabel = getSessionAiLabel(session);
   return (
     <Link
@@ -226,10 +200,10 @@ function HistoryRow({ session }: { session: TrainingHistorySummaryResponse }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-medium">{formatHistoryDate(session.completedAt)}</p>
+          <p className="text-sm font-medium">{formatHistoryDate(session.completedAt, locale)}</p>
           {aiLabel && <span className="rounded-full bg-primary/[0.08] px-2 py-0.5 text-[10px] font-medium text-primary/85">{aiLabel}</span>}
         </div>
-        <p className="mt-1 text-xs tabular-nums text-muted-foreground">차트 {session.completedChartCount}/{session.totalChartCount} · 거래 {session.totalTradeCount} · 스냅샷 {session.snapshotCount}</p>
+        <p className="mt-1 text-xs tabular-nums text-muted-foreground">{summaryLabel}</p>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
     </Link>

@@ -13,6 +13,7 @@ import {
   isCurrentChartRequest,
   type ChartRequestToken,
 } from "./trainingStateConsistency";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type HydrationResource = "draft" | "events" | "snapshots";
 
@@ -33,6 +34,7 @@ function apiErrorMessage(error: unknown, fallback: string) {
  * - note 이벤트 저장
  */
 export function useTrainingReport(activeChartId: number | null) {
+  const { t } = useI18n();
   const activeChartIdRef = useRef(activeChartId);
   const requestVersionsRef = useRef<Record<HydrationResource, number>>({
     draft: 0,
@@ -175,7 +177,7 @@ export function useTrainingReport(activeChartId: number | null) {
         contentJson: draft,
       });
     } catch (e: unknown) {
-      setError(apiErrorMessage(e, "드래프트 저장 실패"));
+      setError(apiErrorMessage(e, t("training.report.draftSaveFailed")));
     } finally {
       setDraftSaving(false);
     }
@@ -198,7 +200,7 @@ export function useTrainingReport(activeChartId: number | null) {
 
       setSnapshots((prev) => [saved, ...prev]);
     } catch (e: unknown) {
-      setError(apiErrorMessage(e, "스냅샷 저장 실패"));
+      setError(apiErrorMessage(e, t("training.report.snapshotSaveFailed")));
     }
   };
 
@@ -224,7 +226,7 @@ export function useTrainingReport(activeChartId: number | null) {
 
       const event = await reportApi.createEvent(targetChartId, {
         type: "SNAPSHOT",
-        title: content.thesis?.trim() || "시나리오 저장",
+        title: content.thesis?.trim() || t("training.report.scenarioSavedTitle"),
         payloadJson: {
           scenario: true,
           snapshotId: saved.id,
@@ -242,7 +244,7 @@ export function useTrainingReport(activeChartId: number | null) {
 
       return saved;
     } catch (e: unknown) {
-      setError(apiErrorMessage(e, "시나리오 저장 실패"));
+      setError(apiErrorMessage(e, t("training.report.scenarioSaveFailed")));
       return null;
     }
   };
@@ -258,7 +260,7 @@ export function useTrainingReport(activeChartId: number | null) {
 
       const event = await reportApi.createEvent(activeChartId, {
         type: "NOTE",
-        title: draft.thesis?.trim() || "수동 메모",
+        title: draft.thesis?.trim() || t("training.report.manualNoteTitle"),
         payloadJson: {
           thesis: draft.thesis ?? "",
           entryReason: draft.entryReason ?? "",
@@ -271,7 +273,7 @@ export function useTrainingReport(activeChartId: number | null) {
 
       appendEvent(event);
     } catch (e: unknown) {
-      setError(apiErrorMessage(e, "메모 이벤트 저장 실패"));
+      setError(apiErrorMessage(e, t("training.report.noteSaveFailed")));
     }
   };
 

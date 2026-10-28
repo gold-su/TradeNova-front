@@ -123,13 +123,20 @@ export function createScenarioClaim(
   side: "BUY" | "SELL",
   planRelation: PlanRelation,
   createdAt = new Date().toISOString(),
+  copy = {
+    followedTitle: "기존 계획 실행",
+    changedTitle: "계획 변경 후 실행",
+    entryConditionMet: "진입 조건이 충족되었다고 사용자가 기록함",
+    exitConditionMet: "청산 조건이 충족되었다고 사용자가 기록함",
+    changedReason: "사전 계획을 변경해 실행했다고 사용자가 기록함",
+  },
 ): TradeReasonItem {
   return {
     id: `scenario-${side.toLowerCase()}`,
-    title: planRelation === "FOLLOWED_PLAN" ? "기존 계획 실행" : "계획 변경 후 실행",
+    title: planRelation === "FOLLOWED_PLAN" ? copy.followedTitle : copy.changedTitle,
     entryReason: planRelation === "FOLLOWED_PLAN"
-      ? `${side === "BUY" ? "진입" : "청산"} 조건이 충족되었다고 사용자가 기록함`
-      : "사전 계획을 변경해 실행했다고 사용자가 기록함",
+      ? side === "BUY" ? copy.entryConditionMet : copy.exitConditionMet
+      : copy.changedReason,
     riskNote: "",
     createdAt,
   };
@@ -141,18 +148,20 @@ export function buildTradeEventPayload({
   res,
   tradeForm,
   sellAll = false,
+  claimCopy,
 }: {
   side: "BUY" | "SELL";
   qty?: number;
   res: TradeResponse;
   tradeForm: TradeForm;
   sellAll?: boolean;
+  claimCopy?: Parameters<typeof createScenarioClaim>[3];
 }) {
   const scenarioSelected = tradeForm.planRelation !== "UNPLANNED" &&
     tradeForm.reasonMode === "SCENARIO" && tradeForm.scenarioSnapshotId != null;
   const reasons = [
     ...(scenarioSelected && tradeForm.planRelation
-      ? [createScenarioClaim(side, tradeForm.planRelation)]
+      ? [createScenarioClaim(side, tradeForm.planRelation, undefined, claimCopy)]
       : []),
     ...(tradeForm.reasons ?? []),
   ];

@@ -28,27 +28,7 @@ import type {
   SelectedDrawing,
 } from "@/components/training/chart/drawing/drawingTypes";
 import { drawingEscapeAction } from "@/components/training/chart/drawing/drawingTypes";
-
-function sectorLabel(sector?: string) {
-  switch (sector) {
-    case "SEMICONDUCTOR":
-      return "반도체";
-    case "SECONDARY_BATTERY":
-      return "2차전지";
-    case "PLATFORM":
-      return "플랫폼";
-    case "BIO":
-      return "바이오";
-    case "FINANCE":
-      return "금융";
-    case "DEFENSE":
-      return "방산";
-    case "SHIPBUILDING":
-      return "조선";
-    default:
-      return "블라인드";
-  }
-}
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   charts: TrainingChartDto[];
@@ -123,6 +103,8 @@ export function TrainingCenterPanel({
   onDeleteSelectedDrawing,
   onClearChartDrawings,
 }: Props) {
+  const { t } = useI18n();
+  const sectorLabel = (sector?: string) => t(`training.sector.${sector && ["SEMICONDUCTOR", "SECONDARY_BATTERY", "PLATFORM", "BIO", "FINANCE", "DEFENSE", "SHIPBUILDING"].includes(sector) ? sector : "unknown"}`);
   const [indicatorOpen, setIndicatorOpen] = useState(false);
 
   const [indicatorScope, setIndicatorScope] = useState<"GLOBAL" | "CHART">(
@@ -187,7 +169,7 @@ export function TrainingCenterPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/70">
-              ACTIVE CHART
+              {t("training.chartUi.active")}
             </div>
 
             <div className="mt-1 flex items-center gap-2">
@@ -198,7 +180,7 @@ export function TrainingCenterPanel({
               <span className="text-xl font-bold tracking-tight text-foreground">
                 {activeChart
                   ? sectorLabel(activeChart.trainingSector)
-                  : "차트를 선택하세요"}
+                  : t("training.chartUi.selectPrompt")}
               </span>
             </div>
           </div>
@@ -212,7 +194,7 @@ export function TrainingCenterPanel({
                 : "text-muted-foreground hover:text-foreground"
                 }`}
             >
-              Grid
+              {t("training.chart.grid")}
             </button>
 
             <button
@@ -223,7 +205,7 @@ export function TrainingCenterPanel({
                 : "text-muted-foreground hover:text-foreground"
                 }`}
             >
-              Single
+              {t("training.chart.single")}
             </button>
           </div>
         </div>
@@ -240,13 +222,13 @@ export function TrainingCenterPanel({
               className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_14px_rgba(52,211,153,0.18)]"
             >
               <Activity className="h-3.5 w-3.5" />
-              보조지표
+              {t("training.chartUi.indicators")}
             </button>
 
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground">새로고침</span>
+            <span className="text-[11px] text-muted-foreground">{t("training.chartUi.refresh")}</span>
 
             <Select
               value={refreshRequest.refreshType}
@@ -267,8 +249,8 @@ export function TrainingCenterPanel({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="RANDOM">전체 랜덤</SelectItem>
-                <SelectItem value="TRAINING_SECTOR">섹터 선택</SelectItem>
+                <SelectItem value="RANDOM">{t("training.chartUi.random")}</SelectItem>
+                <SelectItem value="TRAINING_SECTOR">{t("training.chartUi.selectSector")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -287,13 +269,7 @@ export function TrainingCenterPanel({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="SEMICONDUCTOR">반도체</SelectItem>
-                <SelectItem value="SECONDARY_BATTERY">2차전지</SelectItem>
-                <SelectItem value="PLATFORM">플랫폼</SelectItem>
-                <SelectItem value="BIO">바이오</SelectItem>
-                <SelectItem value="FINANCE">금융</SelectItem>
-                <SelectItem value="DEFENSE">방산</SelectItem>
-                <SelectItem value="SHIPBUILDING">조선</SelectItem>
+                {(["SEMICONDUCTOR", "SECONDARY_BATTERY", "PLATFORM", "BIO", "FINANCE", "DEFENSE", "SHIPBUILDING"] as const).map((sector) => <SelectItem key={sector} value={sector}>{t(`training.sector.${sector}`)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -307,7 +283,7 @@ export function TrainingCenterPanel({
             <span className="min-w-0 flex-1">{visibleError}</span>
             <button
               type="button"
-              aria-label="오류 메시지 닫기"
+              aria-label={t("training.chartUi.closeError")}
               onClick={() => setVisibleError(null)}
               className="rounded-lg p-1 text-red-100/70 transition hover:bg-red-500/20 hover:text-red-50"
             >
@@ -390,8 +366,8 @@ export function TrainingCenterPanel({
         onScopeChange={setIndicatorScope}
         activeChartLabel={
           activeChart
-            ? `Chart ${activeChart.chartIndex + 1} · 블라인드 차트`
-            : "차트를 선택하세요."
+            ? `Chart ${activeChart.chartIndex + 1} · ${t("training.chart.blindChart")}`
+            : t("training.chartUi.selectPrompt")
         }
         hasChartOverride={!!(activeChartId && chartIndicators[activeChartId])}
         settings={

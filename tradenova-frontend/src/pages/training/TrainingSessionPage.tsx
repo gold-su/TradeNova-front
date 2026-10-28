@@ -3,16 +3,18 @@ import { TrainingLeftPanel } from "@/components/training/layout/TrainingLeftPane
 import { TrainingRightPanel } from "@/components/training/layout/TrainingRightPanel";
 import { useTrainingSessionPage } from "@/pages/training/useTrainingSessionPage";
 import { TrainingCompletionPage } from "@/components/training/completion/TrainingCompletionPage";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 export default function TrainingSessionPage() {
+  const { t } = useI18n();
   const page = useTrainingSessionPage();
   if (page.activeSessionLoading) {
     return (
       <div className="flex h-[calc(100dvh-57px)] w-full items-center justify-center bg-background">
         <div className="rounded-2xl border border-border/60 bg-background/40 px-8 py-6 text-center shadow-sm">
-          <div className="mb-2 text-sm font-semibold">훈련 세션 복구 중</div>
+          <div className="mb-2 text-sm font-semibold">{t("training.session.restoring")}</div>
           <div className="text-xs text-muted-foreground">
-            이전 훈련 기록과 차트 상태를 불러오고 있습니다.
+            {t("training.session.restoringBody")}
           </div>
         </div>
       </div>
@@ -63,11 +65,10 @@ export default function TrainingSessionPage() {
         <main className="flex flex-1 items-center justify-center p-6">
           <div className="max-w-md rounded-3xl border border-border/60 bg-background/40 p-8 text-center shadow-sm">
             <div className="mb-3 text-xl font-semibold">
-              진행 중인 훈련 세션이 없습니다
+              {t("training.session.empty")}
             </div>
             <div className="mb-6 text-sm leading-6 text-muted-foreground">
-              새 훈련을 시작하면 랜덤 차트 기반으로 매수/매도 판단, 보조지표
-              설정, 매매 기록, AI 분석을 진행할 수 있습니다.
+              {t("training.session.emptyBody")}
             </div>
 
             <button
@@ -76,7 +77,7 @@ export default function TrainingSessionPage() {
               disabled={page.loading}
               className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {page.loading ? "훈련 생성 중..." : "새 훈련 시작"}
+              {page.loading ? t("training.session.creating") : t("training.session.start")}
             </button>
           </div>
         </main>

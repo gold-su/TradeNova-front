@@ -1,3 +1,5 @@
+import { useI18n } from "@/i18n/LanguageProvider";
+
 type Props = {
   disabled: boolean;
   loading: boolean;
@@ -15,9 +17,10 @@ export function TrainingActionBar({
   onBuy,
   onSell,
 }: Props) {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl border border-border/60 bg-background/30 p-4">
-      <div className="mb-3 text-sm font-semibold">Actions</div>
+      <div className="mb-3 text-sm font-semibold">{t("training.action.action")}</div>
 
       <div className="grid grid-cols-2 gap-2">
         <button
@@ -25,7 +28,7 @@ export function TrainingActionBar({
           disabled={disabled}
           className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
-          {loading ? "처리 중..." : "NEXT"}
+          {loading ? t("training.action.processing") : t("training.action.next")}
         </button>
 
         <button
@@ -33,7 +36,7 @@ export function TrainingActionBar({
           disabled={disabled}
           className="rounded-xl border border-border/60 bg-background px-4 py-3 text-sm disabled:opacity-50"
         >
-          BUY
+          {t("training.action.buy")}
         </button>
 
         <button
@@ -41,7 +44,7 @@ export function TrainingActionBar({
           disabled={disabled}
           className="rounded-xl border border-border/60 bg-background px-4 py-3 text-sm disabled:opacity-50"
         >
-          SELL
+          {t("training.action.sell")}
         </button>
 
         <button
@@ -49,7 +52,7 @@ export function TrainingActionBar({
           disabled={disabled}
           className="rounded-xl border border-border/60 bg-background px-4 py-3 text-sm disabled:opacity-50"
         >
-          SELL ALL
+          {t("training.action.sellAll")}
         </button>
       </div>
     </div>

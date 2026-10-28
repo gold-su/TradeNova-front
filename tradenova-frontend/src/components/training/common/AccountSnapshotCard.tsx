@@ -1,26 +1,27 @@
 import type { ProgressResponse, TrainingChartDto } from "@/types/training";
 import { Wallet } from "lucide-react";
 import { calculateUnrealizedPosition } from "./accountSnapshotCalculations";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 function isFiniteNumber(v: number | null | undefined): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-function n(v: number | null | undefined) {
+function n(v: number | null | undefined, locale: string) {
   if (!isFiniteNumber(v)) return "-";
-  return new Intl.NumberFormat("ko-KR").format(v);
+  return new Intl.NumberFormat(locale).format(v);
 }
 
-function n2(v: number | null | undefined) {
+function n2(v: number | null | undefined, locale: string) {
   if (!isFiniteNumber(v)) return "-";
-  return new Intl.NumberFormat("ko-KR", {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   }).format(v);
 }
 
-function signed(v: number | null, suffix: string) {
+function signed(v: number | null, suffix: string, locale: string) {
   if (v === null) return "-";
-  const value = new Intl.NumberFormat("ko-KR", {
+  const value = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   }).format(v);
   return `${v > 0 ? "+" : ""}${value}${suffix}`;
@@ -31,33 +32,15 @@ function pnlTone(v: number | null) {
   return v > 0 ? "text-green-400" : "text-red-400";
 }
 
-function sectorLabel(sector?: string) {
-  switch (sector) {
-    case "SEMICONDUCTOR":
-      return "반도체";
-    case "SECONDARY_BATTERY":
-      return "2차전지";
-    case "PLATFORM":
-      return "플랫폼";
-    case "BIO":
-      return "바이오";
-    case "FINANCE":
-      return "금융";
-    case "DEFENSE":
-      return "방산";
-    case "SHIPBUILDING":
-      return "조선";
-    default:
-      return "블라인드";
-  }
-}
-
 type Props = {
   chart: TrainingChartDto | null;
   progress: ProgressResponse | null;
 };
 
 export function AccountSnapshotCard({ chart, progress }: Props) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
+  const sectorKey = chart?.trainingSector && ["SEMICONDUCTOR", "SECONDARY_BATTERY", "PLATFORM", "BIO", "FINANCE", "DEFENSE", "SHIPBUILDING"].includes(chart.trainingSector) ? chart.trainingSector : "unknown";
   const cash = progress?.cashBalance ?? null;
   const qty = progress?.positionQty ?? null;
   const avg = progress?.avgPrice ?? null;
@@ -75,37 +58,37 @@ export function AccountSnapshotCard({ chart, progress }: Props) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="text-sm font-semibold">계좌/포지션</div>
+          <div className="text-sm font-semibold">{t("training.account.snapshot")}</div>
         </div>
 
         <div className="text-[11px] text-muted-foreground">
           {chart
-            ? `Chart ${chart.chartIndex + 1} · ${sectorLabel(chart.trainingSector)}`
-            : "차트 없음"}
+            ? `Chart ${chart.chartIndex + 1} · ${t(`training.sector.${sectorKey}`)}`
+            : t("training.chart.none")}
         </div>
       </div>
 
       <div className="mt-3">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] text-muted-foreground">현재가</div>
+            <div className="text-[11px] text-muted-foreground">{t("training.account.currentPrice")}</div>
             <div className="mt-1 text-xl font-bold leading-none text-primary">
-              {isFiniteNumber(current) ? `${n2(current)}원` : "-"}
+              {isFiniteNumber(current) ? `₩${n2(current, locale)}` : "-"}
             </div>
           </div>
 
           <div className="rounded-full border border-border/45 bg-background/35 px-2 py-1 text-right text-[11px] font-medium text-muted-foreground">
-            {hasPosition ? "포지션 보유" : "미보유"}
+            {hasPosition ? t("training.account.hasPosition") : t("training.account.noPosition")}
           </div>
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/30 pt-3">
-          <Metric label="사용 가능 현금" value={isFiniteNumber(cash) ? `${n(cash)}원` : "-"} />
-          <Metric label="평가 금액" value={marketValue === null ? "-" : `${n(marketValue)}원`} align="right" />
-          <Metric label="보유 수량" value={isFiniteNumber(qty) ? `${n2(qty)}주` : "-"} />
-          <Metric label="평균 매입가" value={isFiniteNumber(avg) && hasPosition ? `${n2(avg)}원` : "-"} align="right" />
-          <Metric label="평가 손익" value={signed(unrealizedPnL, "원")} tone={pnlTone(unrealizedPnL)} />
-          <Metric label="수익률" value={signed(returnRate, "%")} tone={pnlTone(returnRate)} align="right" />
+          <Metric label={t("training.account.availableCash")} value={isFiniteNumber(cash) ? `₩${n(cash, locale)}` : "-"} />
+          <Metric label={t("training.account.marketValue")} value={marketValue === null ? "-" : `₩${n(marketValue, locale)}`} align="right" />
+          <Metric label={t("training.account.positionQty")} value={isFiniteNumber(qty) ? t("training.chart.shares", { count: n2(qty, locale) }) : "-"} />
+          <Metric label={t("training.account.averagePrice")} value={isFiniteNumber(avg) && hasPosition ? `₩${n2(avg, locale)}` : "-"} align="right" />
+          <Metric label={t("training.account.unrealizedPnl")} value={signed(unrealizedPnL, " KRW", locale)} tone={pnlTone(unrealizedPnL)} />
+          <Metric label={t("training.account.returnRate")} value={signed(returnRate, "%", locale)} tone={pnlTone(returnRate)} align="right" />
         </dl>
       </div>
     </section>

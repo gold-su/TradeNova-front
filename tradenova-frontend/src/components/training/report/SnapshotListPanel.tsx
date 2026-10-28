@@ -8,17 +8,18 @@ import {
   ShieldAlert,
   StickyNote,
 } from "lucide-react";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   items: ReportDocumentResponse[];
 };
 
-function formatTime(value: string) {
+function formatTime(value: string, locale: string) {
   const d = new Date(value);
 
   if (Number.isNaN(d.getTime())) return value;
 
-  return d.toLocaleString("ko-KR", {
+  return d.toLocaleString(locale, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -35,6 +36,8 @@ function emptyText(value?: string | null) {
 }
 
 export function SnapshotListPanel({ items }: Props) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState<ReportDocumentResponse | null>(null);
 
@@ -58,17 +61,17 @@ export function SnapshotListPanel({ items }: Props) {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 text-primary" />
-            <div className="text-sm font-semibold">시나리오 기록</div>
+            <div className="text-sm font-semibold">{t("training.log.scenarioRecords")}</div>
           </div>
 
           <div className="text-[11px] text-muted-foreground">
-            {scenarioItems.length}개
+            {t("training.log.count", { count: scenarioItems.length })}
           </div>
         </div>
 
         {visibleItems.length === 0 ? (
           <div className="rounded-lg bg-background/35 px-3 py-3 text-sm text-muted-foreground">
-            아직 저장된 시나리오가 없습니다.
+            {t("training.log.noScenarios")}
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -81,16 +84,16 @@ export function SnapshotListPanel({ items }: Props) {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="truncate text-xs font-semibold text-foreground">
-                    {item.contentJson?.thesis || "무제 시나리오"}
+                    {item.contentJson?.thesis || t("training.log.untitledScenario")}
                   </div>
 
                   <div className="shrink-0 text-[10px] text-muted-foreground">
-                    {formatTime(item.createdAt)}
+                    {formatTime(item.createdAt, locale)}
                   </div>
                 </div>
 
                 <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
-                  {item.contentJson?.entryReason || "진입 조건 미작성"}
+                  {item.contentJson?.entryReason || t("training.log.noEntryCondition")}
                 </div>
               </button>
             ))}
@@ -101,7 +104,7 @@ export function SnapshotListPanel({ items }: Props) {
                 onClick={() => setExpanded((prev) => !prev)}
                 className="mt-1 h-8 w-full rounded-md text-xs text-muted-foreground transition hover:bg-background/45 hover:text-foreground"
               >
-                {expanded ? "접기" : `전체 ${scenarioItems.length}개 보기`}
+                {expanded ? t("training.log.collapse") : t("training.log.viewAllCount", { count: scenarioItems.length })}
               </button>
             )}
           </div>
@@ -112,7 +115,7 @@ export function SnapshotListPanel({ items }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <button
             type="button"
-            aria-label="닫기"
+            aria-label={t("common.close")}
             className="absolute inset-0"
             onClick={() => setSelected(null)}
           />
@@ -120,9 +123,9 @@ export function SnapshotListPanel({ items }: Props) {
           <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-border/45 bg-background shadow-2xl">
             <div className="flex items-start justify-between border-b border-border/35 px-5 py-4">
               <div>
-                <div className="text-lg font-bold">시나리오 상세</div>
+                <div className="text-lg font-bold">{t("training.log.scenarioDetails")}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {formatTime(selected.createdAt)}
+                  {formatTime(selected.createdAt, locale)}
                 </div>
               </div>
 
@@ -139,7 +142,7 @@ export function SnapshotListPanel({ items }: Props) {
               <section className="rounded-2xl bg-background/35 p-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                   <Target className="h-3.5 w-3.5 text-primary" />
-                  핵심 관점
+                  {t("training.plan.currentView")}
                 </div>
                 <p className="text-sm leading-6 text-foreground/90">
                   {emptyText(selected.contentJson?.thesis)}
@@ -149,7 +152,7 @@ export function SnapshotListPanel({ items }: Props) {
               <section className="rounded-2xl bg-background/35 p-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                   <FileText className="h-3.5 w-3.5 text-primary" />
-                  진입 조건
+                  {t("training.plan.entryCondition")}
                 </div>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
                   {emptyText(selected.contentJson?.entryReason)}
@@ -160,7 +163,7 @@ export function SnapshotListPanel({ items }: Props) {
                 <section className="rounded-2xl bg-background/35 p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                     <Route className="h-3.5 w-3.5 text-primary" />
-                    대응 계획
+                    {t("training.plan.ifInvalidated")}
                   </div>
                   <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
                     {emptyText(selected.contentJson?.exitPlan)}
@@ -170,7 +173,7 @@ export function SnapshotListPanel({ items }: Props) {
                 <section className="rounded-2xl bg-background/35 p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                     <ShieldAlert className="h-3.5 w-3.5 text-red-300" />
-                    무효화 기준
+                    {t("training.plan.invalidationCondition")}
                   </div>
                   <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
                     {emptyText(selected.contentJson?.riskNote)}
@@ -181,7 +184,7 @@ export function SnapshotListPanel({ items }: Props) {
               <section className="rounded-2xl bg-background/35 p-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                   <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />
-                  추가 메모
+                  {t("training.plan.note")}
                 </div>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
                   {emptyText(selected.contentJson?.freeNote)}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { paperAccountApi } from "@/api/paperAccountApi";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   open: boolean;
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [initialBalance, setInitialBalance] = useState(10000000);
@@ -18,7 +20,7 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      setError("계좌 이름을 입력해주세요.");
+      setError(t("training.account.nameRequired"));
       return;
     }
 
@@ -39,7 +41,7 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
       await onCreated(created.id);
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "계좌 생성에 실패했습니다.");
+      setError(e?.response?.data?.message ?? t("training.account.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -49,9 +51,9 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-background p-5 shadow-xl">
         <div className="mb-4">
-          <div className="text-lg font-semibold">새 계좌 만들기</div>
+          <div className="text-lg font-semibold">{t("training.account.createTitle")}</div>
           <div className="mt-1 text-sm text-muted-foreground">
-            훈련에 사용할 모의투자 계좌를 생성합니다.
+            {t("training.account.createBody")}
           </div>
         </div>
 
@@ -59,14 +61,14 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="계좌 이름"
+            placeholder={t("training.account.name")}
             className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
           />
 
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="설명 선택"
+            placeholder={t("training.account.description")}
             className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
           />
 
@@ -74,7 +76,7 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
             type="number"
             value={initialBalance}
             onChange={(e) => setInitialBalance(Number(e.target.value))}
-            placeholder="초기 자본금"
+            placeholder={t("training.account.initialBalance")}
             className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm"
           />
         </div>
@@ -88,7 +90,7 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
             disabled={loading}
             className="rounded-xl border border-border/60 px-4 py-2 text-sm disabled:opacity-50"
           >
-            취소
+            {t("common.cancel")}
           </button>
 
           <button
@@ -97,7 +99,7 @@ export function AccountCreateDialog({ open, onClose, onCreated }: Props) {
             disabled={loading}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {loading ? "생성 중..." : "생성"}
+            {loading ? t("training.account.creating") : t("training.account.create")}
           </button>
         </div>
       </div>

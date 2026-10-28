@@ -3,8 +3,7 @@ import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
-import { M } from "../i18n/messages";
-import { getLocale } from "../i18n/locale";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,7 @@ import { saveAuthSession } from "@/lib/authSession";
 
 export default function LoginPage() {
     const nav = useNavigate();
-    const t = M[getLocale()];
+    const { t } = useI18n();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -41,7 +40,7 @@ export default function LoginPage() {
                 data?.msg1 ||
                 data?.errors?.email ||
                 data?.errors?.password ||
-                "로그인 실패";
+                t("auth.loginFailed");
 
             setErrorMsg(String(msg));
         } finally {
@@ -60,13 +59,13 @@ export default function LoginPage() {
 
             <Card className="relative z-10 w-full max-w-md bg-card border-border rounded-2xl">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{t.loginDesc}</p>
+                    <CardTitle className="text-2xl">{t("auth.loginTitle")}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{t("auth.loginDesc")}</p>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email">{t.email}</Label>
+                        <Label htmlFor="email">{t("auth.email")}</Label>
                         <Input
                             id="email"
                             className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
@@ -81,7 +80,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">{t.password}</Label>
+                        <Label htmlFor="password">{t("auth.password")}</Label>
                         <Input
                             id="password"
                             className="h-11 rounded-xl bg-background/40 border-border/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
@@ -107,16 +106,16 @@ export default function LoginPage() {
                         onClick={onSubmit}
                         disabled={disabled}
                     >
-                        {loading ? t.loginLoading : t.loginBtn}
+                        {loading ? t("auth.loggingIn") : t("auth.login")}
                     </Button>
 
                     <div className="text-sm text-muted-foreground">
-                        {t.noAccount}{" "}
+                        {t("auth.noAccount")}{" "}
                         <Link
                             to="/signup"
                             className="text-primary font-semibold hover:underline underline-offset-4"
                         >
-                            {t.goSignup}
+                            {t("auth.signup")}
                         </Link>
                     </div>
                 </CardContent>

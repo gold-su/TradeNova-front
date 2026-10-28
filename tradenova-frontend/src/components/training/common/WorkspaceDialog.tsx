@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 /** Native modal semantics provide focus trapping, Escape and focus restoration. */
 export function WorkspaceDialog({
@@ -20,6 +21,7 @@ export function WorkspaceDialog({
   medium?: boolean;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -61,7 +63,7 @@ export function WorkspaceDialog({
           </div>
           <button
             type="button"
-            aria-label="닫기"
+            aria-label={t("common.close")}
             disabled={busy}
             onClick={onClose}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 disabled:opacity-40"

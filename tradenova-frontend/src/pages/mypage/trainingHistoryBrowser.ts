@@ -23,20 +23,20 @@ export function filterAndSortHistory(items: TrainingHistorySummaryResponse[], so
   });
 }
 
-export function groupHistoryByMonth(items: TrainingHistorySummaryResponse[]) {
+export function groupHistoryByMonth(items: TrainingHistorySummaryResponse[], locale = "ko-KR", unknownLabel = "날짜 미상") {
   const groups = new Map<string, TrainingHistorySummaryResponse[]>();
   for (const item of items) {
     const date = new Date(item.completedAt ?? item.createdAt);
-    const key = Number.isNaN(date.getTime()) ? "날짜 미상" : new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit" }).format(date);
+    const key = Number.isNaN(date.getTime()) ? unknownLabel : new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit" }).format(date);
     groups.set(key, [...(groups.get(key) ?? []), item]);
   }
   return [...groups.entries()].map(([label, sessions]) => ({ label, sessions }));
 }
 
-export function formatHistoryDate(value: string | null) {
-  if (!value) return "완료 시각 없음";
+export function formatHistoryDate(value: string | null, locale = "ko-KR", emptyLabel = "완료 시각 없음") {
+  if (!value) return emptyLabel;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "완료 시각 없음" : new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? emptyLabel : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function historyTimestamp(item: TrainingHistorySummaryResponse) {

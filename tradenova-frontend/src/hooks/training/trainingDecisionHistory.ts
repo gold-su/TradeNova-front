@@ -85,9 +85,7 @@ export function getTradeReasonHistory(
             ? payload.planRelation
             : null,
         changeReason: text(payload.changeReason),
-        label: linked
-          ? `계획 연결${manualCount ? ` · 추가 근거 ${manualCount}개` : ""}`
-          : "계획 없이 거래",
+        manualCount,
         scenarioId: linked ? Number(payload.scenarioSnapshotId) : null,
         qty:
           typeof payload.qty === "number" && Number.isFinite(payload.qty)

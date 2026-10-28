@@ -11,27 +11,7 @@ import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
 import { getTrainingChartTileState, hasOpenChartPosition } from "./trainingChartTileState";
-
-function sectorLabel(sector?: string) {
-  switch (sector) {
-    case "SEMICONDUCTOR":
-      return "반도체";
-    case "SECONDARY_BATTERY":
-      return "2차전지";
-    case "PLATFORM":
-      return "플랫폼";
-    case "BIO":
-      return "바이오";
-    case "FINANCE":
-      return "금융";
-    case "DEFENSE":
-      return "방산";
-    case "SHIPBUILDING":
-      return "조선";
-    default:
-      return "블라인드";
-  }
-}
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   chart: TrainingChartDto;
@@ -90,6 +70,8 @@ export function TrainingChartTile({
   canClearDrawings,
   drawingEditingEnabled = false,
 }: Props) {
+  const { t } = useI18n();
+  const sectorLabel = (sector?: string) => t(`training.sector.${sector && ["SEMICONDUCTOR", "SECONDARY_BATTERY", "PLATFORM", "BIO", "FINANCE", "DEFENSE", "SHIPBUILDING"].includes(sector) ? sector : "unknown"}`);
   const visible = progress
     ? candles.slice(0, Math.min(progress.progressIndex + 1, candles.length))
     : candles;
@@ -132,14 +114,14 @@ export function TrainingChartTile({
 
           {hasIndicatorOverride && (
             <span className="shrink-0 rounded border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-              지표
+              {t("training.chartUi.indicators")}
             </span>
           )}
 
           {hasPosition && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded border border-cyan-300/25 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[10px] font-medium text-cyan-200">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-cyan-300" />
-              보유
+              {t("training.chart.holding")}
             </span>
           )}
         </div>
@@ -153,7 +135,7 @@ export function TrainingChartTile({
           <button
             type="button"
             disabled={refreshing}
-            title="차트 새로고침"
+            title={t("training.chart.refresh")}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -205,7 +187,7 @@ export function TrainingChartTile({
           </>
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
-            no data
+            {t("training.chartUi.noData")}
           </div>
         )}
       </div>

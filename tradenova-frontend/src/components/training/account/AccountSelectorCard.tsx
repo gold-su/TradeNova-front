@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { PaperAccountDto } from "@/hooks/training/training.types";
 import { AccountCreateDialog } from "./AccountCreateDialog";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   accounts: PaperAccountDto[];
@@ -11,9 +12,9 @@ type Props = {
   loadAccounts: (selectAccountId?: number) => Promise<void>;
 };
 
-function money(v: number | null | undefined) {
+function money(v: number | null | undefined, locale: string) {
   if (v === null || v === undefined) return "-";
-  return new Intl.NumberFormat("ko-KR").format(v);
+  return new Intl.NumberFormat(locale).format(v);
 }
 
 export function AccountSelectorCard({
@@ -23,6 +24,8 @@ export function AccountSelectorCard({
   hasSession,
   loadAccounts,
 }: Props) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const [createOpen, setCreateOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -43,7 +46,7 @@ export function AccountSelectorCard({
     if (!hasSession) return;
 
     setNotice(
-      "진행 중인 훈련에서는 계좌를 변경할 수 없습니다. 훈련을 종료한 뒤 새 계좌로 시작하세요.",
+      t("training.account.locked"),
     );
 
     window.setTimeout(() => setNotice(null), 2500);
@@ -55,7 +58,7 @@ export function AccountSelectorCard({
         <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold">
-              {selected?.name ?? "계좌 선택"}
+              {selected?.name ?? t("training.account.select")}
             </div>
             {selected?.description && (
               <div className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
@@ -70,7 +73,7 @@ export function AccountSelectorCard({
               onClick={() => setCreateOpen(true)}
               className="rounded-lg bg-background/40 px-2 py-1 text-[11px] hover:bg-background/60"
             >
-              + 생성
+              + {t("training.account.create")}
             </button>
           )}
         </div>
@@ -95,13 +98,13 @@ export function AccountSelectorCard({
         {selected && (
           <div className="grid grid-cols-2 gap-2 rounded-xl bg-background/30 p-3 text-[11px] text-muted-foreground">
             <div>
-              <div>잔액</div>
+              <div>{t("training.account.balance")}</div>
               <div className="mt-0.5 text-sm font-semibold text-foreground">
-                ₩{money(selected.cashBalance)}
+                ₩{money(selected.cashBalance, locale)}
               </div>
             </div>
             <div>
-              <div>현금 기준 수익률</div>
+              <div>{t("training.account.cashReturn")}</div>
               <div
                 className={
                   returnRate >= 0
@@ -124,7 +127,7 @@ export function AccountSelectorCard({
 
         {!hasSession && (
           <div className="text-[11px] leading-5 text-muted-foreground">
-            훈련을 시작할 계좌를 선택하세요.
+            {t("training.account.selectHelp")}
           </div>
         )}
       </div>

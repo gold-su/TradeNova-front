@@ -10,27 +10,7 @@ import type { IndicatorSettings } from "@/types/training";
 import { RefreshCw } from "lucide-react";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
 import type { ChartDrawing, DrawingPoint, DrawingTool, PendingDrawing, SelectedDrawing } from "./drawing/drawingTypes";
-
-function sectorLabel(sector?: string) {
-  switch (sector) {
-    case "SEMICONDUCTOR":
-      return "반도체";
-    case "SECONDARY_BATTERY":
-      return "2차전지";
-    case "PLATFORM":
-      return "플랫폼";
-    case "BIO":
-      return "바이오";
-    case "FINANCE":
-      return "금융";
-    case "DEFENSE":
-      return "방산";
-    case "SHIPBUILDING":
-      return "조선";
-    default:
-      return "블라인드";
-  }
-}
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   chart: TrainingChartDto | null;
@@ -77,10 +57,12 @@ export function TrainingChartSingle({
   drawingRailCollapsed,
   onToggleDrawingRail,
 }: Props) {
+  const { t } = useI18n();
+  const sectorLabel = (sector?: string) => t(`training.sector.${sector && ["SEMICONDUCTOR", "SECONDARY_BATTERY", "PLATFORM", "BIO", "FINANCE", "DEFENSE", "SHIPBUILDING"].includes(sector) ? sector : "unknown"}`);
   if (!chart) {
     return (
       <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-background/20 text-sm text-muted-foreground">
-        차트를 선택하세요.
+        {t("training.chartUi.selectPrompt")}
       </div>
     );
   }
@@ -112,7 +94,7 @@ export function TrainingChartSingle({
         <button
           type="button"
           disabled={refreshing}
-          title="차트 새로고침"
+          title={t("training.chart.refresh")}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -165,7 +147,7 @@ export function TrainingChartSingle({
           </>
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-border/50 bg-background/20 text-xs text-muted-foreground">
-            no data
+            {t("training.chartUi.noData")}
           </div>
         )}
       </div>

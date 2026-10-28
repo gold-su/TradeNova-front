@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import { getExtendedLineEndpoints, getFibonacciLevels, getParallelChannelGeometry, getRayEndpoint, normalizeZoneRect, type PixelPoint } from "./drawingGeometry";
 import { MAX_DRAWING_TEXT_LENGTH, type ChartDrawing, type DrawingPoint, type DrawingTool, type PendingDrawing, type SelectedDrawing } from "./drawingTypes";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   chart: IChartApi | null;
@@ -34,6 +35,7 @@ function FibonacciLines({ start, end, startPrice, endPrice, stroke, dashed = fal
 }
 
 export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, pendingDrawing, selectedDrawing, onAddPoint, onCommitText, onCancelDraft, onSelectDrawing, editingEnabled }: Props) {
+  const { t } = useI18n();
   const pointerRef = useRef<DrawingPoint | null>(null);
   const frameRef = useRef<number | null>(null);
   const [previewPoint, setPreviewPoint] = useState<DrawingPoint | null>(null);
@@ -143,6 +145,6 @@ export function DrawingOverlay({ chart, candleSeries, chartId, drawings, tool, p
         return <g key={drawing.id} data-drawing-id={drawing.id} {...common}><polygon points={points} fill="rgba(52,211,153,0.08)" stroke="transparent" /><line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={stroke} strokeWidth={selected ? 2 : 1.25} /><line x1={geometry.parallelStart.x} y1={geometry.parallelStart.y} x2={geometry.parallelEnd.x} y2={geometry.parallelEnd.y} stroke={stroke} strokeWidth={selected ? 2 : 1.25} /></g>;
       })}
     </svg>
-    {editingEnabled && textAnchor && <input autoFocus value={textValue} maxLength={MAX_DRAWING_TEXT_LENGTH} aria-label="차트 텍스트 입력" placeholder="텍스트 입력 후 Enter" onChange={(event) => setTextValue(event.target.value)} onKeyDown={onTextKeyDown} onBlur={() => { if (onCommitText(textValue)) setTextValue(""); else { setTextValue(""); onCancelDraft(); } }} className="absolute z-20 h-8 w-48 rounded-md border border-primary/50 bg-background/95 px-2 text-xs text-foreground shadow-lg outline-none focus:ring-1 focus:ring-primary" style={{ left: Math.min(textAnchor.x + 6, Math.max(0, size.width - 198)), top: Math.min(textAnchor.y + 6, Math.max(0, size.height - 38)) }} />}
+    {editingEnabled && textAnchor && <input autoFocus value={textValue} maxLength={MAX_DRAWING_TEXT_LENGTH} aria-label={t("training.drawing.textInput")} placeholder={t("training.drawing.textPlaceholder")} onChange={(event) => setTextValue(event.target.value)} onKeyDown={onTextKeyDown} onBlur={() => { if (onCommitText(textValue)) setTextValue(""); else { setTextValue(""); onCancelDraft(); } }} className="absolute z-20 h-8 w-48 rounded-md border border-primary/50 bg-background/95 px-2 text-xs text-foreground shadow-lg outline-none focus:ring-1 focus:ring-primary" style={{ left: Math.min(textAnchor.x + 6, Math.max(0, size.width - 198)), top: Math.min(textAnchor.y + 6, Math.max(0, size.height - 38)) }} />}
   </>;
 }

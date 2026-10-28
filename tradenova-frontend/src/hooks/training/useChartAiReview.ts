@@ -3,12 +3,14 @@ import axios from "axios";
 import { reportApi } from "@/api/reportApi";
 import type { ChartAiPayload, TrainingEventResponse } from "@/types/training";
 import { chartReviewReducer, selectChartReview } from "./chartReviewState";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 export function useChartAiReview(
   sessionId: number | null,
   chartId: number | null,
   appendEvent?: (event: TrainingEventResponse) => void,
 ) {
+  const { t } = useI18n();
   const [state, dispatch] = useReducer(chartReviewReducer, {});
   const requestId = useRef(0);
   const request = useCallback(
@@ -41,8 +43,8 @@ export function useChartAiReview(
             error.response?.data?.error === "CHART_AI_NOT_FOUND");
         if (!missing)
           errorMessage = axios.isAxiosError<{ message?: string }>(error)
-            ? (error.response?.data?.message ?? "차트 AI 요청에 실패했습니다.")
-            : "차트 AI 요청에 실패했습니다.";
+            ? (error.response?.data?.message ?? t("training.review.chartFailed"))
+            : t("training.review.chartFailed");
       }
       dispatch({
         type: "finish",
@@ -53,7 +55,7 @@ export function useChartAiReview(
       });
       return { event, generated };
     },
-    [sessionId],
+    [sessionId, t],
   );
   useEffect(() => {
     if (chartId != null) void request(chartId, false);

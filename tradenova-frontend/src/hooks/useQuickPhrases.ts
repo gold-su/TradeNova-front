@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { reportApi } from "@/api/reportApi";
 import type { QuickPhraseResponse } from "@/types/training";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 export function useQuickPhrases() {
+  const { t } = useI18n();
   const [quickPhrases, setQuickPhrases] = useState<QuickPhraseResponse[]>([]);
   const [quickPhrasesLoading, setQuickPhrasesLoading] = useState(true);
   const [quickPhrasesError, setQuickPhrasesError] = useState<string | null>(null);
@@ -14,11 +16,11 @@ export function useQuickPhrases() {
       setQuickPhrases(await reportApi.getQuickPhrases());
     } catch (error) {
       console.error("quick phrase load failed", error);
-      setQuickPhrasesError("매매 근거를 불러오지 못했습니다.");
+      setQuickPhrasesError(t("training.reasonManager.loadFailed"));
     } finally {
       setQuickPhrasesLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const createQuickPhrase = async (content: string) => {
     const trimmed = content.trim();

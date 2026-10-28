@@ -17,8 +17,10 @@ import {
   type PendingDrawing,
   type SelectedDrawing,
 } from "./drawingTypes";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 export function useChartDrawings(sessionId: number | null) {
+  const { t } = useI18n();
   const [drawingsByChart, setDrawingsByChart] = useState<Record<number, ChartDrawing[]>>({});
   const [tool, setTool] = useState<DrawingTool>("POINTER");
   const [selectedDrawing, setSelectedDrawing] = useState<SelectedDrawing>(null);
@@ -29,8 +31,8 @@ export function useChartDrawings(sessionId: number | null) {
   useEffect(() => {
     if (!sessionId || hydratedSessionRef.current === sessionId) return;
     hydratedSessionRef.current = sessionId;
-    trainingApi.getSessionDrawings(sessionId).then(groups => setDrawingsByChart(prev => mergeHydratedDrawings(prev, groupDrawings(groups)))).catch(() => setError("드로잉을 불러오지 못했습니다."));
-  }, [sessionId]);
+    trainingApi.getSessionDrawings(sessionId).then(groups => setDrawingsByChart(prev => mergeHydratedDrawings(prev, groupDrawings(groups)))).catch(() => setError(t("training.drawing.loadFailed")));
+  }, [sessionId, t]);
 
   const selectTool = useCallback((nextTool: DrawingTool) => {
     setTool(nextTool);
@@ -50,9 +52,9 @@ export function useChartDrawings(sessionId: number | null) {
         : selected);
     }).catch(() => {
       setDrawingsByChart(prev => removeDrawing(prev, drawing.chartId, drawing.id));
-      setError("드로잉 저장에 실패했습니다.");
+      setError(t("training.drawing.saveFailed"));
     });
-  }, []);
+  }, [t]);
 
   const addPoint = useCallback((chartId: number, point: DrawingPoint) => {
     if (tool === "POINTER") return;
@@ -86,8 +88,8 @@ export function useChartDrawings(sessionId: number | null) {
     setDrawingsByChart((prev) => removeDrawing(prev, selectedDrawing.chartId, selectedDrawing.drawingId));
     setSelectedDrawing(null);
     if (!existing || existing.id.startsWith("drawing-")) return;
-    trainingApi.deleteChartDrawing(selectedDrawing.chartId, selectedDrawing.drawingId).catch(() => { setDrawingsByChart(prev => addDrawing(prev, existing)); setError("드로잉 삭제에 실패했습니다."); });
-  }, [drawingsByChart, selectedDrawing]);
+    trainingApi.deleteChartDrawing(selectedDrawing.chartId, selectedDrawing.drawingId).catch(() => { setDrawingsByChart(prev => addDrawing(prev, existing)); setError(t("training.drawing.deleteFailed")); });
+  }, [drawingsByChart, selectedDrawing, t]);
 
   const clearActiveChart = useCallback((chartId: number | null) => {
     if (chartId == null) return;
@@ -95,8 +97,8 @@ export function useChartDrawings(sessionId: number | null) {
     setDrawingsByChart((prev) => clearChartDrawings(prev, chartId));
     setSelectedDrawing((selected) => selected?.chartId === chartId ? null : selected);
     setPendingDrawing((pending) => pending?.chartId === chartId ? null : pending);
-    trainingApi.clearChartDrawings(chartId).catch(() => { setDrawingsByChart(prev => ({ ...prev, [chartId]: existing })); setError("드로잉 초기화에 실패했습니다."); });
-  }, [drawingsByChart]);
+    trainingApi.clearChartDrawings(chartId).catch(() => { setDrawingsByChart(prev => ({ ...prev, [chartId]: existing })); setError(t("training.drawing.clearFailed")); });
+  }, [drawingsByChart, t]);
 
   return { drawingsByChart, tool, selectTool, pendingDrawing, cancelDraft, addPoint, commitText, selectedDrawing, setSelectedDrawing, deleteSelected, clearActiveChart, error, clearError: () => setError(null) };
 }
