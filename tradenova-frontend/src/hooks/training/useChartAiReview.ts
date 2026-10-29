@@ -10,7 +10,7 @@ export function useChartAiReview(
   chartId: number | null,
   appendEvent?: (event: TrainingEventResponse) => void,
 ) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [state, dispatch] = useReducer(chartReviewReducer, {});
   const requestId = useRef(0);
   const request = useCallback(
@@ -24,7 +24,7 @@ export function useChartAiReview(
       try {
         if (analyze) {
           try {
-            event = await reportApi.analyzeChartAi(cid);
+            event = await reportApi.analyzeChartAi(cid, language);
             generated = true;
           } catch (error) {
             if (
@@ -55,7 +55,7 @@ export function useChartAiReview(
       });
       return { event, generated };
     },
-    [sessionId, t],
+    [language, sessionId, t],
   );
   useEffect(() => {
     if (chartId != null) void request(chartId, false);

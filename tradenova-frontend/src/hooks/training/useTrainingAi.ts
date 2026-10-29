@@ -32,7 +32,7 @@ export function useTrainingAi(
   chartId: number | null,
   appendEvent?: (event: TrainingEventResponse) => void,
 ) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   // ===== 세션 AI 상태 =====
   const [sessionAi, setSessionAi] = useState<TrainingEventResponse | null>(
     null,
@@ -89,7 +89,7 @@ export function useTrainingAi(
       setSessionAiLoading(true);
       setSessionAiError(null);
 
-      const event = await reportApi.analyzeSessionAi(sessionId);
+      const event = await reportApi.analyzeSessionAi(sessionId, language);
 
       setSessionAi(event);
       appendEvent?.(event);

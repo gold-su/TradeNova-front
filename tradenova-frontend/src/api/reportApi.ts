@@ -9,6 +9,8 @@ import type {
   TrainingEventAppendRequest,
   TrainingEventResponse,
 } from "@/types/training";
+import type { Language } from "@/i18n/resources";
+import { aiReviewGenerateRequest } from "./aiReviewRequest";
 
 export const reportApi = {
   // ===== Quick Phrase =====
@@ -109,10 +111,11 @@ export const reportApi = {
       .then((r) => r.data),
 
   // ===== Chart AI =====
-  analyzeChartAi: (chartId: number) =>
+  analyzeChartAi: (chartId: number, language: Language) =>
     http
       .post<TrainingEventResponse>(
         `/api/reports/charts/${chartId}/analyze`,
+        aiReviewGenerateRequest(language),
       )
       .then((r) => r.data),
 
@@ -124,10 +127,11 @@ export const reportApi = {
       .then((r) => r.data),
 
   // ===== Session AI =====
-  analyzeSessionAi: (sessionId: number) =>
+  analyzeSessionAi: (sessionId: number, language: Language) =>
     http
       .post<TrainingEventResponse>(
         `/api/reports/sessions/${sessionId}/analyze`,
+        aiReviewGenerateRequest(language),
       )
       .then((r) => r.data),
 
