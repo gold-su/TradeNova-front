@@ -2,8 +2,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
-import { M } from "../i18n/messages";
-import { getLocale } from "../i18n/locale";
+import { useI18n } from "@/i18n/LanguageProvider";
 import { getFieldErrors } from "../utils/errors";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +28,48 @@ const isValidPassword = (v: string) =>
 
 export default function SignupPage() {
     const nav = useNavigate();
-    const t = M[getLocale()];
+    const { t: translate } = useI18n();
+    const t = {
+        email: translate("auth.email"),
+        password: translate("auth.password"),
+        nickname: translate("auth.nickname"),
+        signupBtn: translate("auth.signup"),
+        signupLoading: translate("auth.signingUp"),
+        haveAccount: translate("auth.haveAccount"),
+        goLogin: translate("auth.login"),
+        signupFlow: {
+            start: { title: translate("auth.flow.startTitle"), subtitle: translate("auth.flow.startSubtitle") },
+            email: { title: translate("auth.flow.emailTitle"), subtitle: translate("auth.flow.emailSubtitle") },
+            details: { title: translate("auth.flow.detailsTitle"), subtitle: translate("auth.flow.detailsSubtitle") },
+            verify: { title: translate("auth.flow.verifyTitle"), subtitle: translate("auth.flow.verifySubtitle") },
+        },
+        common: {
+            continue: translate("common.continue"),
+            back: translate("common.back"),
+            resendCode: translate("auth.resendCode"),
+            verifyAndContinue: translate("auth.verifyAndContinue"),
+            emailPlaceholder: "example@domain.com",
+            passwordPlaceholder: "••••••••",
+            codePlaceholder: translate("auth.codePlaceholder"),
+            codeLabel: translate("auth.verificationCode"),
+            continueWithGoogle: translate("auth.continueWithGoogle"),
+            continueWithEmail: translate("auth.continueWithEmail"),
+        },
+        validation: {
+            emailInvalid: translate("auth.validation.email"),
+            nicknameInvalid: translate("auth.validation.nickname"),
+            passwordInvalid: translate("auth.validation.password"),
+            codeInvalid: translate("auth.validation.code"),
+        },
+        toast: {
+            resendSuccess: translate("auth.resendSuccess"),
+            requestFailed: translate("auth.requestFailed"),
+            signupFailed: translate("auth.signupFailed"),
+            emailCheckFailed: translate("auth.emailCheckFailed"),
+            verifyFailed: translate("auth.verifyFailed"),
+            verifiedGoLogin: translate("auth.verified"),
+        },
+    };
 
     const [step, setStep] = useState<Step>("start");
 
@@ -212,7 +252,7 @@ export default function SignupPage() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                    {/* global message는 정말 애매할 때만 */}
+                    {/* Display a global message only as a fallback. */}
                     {globalMsg && (
                         <div className="rounded-xl border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                             {globalMsg}

@@ -7,10 +7,12 @@ import {
   type PublicBetaAccessView,
 } from "@/lib/publicBetaAccess";
 import { PublicBetaClosed } from "./PublicBetaClosed";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type GateState = PublicBetaAccessView | "LOADING" | "ERROR";
 
 export function PublicBetaGate({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const [state, setState] = useState<GateState>("LOADING");
 
   const checkAccess = useCallback(async () => {
@@ -47,10 +49,10 @@ export function PublicBetaGate({ children }: { children: React.ReactNode }) {
     return (
       <main className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-5 py-16 text-center">
         <div>
-          <h1 className="text-xl font-semibold">베타 접근 상태를 확인하지 못했습니다</h1>
-          <p className="mt-3 text-sm text-muted-foreground">잠시 후 다시 확인해 주세요.</p>
+          <h1 className="text-xl font-semibold">{t("landing.gate.errorTitle")}</h1>
+          <p className="mt-3 text-sm text-muted-foreground">{t("landing.gate.errorBody")}</p>
           <Button variant="outline" className="mt-6" onClick={() => void checkAccess()}>
-            다시 확인
+            {t("common.retry")}
           </Button>
         </div>
       </main>
@@ -60,7 +62,7 @@ export function PublicBetaGate({ children }: { children: React.ReactNode }) {
   if (state === "LOADING") {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center text-sm text-muted-foreground" role="status">
-        베타 접근 상태 확인 중…
+        {t("landing.gate.checking")}
       </div>
     );
   }

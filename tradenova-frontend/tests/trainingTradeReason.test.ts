@@ -8,11 +8,25 @@ import {
   buildWaitEventPayload,
   canSubmitDecisionAction,
   clearPendingTradeReason,
+  createScenarioClaim,
   findLatestScenarioSnapshot,
   reconcileScenarioSelection,
   selectPlanRelation,
   selectTradeScenario,
 } from "../src/hooks/training/trainingTradeReason.ts";
+
+test("scenario evidence can use localized display copy without changing relation enums", () => {
+  const claim = createScenarioClaim("BUY", "FOLLOWED_PLAN", "2026-10-28T00:00:00Z", {
+    followedTitle: "Executed the saved plan",
+    changedTitle: "Executed after changing the plan",
+    entryConditionMet: "The entry condition was met",
+    exitConditionMet: "The exit condition was met",
+    changedReason: "The plan was changed before acting",
+  });
+
+  assert.equal(claim.title, "Executed the saved plan");
+  assert.equal(claim.entryReason, "The entry condition was met");
+});
 
 const snapshot = (
   id: number,

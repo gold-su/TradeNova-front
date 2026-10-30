@@ -26,6 +26,7 @@ import {
 } from "./trainingChartRefresh";
 import { buildRandomTrainingSessionRequest } from "./trainingSessionRequest";
 import { appendRevealedCandlesForChart } from "./trainingCandleReveal";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 const INDICATOR_STORAGE_KEY = "tradenova.globalIndicators";
 const CHART_INDICATOR_STORAGE_KEY = "tradenova.chartIndicators";
@@ -62,6 +63,7 @@ export function useTrainingSessionCore(
     chartIndex: number | undefined,
   ) => Promise<void> | void,
 ) {
+  const { t } = useI18n();
   // ===== 화면 제어 상태 =====
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(TRAINING_VIEW_MODE_KEY);
@@ -274,7 +276,7 @@ export function useTrainingSessionCore(
       });
     } catch (e: any) {
       setError(
-        e?.response?.data?.message ?? "진행 중 세션 복구에 실패했습니다.",
+        e?.response?.data?.message ?? t("training.session.restoreFailed"),
       );
     } finally {
       setActiveSessionLoading(false);
@@ -289,7 +291,7 @@ export function useTrainingSessionCore(
     setError(null);
 
     if (!accountId) {
-      setError("먼저 계좌를 선택하거나 생성해주세요.");
+      setError(t("training.session.accountRequired"));
       return false;
     }
 
@@ -309,7 +311,7 @@ export function useTrainingSessionCore(
 
       return true;
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "훈련 세션 생성에 실패했습니다.");
+      setError(e?.response?.data?.message ?? t("training.session.createFailed"));
 
       return false;
     } finally {
@@ -365,7 +367,7 @@ export function useTrainingSessionCore(
     } catch (e: any) {
       setError(
         e?.response?.data?.message ??
-        "세션 종료에 실패했습니다.",
+        t("training.session.finishFailed"),
       );
 
       return null;
@@ -415,7 +417,7 @@ export function useTrainingSessionCore(
           .map((chart) => chart.chartId);
 
         if (ids.length === 0) {
-          setError("모든 차트가 마지막 봉에 도달했습니다.");
+          setError(t("training.session.allChartsEnded"));
           return;
         }
 
@@ -473,8 +475,8 @@ export function useTrainingSessionCore(
           if (succeeded.length > 0) {
             setError(
               recoveryFailed
-                ? "일부 차트 진행에 실패했고 서버 상태를 다시 동기화하지 못했습니다."
-                : "일부 차트 진행에 실패해 서버 상태를 다시 동기화했습니다.",
+                ? t("training.session.partialSyncFailed")
+                : t("training.session.partialSynced"),
             );
           } else {
             const firstFailure = settled.find(
@@ -482,8 +484,8 @@ export function useTrainingSessionCore(
             );
             setError(
               firstFailure?.status === "rejected"
-                ? (progressErrorMessage(firstFailure.reason) ?? "NEXT 실패")
-                : "NEXT 실패",
+                ? (progressErrorMessage(firstFailure.reason) ?? t("training.session.nextFailed"))
+                : t("training.session.nextFailed"),
             );
           }
         }
@@ -496,7 +498,7 @@ export function useTrainingSessionCore(
         await afterProgress?.(activeChartId);
       }
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "NEXT 실패");
+      setError(e?.response?.data?.message ?? t("training.session.nextFailed"));
     } finally {
       setLoading(false);
       mutationGuard.current = false;
@@ -635,7 +637,7 @@ export function useTrainingSessionCore(
       setError(
         progressErrorMessage(e) ??
         (e instanceof Error ? e.message : undefined) ??
-        "이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.",
+        t("training.session.refreshTradeBlocked"),
       );
     } finally {
       refreshingChartIdsRef.current.delete(chartId);

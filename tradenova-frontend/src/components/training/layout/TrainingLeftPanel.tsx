@@ -14,6 +14,7 @@ import type {
 } from "@/types/training";
 import type { PaperAccountDto } from "@/hooks/training/training.types";
 import { getTrainingProgressDisplay } from "@/hooks/training/trainingCandleReveal";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   sessionId: number | null;
@@ -40,33 +41,6 @@ type Props = {
   onAnalyzeChartAi: () => void;
 };
 
-function sectorLabel(sector?: string) {
-  switch (sector) {
-    case "SEMICONDUCTOR":
-      return "반도체";
-
-    case "SECONDARY_BATTERY":
-      return "2차전지";
-
-    case "PLATFORM":
-      return "플랫폼";
-
-    case "BIO":
-      return "바이오";
-
-    case "FINANCE":
-      return "금융";
-
-    case "DEFENSE":
-      return "방산";
-
-    case "SHIPBUILDING":
-      return "조선";
-
-    default:
-      return "블라인드 차트";
-  }
-}
 export function TrainingLeftPanel({
   sessionId,
   status,
@@ -84,6 +58,8 @@ export function TrainingLeftPanel({
   chartAiLoading,
   onAnalyzeChartAi,
 }: Props) {
+  const { t } = useI18n();
+  const sectorLabel = (sector?: string) => t(`training.sector.${sector ?? "unknown"}`);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [finishFailed, setFinishFailed] = useState(false);
@@ -108,10 +84,10 @@ export function TrainingLeftPanel({
   };
 
   const statusLabel = !hasSession
-    ? "대기 중"
+    ? t("training.session.waiting")
     : status === "COMPLETED"
-      ? "완료"
-      : "진행 중";
+      ? t("training.session.completed")
+      : t("training.session.active");
 
   return (
     <aside className="w-[280px] shrink-0 border-r border-border/60 bg-background/40 px-4 py-3">
@@ -119,11 +95,11 @@ export function TrainingLeftPanel({
         <div className="sticky top-0 z-10 border-b border-border/40 bg-background/95 py-3 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[11px] text-muted-foreground">훈련</div>
+              <div className="text-[11px] text-muted-foreground">{t("training.session.label")}</div>
 
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-base font-semibold">
-                  {sessionId ? `#${sessionId}` : "준비 중"}
+                  {sessionId ? `#${sessionId}` : t("training.session.preparing")}
                 </span>
 
                 <span
@@ -145,7 +121,7 @@ export function TrainingLeftPanel({
 
         <section className="border-b border-border/40 py-4">
           <div className="mb-2 text-xs font-semibold text-muted-foreground">
-            계좌
+            {t("training.account.label")}
           </div>
 
           <AccountSelectorCard
@@ -161,10 +137,10 @@ export function TrainingLeftPanel({
           <section className="py-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-xs font-semibold text-muted-foreground">
-                차트
+                {t("training.chart.charts")}
               </div>
               <div className="text-[11px] text-muted-foreground">
-                블라인드 훈련
+                {t("training.chart.blindTraining")}
               </div>
             </div>
 
@@ -203,7 +179,7 @@ export function TrainingLeftPanel({
 
                         {isDone && (
                           <div className="mt-0.5 text-[10px] text-muted-foreground">
-                            완료된 차트
+                            {t("training.chart.completed")}
                           </div>
                         )}
                       </div>
@@ -248,7 +224,7 @@ export function TrainingLeftPanel({
               disabled={loading || status === "COMPLETED"}
               className="w-full rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
             >
-              훈련 종료
+              {t("training.session.finish")}
             </button>
           </section>
         )}
@@ -262,22 +238,21 @@ export function TrainingLeftPanel({
         >
           <button
             type="button"
-            aria-label="훈련 종료 확인 닫기"
+            aria-label={t("training.session.closeFinish")}
             disabled={finishing}
             onClick={() => setFinishDialogOpen(false)}
             className="absolute inset-0 cursor-default"
           />
           <div className="relative z-10 w-full max-w-md rounded-3xl border border-border/45 bg-background p-6 shadow-2xl">
             <h2 id="finish-dialog-title" className="text-lg font-bold">
-              훈련을 종료하시겠습니까?
+              {t("training.session.finishTitle")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              훈련을 종료하면 다시 진행할 수 없습니다.<br />
-              현재 보유 중인 포지션이 있다면 종료 시 자동으로 청산됩니다.
+              {t("training.session.finishBody")}
             </p>
             {finishFailed && (
               <p role="alert" className="mt-3 text-sm text-red-300">
-                훈련 종료에 실패했습니다. 잠시 후 다시 시도해주세요.
+                {t("training.session.finishFailed")}
               </p>
             )}
             <div className="mt-6 flex justify-end gap-2">
@@ -287,7 +262,7 @@ export function TrainingLeftPanel({
                 onClick={() => setFinishDialogOpen(false)}
                 className="rounded-xl px-4 py-2 text-sm text-muted-foreground transition hover:bg-background/60 hover:text-foreground disabled:opacity-50"
               >
-                취소
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -295,7 +270,7 @@ export function TrainingLeftPanel({
                 onClick={confirmFinish}
                 className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-500/90 disabled:opacity-50"
               >
-                {finishing ? "종료 중..." : "훈련 종료"}
+                {finishing ? t("training.session.finishing") : t("training.session.finish")}
               </button>
             </div>
           </div>

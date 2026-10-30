@@ -6,6 +6,7 @@ import type {
   SessionAiPayload,
   TrainingEventResponse,
 } from "@/types/training";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 function apiError(error: unknown) {
   if (!axios.isAxiosError<{ error?: string; message?: string }>(error)) {
@@ -31,6 +32,7 @@ export function useTrainingAi(
   chartId: number | null,
   appendEvent?: (event: TrainingEventResponse) => void,
 ) {
+  const { t } = useI18n();
   // ===== 세션 AI 상태 =====
   const [sessionAi, setSessionAi] = useState<TrainingEventResponse | null>(
     null,
@@ -67,7 +69,7 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        message ?? "세션 AI 결과 조회에 실패했습니다.",
+        message ?? t("training.review.sessionLoadFailed"),
       );
       return null;
     } finally {
@@ -100,7 +102,7 @@ export function useTrainingAi(
       }
 
       setSessionAiError(
-        message ?? "세션 AI 분석에 실패했습니다.",
+        message ?? t("training.review.failed"),
       );
     } finally {
       setSessionAiLoading(false);

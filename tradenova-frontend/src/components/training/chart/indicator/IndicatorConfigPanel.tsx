@@ -4,6 +4,7 @@ import { ConfigNumberInput } from "./ConfigNumberInput";
 import { DEFAULT_INDICATORS } from "./indicatorDefaults";
 import { useState } from "react";
 import { IndicatorConfigTabs } from "./IndicatorConfigTabs";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   selectedKey: IndicatorKey | null;
@@ -18,13 +19,14 @@ export function IndicatorConfigPanel({
   onChange,
   onClose,
 }: Props) {
+  const { t } = useI18n();
   if (!selectedKey) return null;
 
   return (
     <aside className="absolute left-[320px] top-4 z-50 max-h-[520px] w-[340px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur">
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         <div>
-          <div className="text-sm font-semibold">지표 설정</div>
+          <div className="text-sm font-semibold">{t("training.indicator.settings")}</div>
           <div className="text-[11px] text-muted-foreground">
             {selectedKey.toUpperCase()}
           </div>
@@ -50,7 +52,7 @@ export function IndicatorConfigPanel({
           <BollingerConfig settings={settings} onChange={onChange} />
         ) : (
           <div className="rounded-2xl border border-border/60 bg-background/30 p-4 text-sm text-muted-foreground">
-            아직 설정 UI가 준비되지 않은 지표입니다.
+            {t("training.indicator.notReady")}
           </div>
         )}
       </div>
@@ -65,6 +67,7 @@ function MaConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"variables" | "style">("variables");
 
   const updateLine = (index: number, patch: Partial<MaLineSetting>) => {
@@ -108,7 +111,7 @@ function MaConfig({
         <div className="mb-3">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-sm font-semibold">이동평균선</div>
+              <div className="text-sm font-semibold">{t("training.indicator.movingAverage")}</div>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
                 기간, 색상, 선 굵기를 설정합니다.
               </div>
@@ -122,9 +125,9 @@ function MaConfig({
 
           <div className="grid grid-cols-3 gap-1.5 pb-1">
             {[
-              { value: "SMA", label: "단순" },
-              { value: "WMA", label: "가중" },
-              { value: "EMA", label: "지수" },
+              { value: "SMA", label: t("training.indicator.sma") },
+              { value: "WMA", label: t("training.indicator.wma") },
+              { value: "EMA", label: t("training.indicator.ema") },
             ].map((item) => (
               <button
                 key={item.value}
@@ -259,7 +262,7 @@ function MaConfig({
         )}
       </div>
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
-        현재 차트 봉 개수보다 큰 기간은 선이 표시되지 않을 수 있습니다.
+        {t("training.indicator.periodNotice")}
       </div>
     </div>
   );
@@ -272,6 +275,7 @@ function RsiConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"variables" | "style">("variables");
 
   const update = (patch: Partial<IndicatorSettings["rsi"]>) => {
@@ -290,7 +294,7 @@ function RsiConfig({
         <div className="mb-3">
           <div className="text-sm font-semibold">RSI</div>
           <div className="mt-0.5 text-[11px] text-muted-foreground">
-            기간과 과매수/과매도 기준선을 설정합니다.
+            {t("training.indicator.rsiDescription")}
           </div>
         </div>
 
@@ -310,21 +314,21 @@ function RsiConfig({
             }
             className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
           >
-            초기화 ↻
+            {t("training.indicator.reset")} ↻
           </button>
         </div>
 
         {tab === "variables" ? (
           <div className="space-y-3 text-xs">
             <ConfigNumberRow
-              label="기간"
+              label={t("training.indicator.period")}
               value={settings.rsi.period}
               min={1}
               onChange={(value) => update({ period: value })}
             />
 
             <ConfigNumberRow
-              label="과매수선"
+              label={t("training.indicator.overbought")}
               value={settings.rsi.upper}
               min={1}
               max={100}
@@ -332,7 +336,7 @@ function RsiConfig({
             />
 
             <ConfigNumberRow
-              label="과매도선"
+              label={t("training.indicator.oversold")}
               value={settings.rsi.lower}
               min={1}
               max={100}
@@ -343,21 +347,21 @@ function RsiConfig({
           <div className="space-y-1">
             <StyleColorRow
               label="RSI"
-              colorLabel="색상"
+              colorLabel={t("training.indicator.color")}
               value={settings.rsi.color}
               onChange={(value) => update({ color: value })}
             />
 
             <StyleColorRow
-              label="상단선"
-              colorLabel="색상"
+              label={t("training.indicator.upper")}
+              colorLabel={t("training.indicator.color")}
               value={settings.rsi.upperColor}
               onChange={(value) => update({ upperColor: value })}
             />
 
             <StyleColorRow
-              label="하단선"
-              colorLabel="색상"
+              label={t("training.indicator.lower")}
+              colorLabel={t("training.indicator.color")}
               value={settings.rsi.lowerColor}
               onChange={(value) => update({ lowerColor: value })}
             />
@@ -366,7 +370,7 @@ function RsiConfig({
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
-        일반적으로 RSI 70 이상은 과매수, 30 이하는 과매도 구간으로 해석합니다.
+        {t("training.indicator.rsiNotice")}
       </div>
     </div>
   );
@@ -379,6 +383,7 @@ function MacdConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"variables" | "style">("variables");
 
   const update = (patch: Partial<IndicatorSettings["macd"]>) => {
@@ -397,7 +402,7 @@ function MacdConfig({
         <div className="mb-3">
           <div className="text-sm font-semibold">MACD</div>
           <div className="mt-0.5 text-[11px] text-muted-foreground">
-            단기 EMA, 장기 EMA, 시그널 기간을 설정합니다.
+            {t("training.indicator.macdDescription")}
           </div>
         </div>
 
@@ -417,7 +422,7 @@ function MacdConfig({
             }
             className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
           >
-            초기화 ↻
+            {t("training.indicator.reset")} ↻
           </button>
         </div>
 
@@ -448,28 +453,28 @@ function MacdConfig({
           <div className="space-y-1">
             <StyleColorRow
               label="MACD"
-              colorLabel="색상"
+              colorLabel={t("training.indicator.color")}
               value={settings.macd.macdColor}
               onChange={(value) => update({ macdColor: value })}
             />
 
             <StyleColorRow
               label="Signal"
-              colorLabel="색상"
+              colorLabel={t("training.indicator.color")}
               value={settings.macd.signalColor}
               onChange={(value) => update({ signalColor: value })}
             />
 
             <StyleColorRow
-              label="양수 막대"
-              colorLabel="색상"
+              label={t("training.indicator.positiveBars")}
+              colorLabel={t("training.indicator.color")}
               value={settings.macd.histogramUpColor}
               onChange={(value) => update({ histogramUpColor: value })}
             />
 
             <StyleColorRow
-              label="음수 막대"
-              colorLabel="색상"
+              label={t("training.indicator.negativeBars")}
+              colorLabel={t("training.indicator.color")}
               value={settings.macd.histogramDownColor}
               onChange={(value) => update({ histogramDownColor: value })}
             />
@@ -478,7 +483,7 @@ function MacdConfig({
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
-        기본값은 MACD 12, 26, 9입니다.
+        {t("training.indicator.macdNotice")}
       </div>
     </div>
   );
@@ -491,6 +496,7 @@ function BollingerConfig({
   settings: IndicatorSettings;
   onChange: (next: IndicatorSettings) => void;
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"variables" | "style">("variables");
 
   const update = (patch: Partial<IndicatorSettings["bollinger"]>) => {
@@ -507,9 +513,9 @@ function BollingerConfig({
     <div className="space-y-4">
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3">
         <div className="mb-3">
-          <div className="text-sm font-semibold">볼린저밴드</div>
+          <div className="text-sm font-semibold">{t("training.indicator.bollinger")}</div>
           <div className="mt-0.5 text-[11px] text-muted-foreground">
-            기간과 표준편차 배수를 설정합니다.
+            {t("training.indicator.bollingerDescription")}
           </div>
         </div>
 
@@ -529,21 +535,21 @@ function BollingerConfig({
             }
             className="mb-2 rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:bg-background/50 hover:text-foreground"
           >
-            초기화 ↻
+            {t("training.indicator.reset")} ↻
           </button>
         </div>
 
         {tab === "variables" ? (
           <div className="space-y-3 text-xs">
             <ConfigNumberRow
-              label="기간"
+              label={t("training.indicator.period")}
               value={settings.bollinger.period}
               min={1}
               onChange={(value) => update({ period: value })}
             />
 
             <ConfigNumberRow
-              label="표준편차"
+              label={t("training.indicator.deviation")}
               value={settings.bollinger.multiplier}
               min={1}
               onChange={(value) => update({ multiplier: value })}
@@ -552,7 +558,7 @@ function BollingerConfig({
         ) : (
           <div className="space-y-1.5">
             <StyleLineRow
-              label="상단선"
+              label={t("training.indicator.upper")}
               color={settings.bollinger.upperColor}
               width={settings.bollinger.upperWidth}
               onColorChange={(value) => update({ upperColor: value })}
@@ -560,7 +566,7 @@ function BollingerConfig({
             />
 
             <StyleLineRow
-              label="중심선"
+              label={t("training.indicator.middle")}
               color={settings.bollinger.middleColor}
               width={settings.bollinger.middleWidth}
               onColorChange={(value) => update({ middleColor: value })}
@@ -568,7 +574,7 @@ function BollingerConfig({
             />
 
             <StyleLineRow
-              label="하단선"
+              label={t("training.indicator.lower")}
               color={settings.bollinger.lowerColor}
               width={settings.bollinger.lowerWidth}
               onColorChange={(value) => update({ lowerColor: value })}
@@ -579,7 +585,7 @@ function BollingerConfig({
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-background/20 p-3 text-xs text-muted-foreground">
-        일반적으로 20일, 표준편차 2배 설정을 많이 사용합니다.
+        {t("training.indicator.bollingerNotice")}
       </div>
     </div>
   );
@@ -614,7 +620,7 @@ function ConfigNumberRow({
 
 function StyleColorRow({
   label,
-  colorLabel = "색상",
+  colorLabel,
   value,
   onChange,
 }: {
@@ -623,12 +629,13 @@ function StyleColorRow({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-[84px_1fr_42px] items-center gap-2 rounded-lg border border-border/20 bg-background/10 px-2 py-1.5 text-xs">
       <span className="text-sm font-medium text-foreground/85">{label}</span>
 
       <span className="text-right text-[11px] text-muted-foreground/55">
-        {colorLabel}
+        {colorLabel ?? t("training.indicator.color")}
       </span>
 
       <input
@@ -654,12 +661,13 @@ function StyleLineRow({
   onColorChange: (value: string) => void;
   onWidthChange: (value: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-[58px_132px_62px] items-center gap-2 rounded-lg border border-border/20 bg-background/10 px-2 py-1.5 text-xs">
       <span className="text-sm font-medium text-foreground/85">{label}</span>
 
       <div className="flex items-center justify-end gap-1.5">
-        <span className="text-[11px] text-muted-foreground/55">굵기</span>
+        <span className="text-[11px] text-muted-foreground/55">{t("training.indicator.width")}</span>
 
         <ConfigNumberInput
           value={width}
@@ -673,7 +681,7 @@ function StyleLineRow({
       </div>
 
       <div className="flex items-center justify-end gap-1.5">
-        <span className="text-[11px] text-muted-foreground/55">색상</span>
+        <span className="text-[11px] text-muted-foreground/55">{t("training.indicator.color")}</span>
 
         <input
           type="color"

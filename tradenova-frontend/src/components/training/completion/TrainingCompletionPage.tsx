@@ -13,9 +13,9 @@ import type {
 } from "@/types/training";
 import { SessionAiReviewContent } from "@/components/training/ai/SessionAiReviewContent";
 import {
-  EXISTING_SESSION_AI_ACTION_LABEL,
   getSessionAiAction,
 } from "@/components/training/ai/sessionAiReview";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   summary: SessionSummaryResponse | null;
@@ -68,16 +68,17 @@ export function TrainingCompletionPage({
   onLoadSessionAi,
   onStartNewSession,
 }: Props) {
+  const { t } = useI18n();
   if (summaryLoading && !summary) {
     return (
       <div className="flex h-[calc(100vh-56px)] items-center justify-center bg-background">
         <div className="rounded-2xl border border-border/50 bg-background/40 px-8 py-6 text-center">
           <RefreshCcw className="mx-auto mb-3 h-5 w-5 animate-spin text-primary" />
           <div className="text-sm font-semibold">
-            훈련 결과를 정리하고 있습니다
+            {t("training.completion.organizing")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            거래와 스냅샷 기록을 집계하는 중입니다.
+            {t("training.completion.aggregating")}
           </div>
         </div>
       </div>
@@ -89,11 +90,11 @@ export function TrainingCompletionPage({
       <div className="flex h-[calc(100vh-56px)] items-center justify-center bg-background p-6">
         <div className="w-full max-w-md rounded-3xl border border-red-500/20 bg-background/40 p-8 text-center">
           <div className="text-base font-semibold">
-            완료 정보를 불러오지 못했습니다
+            {t("training.completion.loadFailed")}
           </div>
 
           <div className="mt-2 text-sm text-muted-foreground">
-            {summaryError ?? "잠시 후 다시 시도해주세요."}
+            {summaryError ?? t("common.tryAgainLater")}
           </div>
 
           <button
@@ -102,7 +103,7 @@ export function TrainingCompletionPage({
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
             <RefreshCcw className="h-4 w-4" />
-            다시 불러오기
+            {t("common.retry")}
           </button>
         </div>
       </div>
@@ -123,11 +124,11 @@ export function TrainingCompletionPage({
             <RefreshCcw className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
 
             <div className="text-base font-semibold">
-              새 훈련을 준비하고 있습니다
+              {t("training.completion.preparing")}
             </div>
 
             <div className="mt-2 text-sm text-muted-foreground">
-              새로운 차트와 훈련 데이터를 불러오는 중입니다.
+              {t("training.completion.loadingNew")}
             </div>
           </div>
         </div>
@@ -139,35 +140,35 @@ export function TrainingCompletionPage({
             <CheckCircle2 className="h-7 w-7" />
           </div>
 
-          <h1 className="text-3xl font-bold">훈련 완료</h1>
+          <h1 className="text-3xl font-bold">{t("training.completion.title")}</h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            이번 세션의 매매 기록과 판단 과정을 정리했습니다.
+            {t("training.completion.description")}
           </p>
         </header>
 
         <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <SummaryCard
-            label="완료 차트"
+            label={t("training.completion.charts")}
             value={`${summary.completedChartCount}/${summary.totalChartCount}`}
             icon={<BarChart3 className="h-4 w-4" />}
           />
 
           <SummaryCard
-            label="거래 횟수"
+            label={t("training.completion.trades")}
             value={summary.tradeCount}
             icon={<TrendingUp className="h-4 w-4" />}
           />
 
           <SummaryCard
-            label="스냅샷"
+            label={t("training.completion.snapshots")}
             value={summary.snapshotCount}
             icon={<Camera className="h-4 w-4" />}
           />
 
           <SummaryCard
-            label="AI 점수"
-            value={aiScore == null ? "-" : `${aiScore}점`}
+            label={t("training.completion.aiScore")}
+            value={aiScore == null ? "-" : t("training.review.score", { score: aiScore })}
             icon={<Bot className="h-4 w-4" />}
           />
         </section>
@@ -177,11 +178,11 @@ export function TrainingCompletionPage({
             <div>
               <div className="flex items-center gap-2 text-base font-semibold">
                 <Bot className="h-5 w-5 text-primary" />
-                세션 AI 분석
+                {t("training.completion.sessionReview")}
               </div>
 
               <div className="mt-1 text-sm text-muted-foreground">
-                결과가 아닌 판단 과정을 거래 근거와 스냅샷으로 평가합니다.
+                {t("training.completion.reviewDescription")}
               </div>
             </div>
 
@@ -193,10 +194,10 @@ export function TrainingCompletionPage({
                 className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {sessionAiLoading
-                  ? "분석 중..."
+                  ? t("training.review.analyzing")
                   : sessionAiAction === "LOAD"
-                    ? EXISTING_SESSION_AI_ACTION_LABEL
-                    : "AI 분석 생성"}
+                    ? t("training.review.loadSaved")
+                    : t("training.review.generate")}
               </button>
             )}
           </div>
@@ -219,10 +220,10 @@ export function TrainingCompletionPage({
             type="button"
             disabled
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border/50 bg-background/40 px-5 py-3 text-sm font-semibold text-muted-foreground opacity-60"
-            title="PDF 내보내기는 다음 단계에서 연결합니다."
+            title={t("training.completion.pdfSoon")}
           >
             <FileDown className="h-4 w-4" />
-            PDF 리포트
+            {t("training.completion.pdf")}
           </button>
 
           <button
@@ -231,7 +232,7 @@ export function TrainingCompletionPage({
             disabled={newSessionLoading}
             className="flex-1 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {newSessionLoading ? "새 훈련 준비 중..." : "새 훈련 시작"}
+            {newSessionLoading ? t("training.completion.preparing") : t("training.completion.newSession")}
           </button>
         </section>
       </div>

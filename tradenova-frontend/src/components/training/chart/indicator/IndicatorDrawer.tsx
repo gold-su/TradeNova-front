@@ -11,6 +11,7 @@ import {
   INDICATOR_PRESETS,
   type IndicatorPresetKey,
 } from "./indicatorPresets";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type IndicatorScope = "GLOBAL" | "CHART";
 
@@ -49,6 +50,7 @@ export function IndicatorDrawer({
   onResetGlobal,
   onClearAllChartOverrides,
 }: Props) {
+  const { t } = useI18n();
   const [selectedConfig, setSelectedConfig] = useState<IndicatorKey | null>(
     null,
   );
@@ -64,9 +66,21 @@ export function IndicatorDrawer({
     return () => window.clearTimeout(timeoutId);
   }, [presetFeedback]);
 
-  const handlePreset = (preset: IndicatorPresetKey, label: string) => {
+  const indicatorLabel = (key: IndicatorKey) => {
+    if (key === "rsi") return "RSI";
+    if (key === "macd") return "MACD";
+    const resourceKey = key === "ma" ? "movingAverage" : key;
+    return t(`training.indicator.${resourceKey}`);
+  };
+
+  const presetLabel = (key: IndicatorPresetKey) => {
+    const resourceKey = { BASIC: "basic", TREND: "trend", MOMENTUM: "momentum", VOLATILITY: "volatility" }[key];
+    return t(`training.indicator.${resourceKey}`);
+  };
+
+  const handlePreset = (preset: IndicatorPresetKey) => {
     onChange(applyIndicatorPreset(settings, preset));
-    setPresetFeedback(`${label} 프리셋을 적용했습니다.`);
+    setPresetFeedback(t("training.indicator.appliedPreset", { name: presetLabel(preset) }));
   };
 
   const getChecked = (key: IndicatorKey) => {
@@ -173,12 +187,12 @@ export function IndicatorDrawer({
 
   const chartIndicators = INDICATOR_META.filter(
     (x) =>
-      x.group === "chart" && x.label.toLowerCase().includes(normalizedKeyword),
+      x.group === "chart" && indicatorLabel(x.key).toLowerCase().includes(normalizedKeyword),
   );
 
   const subIndicators = INDICATOR_META.filter(
     (x) =>
-      x.group === "sub" && x.label.toLowerCase().includes(normalizedKeyword),
+      x.group === "sub" && indicatorLabel(x.key).toLowerCase().includes(normalizedKeyword),
   );
 
   return (
@@ -199,10 +213,10 @@ export function IndicatorDrawer({
           <div className="border-b border-border/60 px-4 py-3">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold">보조지표</div>
+                <div className="text-sm font-semibold">{t("training.indicator.title")}</div>
                 <div className="text-[11px] text-muted-foreground">
                   {scope === "GLOBAL"
-                    ? "전체 차트 공통 설정"
+                    ? t("training.indicator.globalSettings")
                     : activeChartLabel}
                 </div>
               </div>
@@ -226,7 +240,7 @@ export function IndicatorDrawer({
                     : "border-border/60 bg-background/30 text-muted-foreground",
                 ].join(" ")}
               >
-                전체 차트
+                {t("training.indicator.global")}
               </button>
 
               <button
@@ -239,7 +253,7 @@ export function IndicatorDrawer({
                     : "border-border/60 bg-background/30 text-muted-foreground",
                 ].join(" ")}
               >
-                선택 차트만
+                {t("training.indicator.selected")}
               </button>
             </div>
 
@@ -250,7 +264,7 @@ export function IndicatorDrawer({
                   onClick={onResetGlobal}
                   className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
                 >
-                  전체 설정 초기화
+                  {t("training.indicator.resetAll")}
                 </button>
 
                 <button
@@ -259,7 +273,7 @@ export function IndicatorDrawer({
                   disabled={!hasAnyChartOverride}
                   className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  모든 개별 지표 해제
+                  {t("training.indicator.clearOverrides")}
                 </button>
               </div>
             )}
@@ -272,7 +286,7 @@ export function IndicatorDrawer({
                     onClick={onResetChart}
                     className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
                   >
-                    전체 설정으로 되돌리기
+                    {t("training.indicator.returnGlobal")}
                   </button>
                 )}
 
@@ -281,7 +295,7 @@ export function IndicatorDrawer({
                   onClick={onApplyChartToGlobal}
                   className="flex-1 rounded-xl border border-border/60 px-2 py-2 text-[11px] text-muted-foreground hover:bg-background/50"
                 >
-                  이 설정을 전체 적용
+                  {t("training.indicator.applyGlobal")}
                 </button>
               </div>
             )}
@@ -291,7 +305,7 @@ export function IndicatorDrawer({
             <section className="mb-4 rounded-lg border border-border/60 bg-background/30 p-2.5">
               <div className="mb-2 flex min-h-4 items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-foreground/80">
-                  빠른 설정
+                  {t("training.indicator.quick")}
                 </span>
                 <span
                   role="status"
@@ -307,16 +321,16 @@ export function IndicatorDrawer({
                   <button
                     key={preset.key}
                     type="button"
-                    onClick={() => handlePreset(preset.key, preset.label)}
+                    onClick={() => handlePreset(preset.key)}
                     className="rounded-md border border-border/60 bg-background/40 px-1 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/70"
                   >
-                    {preset.label}
+                    {presetLabel(preset.key)}
                   </button>
                 ))}
               </div>
 
               <p className="mt-2 text-[10px] leading-4 text-muted-foreground/75">
-                RSI와 MACD는 단일 차트에서 표시됩니다.
+                {t("training.indicator.gridNotice")}
               </p>
             </section>
 
@@ -329,7 +343,7 @@ export function IndicatorDrawer({
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="지표명 검색"
+                placeholder={t("training.indicator.search")}
                 className="
                 h-10 w-full rounded-xl border border-white/[0.06]
                 bg-white/[0.03]
@@ -353,14 +367,15 @@ export function IndicatorDrawer({
               )}
             </div>
 
-            <SectionTitle compact={!!keyword}>차트지표</SectionTitle>
+            <SectionTitle compact={!!keyword}>{t("training.indicator.price")}</SectionTitle>
 
             {chartIndicators.length > 0 ? (
               chartIndicators.map((item) => (
                 <IndicatorRow
                   key={item.key}
                   checked={getChecked(item.key)}
-                  label={item.label}
+                  label={indicatorLabel(item.key)}
+                  settingsLabel={t("training.indicator.settings")}
                   disabled={item.disabled}
                   onToggle={(checked) => toggleIndicator(item.key, checked)}
                   onConfigClick={
@@ -374,17 +389,18 @@ export function IndicatorDrawer({
                 />
               ))
             ) : (
-              <EmptySearchResult />
+              <EmptySearchResult label={t("training.indicator.noResults")} />
             )}
 
-            <SectionTitle compact={!!keyword}>보조지표</SectionTitle>
+            <SectionTitle compact={!!keyword}>{t("training.indicator.oscillator")}</SectionTitle>
 
             {subIndicators.length > 0 ? (
               subIndicators.map((item) => (
                 <IndicatorRow
                   key={item.key}
                   checked={getChecked(item.key)}
-                  label={item.label}
+                  label={indicatorLabel(item.key)}
+                  settingsLabel={t("training.indicator.settings")}
                   disabled={item.disabled}
                   onToggle={(checked) => toggleIndicator(item.key, checked)}
                   onConfigClick={
@@ -398,7 +414,7 @@ export function IndicatorDrawer({
                 />
               ))
             ) : (
-              <EmptySearchResult />
+              <EmptySearchResult label={t("training.indicator.noResults")} />
             )}
           </div>
 
@@ -433,10 +449,10 @@ function SectionTitle({
   );
 }
 
-function EmptySearchResult() {
+function EmptySearchResult({ label }: { label: string }) {
   return (
     <div className="flex h-[72px] items-center justify-center text-sm text-muted-foreground/45">
-      검색결과가 없습니다
+      {label}
     </div>
   );
 }
@@ -444,12 +460,14 @@ function EmptySearchResult() {
 function IndicatorRow({
   checked,
   label,
+  settingsLabel,
   disabled,
   onToggle,
   onConfigClick,
 }: {
   checked: boolean;
   label: string;
+  settingsLabel: string;
   disabled?: boolean;
   onToggle: (checked: boolean) => void;
   onConfigClick?: () => void;
@@ -481,7 +499,7 @@ function IndicatorRow({
         disabled={disabled || !onConfigClick}
         onClick={onConfigClick}
         className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-white/[0.05] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
-        title="설정"
+        title={settingsLabel}
       >
         <Settings size={15} strokeWidth={1.8} />
       </button>

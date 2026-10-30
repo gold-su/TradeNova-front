@@ -9,15 +9,12 @@ import type {
 } from "@/types/training";
 import type { TradeForm } from "./training.types";
 import {
-  decisionPlanRelationActionLabel,
-  decisionPlanRelationLabel,
-} from "./decisionCapture";
-import {
   buildWaitEventPayload,
   buildTradeEventPayload,
   canSubmitDecisionAction,
   clearPendingTradeReason,
 } from "./trainingTradeReason";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type UseTrainingTradeParams = {
   mutationGuard: { current: boolean };
@@ -37,8 +34,8 @@ type UseTrainingTradeParams = {
   appendEvent: (event: TrainingEventResponse) => void;
 };
 
-function formatPrice(value: number) {
-  return new Intl.NumberFormat("ko-KR").format(Number(value));
+function formatPrice(value: number, locale: string) {
+  return new Intl.NumberFormat(locale).format(Number(value));
 }
 
 export function useTrainingTrade({
@@ -52,6 +49,9 @@ export function useTrainingTrade({
   currentCandleTime,
   appendEvent,
 }: UseTrainingTradeParams) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
+  const relationLabel = () => tradeForm.planRelation ? t(`training.relation.${tradeForm.planRelation === "FOLLOWED_PLAN" ? "followed" : tradeForm.planRelation === "CHANGED_PLAN" ? "changed" : "unplanned"}`) : "-";
 
   const [tradeForm, setTradeForm] = useState<TradeForm>({
     qty: 1,
@@ -101,8 +101,21 @@ export function useTrainingTrade({
 
     return await reportApi.createEvent(chartId, {
       type: "TRADE",
-      title: sellAll ? "SELL ALL 실행" : `${side} 실행`,
-      payloadJson: buildTradeEventPayload({ side, qty, res, tradeForm, sellAll }),
+      title: t("training.action.executionEvent", { side: sellAll ? "SELL ALL" : side }),
+      payloadJson: buildTradeEventPayload({
+        side,
+        qty,
+        res,
+        tradeForm,
+        sellAll,
+        claimCopy: {
+          followedTitle: t("training.relation.followedClaim"),
+          changedTitle: t("training.relation.changedClaim"),
+          entryConditionMet: t("training.relation.entryConditionMet"),
+          exitConditionMet: t("training.relation.exitConditionMet"),
+          changedReason: t("training.relation.changedClaimReason"),
+        },
+      }),
     });
   };
 
@@ -113,14 +126,14 @@ export function useTrainingTrade({
   const executeTrade = async (side: "BUY" | "SELL") => {
     if (!activeChartId) return false;
     if (!canSubmitDecisionAction(tradeForm)) {
-      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      setError(t("training.relation.required"));
       return false;
     }
 
     const qty = Number(tradeForm.qty);
 
     if (!Number.isInteger(qty) || qty <= 0) {
-      setError("수량을 올바르게 입력해주세요.");
+      setError(t("training.action.invalidQuantity"));
       return false;
     }
 
@@ -141,8 +154,8 @@ export function useTrainingTrade({
       } catch (error: unknown) {
         setError(
           axios.isAxiosError<{ message?: string }>(error)
-            ? (error.response?.data?.message ?? `${side} 실패`)
-            : `${side} 실패`,
+            ? (error.response?.data?.message ?? t("training.action.executionFailed", { side }))
+            : t("training.action.executionFailed", { side }),
         );
         return false;
       }
@@ -168,17 +181,13 @@ export function useTrainingTrade({
         appendEvent(event);
       } catch {
         eventSaved = false;
-        setError("거래는 성공했지만 매매 로그 저장에 실패했습니다.");
+        setError(t("training.action.evidenceSaveFailed"));
       }
 
       showSavedMessage(
         eventSaved
-          ? `${side} 체결\n${qty.toLocaleString()}주 · ${formatPrice(
-            tradeRes.executedPrice,
-          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
-          : `${side} 체결됨 · ${qty}주 · ${formatPrice(
-            tradeRes.executedPrice,
-          )}원 · 매매 로그 저장 실패`,
+          ? `${t("training.action.executed", { side })}\n${t("training.action.quantityPrice", { qty: qty.toLocaleString(locale), price: formatPrice(tradeRes.executedPrice, locale) })} · ${relationLabel()}`
+          : `${t("training.action.executed", { side })} · ${t("training.action.quantityPrice", { qty, price: formatPrice(tradeRes.executedPrice, locale) })} · ${t("training.action.evidenceFailedSuffix")}`,
         side,
       );
 
@@ -193,7 +202,7 @@ export function useTrainingTrade({
   const executeWait = async () => {
     if (!activeChartId) return false;
     if (!canSubmitDecisionAction(tradeForm)) {
-      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      setError(t("training.relation.required"));
       return false;
     }
     if (mutationGuardRef.current) return false;
@@ -203,7 +212,7 @@ export function useTrainingTrade({
       setError(null);
       const event = await reportApi.createEvent(activeChartId, {
         type: "TRADE",
-        title: "WAIT 기록",
+        title: t("training.action.waitEvent"),
         payloadJson: buildWaitEventPayload({
           candleTime: currentCandleTime ?? null,
           price: currentPrice ?? null,
@@ -212,13 +221,13 @@ export function useTrainingTrade({
       });
       appendEvent(event);
       showSavedMessage(
-        `WAIT 기록\n${decisionPlanRelationLabel(tradeForm.planRelation)}`,
+        `${t("training.action.waitEvent")}\n${relationLabel()}`,
         "WAIT",
       );
       resetReasonOnly();
       return true;
     } catch {
-      setError("WAIT 판단을 저장하지 못했습니다. 다시 시도해주세요.");
+      setError(t("training.action.waitSaveFailed"));
       return false;
     } finally {
       setLoading(false);
@@ -229,7 +238,7 @@ export function useTrainingTrade({
   const onSellAll = async () => {
     if (!activeChartId) return false;
     if (!canSubmitDecisionAction(tradeForm)) {
-      setError("이번 행동이 계획과 어떤 관계인지 선택해주세요.");
+      setError(t("training.relation.required"));
       return false;
     }
 
@@ -249,8 +258,8 @@ export function useTrainingTrade({
       } catch (error: unknown) {
         setError(
           axios.isAxiosError<{ message?: string }>(error)
-            ? (error.response?.data?.message ?? "SELL ALL 실패")
-            : "SELL ALL 실패",
+            ? (error.response?.data?.message ?? t("training.action.executionFailed", { side: "SELL ALL" }))
+            : t("training.action.executionFailed", { side: "SELL ALL" }),
         );
         return false;
       }
@@ -280,15 +289,13 @@ export function useTrainingTrade({
         appendEvent(event);
       } catch {
         eventSaved = false;
-        setError("거래는 성공했지만 매매 로그 저장에 실패했습니다.");
+        setError(t("training.action.evidenceSaveFailed"));
       }
 
       showSavedMessage(
         eventSaved
-          ? `SELL 체결\n${sellQty == null ? "전량" : `${sellQty.toLocaleString()}주`} · ${formatPrice(
-            res.executedPrice,
-          )}원 · ${decisionPlanRelationActionLabel(tradeForm.planRelation)}`
-          : `SELL ALL 체결됨 · ${formatPrice(res.executedPrice)}원 · 매매 로그 저장 실패`,
+          ? `${t("training.action.executed", { side: "SELL" })}\n${sellQty == null ? t("training.action.allShares") : t("training.action.quantityPrice", { qty: sellQty.toLocaleString(locale), price: formatPrice(res.executedPrice, locale) })} · ${relationLabel()}`
+          : `${t("training.action.executed", { side: "SELL ALL" })} · ₩${formatPrice(res.executedPrice, locale)} · ${t("training.action.evidenceFailedSuffix")}`,
         "SELL",
       );
 

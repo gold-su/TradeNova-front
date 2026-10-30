@@ -1,3 +1,5 @@
+import { useI18n } from "@/i18n/LanguageProvider";
+
 type Tab = "variables" | "style";
 
 type Props = {
@@ -6,6 +8,7 @@ type Props = {
 };
 
 export function IndicatorConfigTabs({ value, onChange }: Props) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-5 text-sm">
       <button
@@ -18,7 +21,7 @@ export function IndicatorConfigTabs({ value, onChange }: Props) {
             : "text-muted-foreground hover:text-foreground",
         ].join(" ")}
       >
-        변수
+        {t("training.indicator.variables")}
       </button>
 
       <button
@@ -31,7 +34,7 @@ export function IndicatorConfigTabs({ value, onChange }: Props) {
             : "text-muted-foreground hover:text-foreground",
         ].join(" ")}
       >
-        스타일
+        {t("training.indicator.style")}
       </button>
     </div>
   );

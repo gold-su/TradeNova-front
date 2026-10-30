@@ -3,9 +3,9 @@ import type { ChartAiPayload, TrainingChartDto } from "@/types/training";
 import { Bot, X } from "lucide-react";
 import {
     ACTIVE_AI_REVIEW_TARGETS,
-    GENERATED_REVIEW_ACTION_LABEL,
 } from "@/components/training/ai/sessionAiReview";
 import { ChartAiReviewContent } from "@/components/training/ai/ChartAiReviewContent";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
     charts: TrainingChartDto[];
@@ -16,30 +16,7 @@ type Props = {
     disabled?: boolean;
 };
 
-function sectorLabel(sector?: string) {
-    const labels: Record<string, string> = {
-        SEMICONDUCTOR: "반도체",
-        SECONDARY_BATTERY: "2차전지",
-        PLATFORM: "플랫폼",
-        BIO: "바이오",
-        FINANCE: "금융",
-        DEFENSE: "방산",
-        SHIPBUILDING: "조선",
-    };
-    return sector ? labels[sector] ?? "블라인드 차트" : "블라인드 차트";
-}
-
 type ReviewPayload = ChartAiPayload;
-
-function scoreLabel(score?: number | null) {
-    if (score === undefined || score === null) return "-";
-    return `${score}점`;
-}
-
-function reviewMeta(payload: ReviewPayload | null) {
-    if (!payload) return "미생성";
-    return `${scoreLabel(payload.score)} · ${payload.analysisType}`;
-}
 
 function ReviewRow({
     title,
@@ -58,6 +35,7 @@ function ReviewRow({
     onOpen: () => void;
     disabled?: boolean;
 }) {
+    const { t } = useI18n();
     const ready = !!payload;
 
     return (
@@ -71,7 +49,7 @@ function ReviewRow({
                 </div>
 
                 <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    {loading ? "분석 중" : ready ? reviewMeta(payload) : subtitle}
+                    {loading ? t("training.review.analyzing") : ready ? `${t("training.review.score", { score: payload.score })} · ${payload.analysisType}` : subtitle}
                 </div>
             </div>
 
@@ -82,7 +60,7 @@ function ReviewRow({
                         onClick={onOpen}
                         className="inline-flex h-7 items-center rounded-md px-2.5 text-[11px] font-medium text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
                     >
-                        {GENERATED_REVIEW_ACTION_LABEL}
+                        {t("training.review.loadSaved")}
                     </button>
                 ) : (
                     <button
@@ -91,7 +69,7 @@ function ReviewRow({
                         onClick={onGenerate}
                         className="inline-flex h-7 items-center rounded-md bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:bg-primary/15 disabled:opacity-40"
                     >
-                        {loading ? "분석 중" : "분석 생성"}
+                        {loading ? t("training.review.analyzing") : t("training.review.generate")}
                     </button>
                 )}
 
@@ -107,11 +85,12 @@ export function AiReviewPanel({
     onAnalyzeChartAi,
     disabled,
 }: Props) {
+    const { t } = useI18n();
     const [open, setOpen] = useState(false);
     const targetChart = charts.find((chart) => chart.chartId === activeChartId) ?? null;
     const targetLabel = targetChart
-        ? `Chart ${targetChart.chartIndex + 1} · ${sectorLabel(targetChart.trainingSector)}`
-        : "차트 선택";
+        ? `Chart ${targetChart.chartIndex + 1} · ${t(`training.sector.${targetChart.trainingSector ?? "unknown"}`)}`
+        : t("training.chartUi.selectPrompt");
 
     return (
         <>
@@ -123,7 +102,7 @@ export function AiReviewPanel({
                     </div>
 
                     <div className="text-[11px] text-muted-foreground">
-                        차트별 분석
+                        {t("training.review.chartReview")}
                     </div>
                 </div>
 
@@ -132,7 +111,7 @@ export function AiReviewPanel({
                     {ACTIVE_AI_REVIEW_TARGETS.includes("CHART") && (
                         <ReviewRow
                             title={targetLabel}
-                            subtitle="미생성"
+                            subtitle={t("training.review.notGenerated")}
                             payload={chartAiPayload}
                             loading={chartAiLoading}
                             disabled={disabled}
@@ -147,7 +126,7 @@ export function AiReviewPanel({
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
                     <button
                         type="button"
-                        aria-label="닫기"
+                        aria-label={t("common.close")}
                         className="absolute inset-0 cursor-default"
                         onClick={() => setOpen(false)}
                     />
@@ -156,7 +135,7 @@ export function AiReviewPanel({
                         <div className="flex items-center justify-between bg-background/95 px-5 py-4">
                             <div>
                                 <div className="text-base font-semibold">
-                                    Chart Review
+                                    {t("training.review.chartReview")}
                                 </div>
                                 <div className="mt-0.5 text-xs text-muted-foreground">
                                     {targetLabel}
@@ -165,7 +144,7 @@ export function AiReviewPanel({
 
                             <button
                                 type="button"
-                                aria-label="AI 리뷰 닫기"
+                                aria-label={t("training.review.close")}
                                 onClick={() => setOpen(false)}
                                 className="rounded-lg p-2 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
                             >

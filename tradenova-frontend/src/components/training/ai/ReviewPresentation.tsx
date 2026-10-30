@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Target } from "lucide-react";
 import { parseInlineEmphasis } from "@/components/training/ai/inlineEmphasis";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type ReviewTone = "positive" | "warning" | "neutral" | "focus";
 
@@ -28,9 +29,10 @@ export function ReviewInlineText({ children }: { children: string }) {
 }
 
 export function ReviewSummary({ children }: { children: string }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-xl border border-border/60 border-l-2 border-l-primary bg-card/55 px-4 py-4 sm:px-5 sm:py-5">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">전체 요약</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{t("training.review.summary")}</h3>
       <p className="mt-3 whitespace-pre-wrap break-words text-[0.95rem] font-semibold leading-7 text-foreground/95 [overflow-wrap:anywhere]">
         <ReviewInlineText>{children}</ReviewInlineText>
       </p>

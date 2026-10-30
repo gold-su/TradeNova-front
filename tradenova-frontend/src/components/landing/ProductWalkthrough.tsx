@@ -8,7 +8,7 @@ import aiReviewMobile from "@/assets/landing/product/ai-review-mobile.png";
 import nextProgressMobile from "@/assets/landing/product/next-progress-mobile.png";
 import scenarioPlanMobile from "@/assets/landing/product/scenario-plan-mobile.png";
 import tradeExecutionMobile from "@/assets/landing/product/trade-execution-mobile.png";
-import { PRODUCT_WALKTHROUGH_STEPS } from "@/lib/landing/productWalkthrough";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 const screenshots = {
   blind: { desktop: blindChart, mobile: blindChartMobile },
@@ -17,6 +17,14 @@ const screenshots = {
   trade: { desktop: tradeExecution, mobile: tradeExecutionMobile },
   review: { desktop: aiReview, mobile: aiReviewMobile },
 } as const;
+
+const stepMeta = [
+  { number: "01", stage: "BLIND", image: "blind" },
+  { number: "02", stage: "PLAN", image: "plan" },
+  { number: "03", stage: "NEXT", image: "next" },
+  { number: "04", stage: "TRADE", image: "trade" },
+  { number: "05", stage: "AI REVIEW", image: "review" },
+] as const;
 
 type ScreenshotProps = {
   src: string;
@@ -54,7 +62,9 @@ export function ProductScreenshot({
 }
 
 export function HeroProductScreenshot() {
-  const step = PRODUCT_WALKTHROUGH_STEPS[0];
+  const { t, value } = useI18n();
+  const copy = value<Array<{ title: string; description: string; alt: string }>>("landing.walkthrough.steps")[0];
+  const step = stepMeta[0];
 
   return (
     <div className="relative min-w-0">
@@ -65,12 +75,12 @@ export function HeroProductScreenshot() {
       <ProductScreenshot
         src={screenshots[step.image].desktop}
         mobileSrc={screenshots[step.image].mobile}
-        alt={step.imageAlt}
+        alt={copy.alt}
         eager
         className="relative"
       />
       <div className="relative mt-3 flex items-center justify-between gap-4 text-[11px] text-muted-foreground">
-        <span>실제 Training Workspace</span>
+        <span>{t("landing.walkthrough.workspace")}</span>
         <span className="font-medium text-primary">BLIND · PLAN · TRADE</span>
       </div>
     </div>
@@ -78,9 +88,11 @@ export function HeroProductScreenshot() {
 }
 
 export function ProductWalkthrough() {
+  const { value } = useI18n();
+  const copy = value<Array<{ title: string; description: string; alt: string }>>("landing.walkthrough.steps");
   return (
     <div className="mt-12 space-y-14 sm:mt-14 sm:space-y-20">
-      {PRODUCT_WALKTHROUGH_STEPS.map((step, index) => (
+      {stepMeta.map((step, index) => (
         <article
           key={step.number}
           className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:items-center lg:gap-12"
@@ -92,16 +104,16 @@ export function ProductWalkthrough() {
               <span>{step.stage}</span>
             </div>
             <h3 className="mt-4 break-keep text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-              {step.title}
+              {copy[index]?.title}
             </h3>
             <p className="mt-4 max-w-xl break-keep text-sm leading-7 text-muted-foreground sm:text-base">
-              {step.description}
+              {copy[index]?.description}
             </p>
           </div>
           <ProductScreenshot
             src={screenshots[step.image].desktop}
             mobileSrc={screenshots[step.image].mobile}
-            alt={step.imageAlt}
+            alt={copy[index]?.alt ?? ""}
             className={index % 2 ? "lg:order-1" : ""}
           />
         </article>

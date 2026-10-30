@@ -12,6 +12,7 @@ import {
   Activity,
   Pause,
 } from "lucide-react";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   items: TrainingEventResponse[];
@@ -39,20 +40,20 @@ type TradePayload = {
   reasonVersion?: number;
 };
 
-function eventLabel(type: string) {
+function eventLabel(type: string, t: (key: string) => string) {
   switch (type) {
     case "TRADE":
-      return "매매";
+      return t("training.log.trade");
     case "NOTE":
-      return "메모";
+      return t("training.log.note");
     case "SNAPSHOT":
-      return "스냅샷";
+      return t("training.log.snapshot");
     case "AI":
       return "AI";
     case "WARNING":
-      return "경고";
+      return t("training.log.warning");
     case "PROGRESS":
-      return "진행";
+      return t("training.log.progress");
     default:
       return type;
   }
@@ -76,19 +77,19 @@ function getTradeSide(item: TrainingEventResponse): "BUY" | "SELL" | "WAIT" {
   return "BUY";
 }
 
-function formatNumber(v: unknown) {
+function formatNumber(v: unknown, locale: string) {
   if (v === null || v === undefined || v === "") return "-";
   const num = Number(v);
   if (Number.isNaN(num)) return "-";
-  return new Intl.NumberFormat("ko-KR").format(num);
+  return new Intl.NumberFormat(locale).format(num);
 }
 
-function formatTime(value: string) {
+function formatTime(value: string, locale: string) {
   const d = new Date(value);
 
   if (Number.isNaN(d.getTime())) return value;
 
-  return d.toLocaleString("ko-KR", {
+  return d.toLocaleString(locale, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -100,7 +101,7 @@ type DisplayEvent = TrainingEventResponse & {
   progressCount?: number;
 };
 
-function compactProgressEvents(items: TrainingEventResponse[]): DisplayEvent[] {
+function compactProgressEvents(items: TrainingEventResponse[], progressLabel: (count: number) => string): DisplayEvent[] {
   const result: DisplayEvent[] = [];
 
   for (const item of items) {
@@ -113,11 +114,11 @@ function compactProgressEvents(items: TrainingEventResponse[]): DisplayEvent[] {
 
     if (last?.type === "PROGRESS") {
       last.progressCount = (last.progressCount ?? 1) + 1;
-      last.title = `${last.progressCount}봉 진행`;
+      last.title = progressLabel(last.progressCount);
     } else {
       result.push({
         ...item,
-        title: "1봉 진행",
+        title: progressLabel(1),
         progressCount: 1,
       });
     }
@@ -177,6 +178,8 @@ function eventTone(item: TrainingEventResponse) {
 }
 
 function EventSummary({ item, compact = false }: { item: TrainingEventResponse; compact?: boolean }) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const tradePayload = getTradePayload(item);
 
   if (item.type === "TRADE") {
@@ -204,16 +207,17 @@ function EventSummary({ item, compact = false }: { item: TrainingEventResponse; 
 
           <span className="truncate text-xs font-semibold leading-none text-foreground">
             {side === "WAIT"
-              ? "현재 구간 관망"
-              : `${formatNumber(tradePayload.qty)}주 · ${formatNumber(
+              ? t("training.log.waitingNow")
+              : t("training.log.tradeAmount", { qty: formatNumber(tradePayload.qty, locale), price: formatNumber(
                   tradePayload.price ?? tradePayload.executedPrice,
-                )}원`}
+                  locale,
+                ) })}
           </span>
         </div>
 
         {!compact && reasonPreview && (
           <div className="mt-1 truncate text-[11px] text-muted-foreground">
-            근거 {reasons.length > 0 ? `${reasons.length}개 · ` : ""}
+            {t("training.log.reason")} {reasons.length > 0 ? `${t("training.log.count", { count: reasons.length })} · ` : ""}
             {reasonPreview}
           </div>
         )}
@@ -225,10 +229,10 @@ function EventSummary({ item, compact = false }: { item: TrainingEventResponse; 
 
   const subText =
     item.type === "SNAPSHOT"
-      ? String(normalPayload?.thesis || "시나리오")
+      ? String(normalPayload?.thesis || t("training.log.scenario"))
       : item.type === "NOTE"
-        ? String(normalPayload?.thesis || "메모")
-        : eventLabel(item.type);
+        ? String(normalPayload?.thesis || t("training.log.note"))
+        : eventLabel(item.type, t);
 
   return (
     <div className="min-w-0 flex-1">
@@ -249,6 +253,8 @@ function EventRow({
   item: TrainingEventResponse;
   compact?: boolean;
 }) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const [reasonOpen, setReasonOpen] = useState(false);
   const tradePayload = getTradePayload(item);
   const reasons = tradePayload.reasons ?? [];
@@ -273,7 +279,7 @@ function EventRow({
         <EventSummary item={item} compact={compact} />
 
         <div className="shrink-0 text-[10px] text-muted-foreground">
-          {formatTime(item.createdAt)}
+          {formatTime(item.createdAt, locale)}
         </div>
       </div>
 
@@ -285,10 +291,10 @@ function EventRow({
             className="flex h-9 w-full items-center justify-between rounded-xl bg-background/45 px-3 text-xs transition hover:bg-primary/[0.04]"
           >
             <span className="font-semibold text-foreground">
-              매매 근거 {reasons.length}개
+              {t("training.log.tradeReasons", { count: reasons.length })}
             </span>
             <span className="text-muted-foreground">
-              {reasonOpen ? "접기" : "보기"}
+              {reasonOpen ? t("training.log.collapse") : t("training.log.view")}
             </span>
           </button>
 
@@ -301,7 +307,7 @@ function EventRow({
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <div className="text-xs font-semibold text-primary">
-                      근거 {idx + 1}
+                      {t("training.log.reasonIndex", { index: idx + 1 })}
                     </div>
                     {reason.title && (
                       <div className="max-w-[260px] truncate text-[11px] text-muted-foreground">
@@ -313,7 +319,7 @@ function EventRow({
                   {reason.entryReason && (
                     <div className="rounded-lg bg-background/45 px-3 py-2">
                       <div className="mb-1 text-[10px] font-semibold text-muted-foreground">
-                        매매 판단
+                        {t("training.log.tradeDecision")}
                       </div>
                       <div className="whitespace-pre-wrap text-xs leading-5 text-foreground/90">
                         {reason.entryReason}
@@ -324,7 +330,7 @@ function EventRow({
                   {reason.riskNote && (
                     <div className="mt-2 rounded-lg bg-red-500/10 px-3 py-2">
                       <div className="mb-1 text-[10px] font-semibold text-red-300">
-                        리스크 기준
+                        {t("training.log.riskCriteria")}
                       </div>
                       <div className="whitespace-pre-wrap text-xs leading-5 text-red-100/90">
                         {reason.riskNote}
@@ -343,6 +349,7 @@ function EventRow({
 }
 
 export function EventLogPanel({ items, loading }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const sortedItems = items
     .slice()
@@ -359,7 +366,7 @@ export function EventLogPanel({ items, loading }: Props) {
     return !!payload?.savedForAiReview;
   });
 
-  const displayItems = compactProgressEvents(visibleItems);
+  const displayItems = compactProgressEvents(visibleItems, (count) => t("training.log.candlesProgressed", { count }));
 
   const recent = displayItems.slice(0, 3);
   const bodyMode = getEventLogBodyMode(loading, recent.length);
@@ -371,7 +378,7 @@ export function EventLogPanel({ items, loading }: Props) {
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">03 · REVIEW</div>
             <div className="text-[11px] text-muted-foreground">
-              최근 판단 {recent.length}개{loading ? " · 동기화 중" : ""}
+              {t("training.log.recentDecisions", { count: recent.length })}{loading ? ` · ${t("training.log.syncing")}` : ""}
             </div>
           </div>
 
@@ -380,12 +387,12 @@ export function EventLogPanel({ items, loading }: Props) {
             onClick={() => setOpen(true)}
             className="rounded-md border border-border/50 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
           >
-            전체 보기
+            {t("training.log.viewAll")}
           </button>
         </div>
 
         {bodyMode !== "content" ? (
-          <div className="text-sm text-muted-foreground">{bodyMode === "loading" ? "불러오는 중..." : "기록 없음"}</div>
+          <div className="text-sm text-muted-foreground">{bodyMode === "loading" ? t("training.log.loading") : t("training.log.empty")}</div>
         ) : (
           <div className="space-y-2">
             {recent.map((item) => (
@@ -399,7 +406,7 @@ export function EventLogPanel({ items, loading }: Props) {
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50">
           <button
             type="button"
-            aria-label="닫기"
+            aria-label={t("common.close")}
             className="absolute inset-0 cursor-default"
             onClick={() => setOpen(false)}
           />
@@ -407,9 +414,9 @@ export function EventLogPanel({ items, loading }: Props) {
           <div className="relative z-10 h-full w-[560px] border-l border-border/60 bg-background p-4 shadow-2xl">
             <div className="mb-4 flex items-center justify-between border-b border-border/50 pb-3">
               <div>
-                <div className="text-base font-semibold">전체 로그</div>
+                <div className="text-base font-semibold">{t("training.log.allLogs")}</div>
                 <div className="text-xs text-muted-foreground">
-                  현재 차트의 이벤트 기록
+                  {t("training.log.currentChartEvents")}
                 </div>
               </div>
 
@@ -425,7 +432,7 @@ export function EventLogPanel({ items, loading }: Props) {
             <div className="thin-scrollbar h-[calc(100%-64px)] space-y-2 overflow-y-auto pr-1">
               {items.length === 0 ? (
                 <div className="rounded-xl border border-border/50 bg-background/40 p-5 text-sm text-muted-foreground">
-                  기록 없음
+                  {t("training.log.empty")}
                 </div>
               ) : (
                 displayItems.map((item) => <EventRow key={item.id} item={item} />)

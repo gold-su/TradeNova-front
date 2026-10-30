@@ -22,6 +22,7 @@ import {
   createVolumeSeries,
   type VolumeSeriesRefs,
 } from "@/components/training/chart/panes/VolumePane";
+import { useI18n } from "@/i18n/LanguageProvider";
 import {
   createRsiSeries,
   type RsiSeriesRefs,
@@ -88,20 +89,11 @@ type Props = {
   onToggleDrawingRail?: () => void;
 };
 
-function formatTooltipDate(timestamp: number) {
-  const date = new Date(timestamp);
-
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  const day = weekdays[date.getDay()];
-
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-
-  return `(${day}) ${yyyy}.${mm}.${dd}`;
+function formatTooltipDate(timestamp: number, locale: string) {
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }).format(new Date(timestamp));
 }
 
-function formatAxisMonth(timestamp: number) {
+function formatAxisMonth(timestamp: number, locale: string) {
   const date = new Date(timestamp);
 
   const yyyy = date.getFullYear();
@@ -111,7 +103,7 @@ function formatAxisMonth(timestamp: number) {
     return String(yyyy);
   }
 
-  return `${month}월`;
+  return locale === "ko-KR" ? `${month}월` : new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
 }
 
 export default function CandleChart({
@@ -139,6 +131,8 @@ export default function CandleChart({
   drawingRailCollapsed = false,
   onToggleDrawingRail,
 }: Props) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
   const rsiContainerRef = useRef<HTMLDivElement | null>(null);
   const macdContainerRef = useRef<HTMLDivElement | null>(null);
@@ -295,7 +289,7 @@ export default function CandleChart({
               ? time * 1000
               : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
 
-          return formatTooltipDate(timestamp);
+          return formatTooltipDate(timestamp, locale);
         },
       },
       grid: {
@@ -321,7 +315,7 @@ export default function CandleChart({
               ? time * 1000
               : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
 
-          return formatAxisMonth(timestamp);
+          return formatAxisMonth(timestamp, locale);
         },
       },
       crosshair: {
@@ -618,7 +612,7 @@ export default function CandleChart({
       setTooltip(null);
       setTradeTooltip(null);
     };
-  }, [chartId, height, mainHeight, showRsi, showMacd, subPaneHeight]);
+  }, [chartId, height, locale, mainHeight, showRsi, showMacd, subPaneHeight]);
 
   /**
    * 데이터 업데이트 effect
@@ -839,7 +833,7 @@ export default function CandleChart({
   return (
     <div className="relative h-full w-full">
       <div className="mb-2 flex flex-wrap items-center gap-2 px-1 text-[11px] text-muted-foreground">
-        {indicatorSettings.volume.enabled && <span>Volume</span>}
+        {indicatorSettings.volume.enabled && <span>{t("training.indicator.volume")}</span>}
 
         {indicatorSettings.ma.enabled &&
           indicatorSettings.ma.lines.map((line) => {
@@ -918,30 +912,30 @@ export default function CandleChart({
           className="pointer-events-none absolute z-20 w-[150px] rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-[11px] shadow-xl backdrop-blur"
           style={tooltipStyle}
         >
-          {formatTooltipDate(tooltip.candle.t)}
+          {formatTooltipDate(tooltip.candle.t, locale)}
 
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted-foreground">
-            <span>시가</span>
+            <span>{t("training.chart.open")}</span>
             <span className="text-right text-foreground">
               {tooltip.candle.o.toLocaleString()}
             </span>
 
-            <span>고가</span>
+            <span>{t("training.chart.high")}</span>
             <span className="text-right text-red-400">
               {tooltip.candle.h.toLocaleString()}
             </span>
 
-            <span>저가</span>
+            <span>{t("training.chart.low")}</span>
             <span className="text-right text-blue-400">
               {tooltip.candle.l.toLocaleString()}
             </span>
 
-            <span>종가</span>
+            <span>{t("training.chart.close")}</span>
             <span className="text-right text-foreground">
               {tooltip.candle.c.toLocaleString()}
             </span>
 
-            <span>거래량</span>
+            <span>{t("training.chart.volume")}</span>
             <span className="text-right text-foreground">
               {tooltip.candle.v.toLocaleString()}
             </span>
@@ -968,7 +962,7 @@ export default function CandleChart({
           </div>
 
           <div className="mt-1 flex justify-between text-muted-foreground">
-            <span>가격</span>
+            <span>{t("training.chart.price")}</span>
             <span className="text-foreground">
               {tradeTooltip.trade.price.toLocaleString()}
             </span>
@@ -976,9 +970,9 @@ export default function CandleChart({
 
           {tradeTooltip.trade.qty && (
             <div className="flex justify-between text-muted-foreground">
-              <span>수량</span>
+              <span>{t("training.chart.quantity")}</span>
               <span className="text-foreground">
-                {tradeTooltip.trade.qty}주
+                {t("training.chart.shares", { count: tradeTooltip.trade.qty })}
               </span>
             </div>
           )}

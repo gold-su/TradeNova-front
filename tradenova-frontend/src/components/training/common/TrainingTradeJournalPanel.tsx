@@ -37,6 +37,7 @@ import {
   type TrainingOrderMode,
 } from "@/hooks/training/trainingWorkspaceState";
 import { PlanRelationSection } from "./PlanRelationSection";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 type Props = {
   tradeForm: TradeForm;
@@ -108,6 +109,8 @@ export function TrainingTradeJournalPanel({
   scenarioSnapshots,
   chartId,
 }: Props) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const [orderMode, setOrderMode] = useState<TrainingOrderMode>(null);
   const [waitOpen, setWaitOpen] = useState(false);
   const [waitReasonOpen, setWaitReasonOpen] = useState(false);
@@ -178,7 +181,7 @@ export function TrainingTradeJournalPanel({
       setSellAllSelected(false);
     } else {
       setOrderError(
-        "주문이 완료되지 않았습니다. 수량과 계좌 상태를 확인한 뒤 다시 시도해주세요.",
+        t("training.tradeUi.orderFailed"),
       );
     }
   };
@@ -216,9 +219,9 @@ export function TrainingTradeJournalPanel({
               <div className="text-[10px] font-bold tracking-[0.14em] text-primary/80">
                 02 · ACTION
               </div>
-              <div className="mt-1 text-sm font-semibold">이번 판단 기록</div>
+              <div className="mt-1 text-sm font-semibold">{t("training.actionUi.heading")}</div>
               <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                PLAN과 비교한 뒤 행동을 기록합니다.
+                {t("training.actionUi.help")}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -228,7 +231,7 @@ export function TrainingTradeJournalPanel({
                 disabled={disabled}
                 className={`h-9 rounded-lg bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
-                BUY
+                {t("training.action.buy")}
               </button>
               <button
                 type="button"
@@ -239,7 +242,7 @@ export function TrainingTradeJournalPanel({
                 disabled={disabled}
                 className={`h-9 rounded-lg bg-sky-500/10 text-sm font-bold text-sky-300 transition hover:bg-sky-500/15 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
-                WAIT
+                {t("training.action.wait")}
               </button>
               <button
                 type="button"
@@ -247,7 +250,7 @@ export function TrainingTradeJournalPanel({
                 disabled={disabled}
                 className={`h-9 rounded-lg bg-red-500/15 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
               >
-                SELL
+                {t("training.action.sell")}
               </button>
             </div>
 
@@ -264,7 +267,7 @@ export function TrainingTradeJournalPanel({
                     }
                     className="no-number-spinner h-7 w-12 bg-transparent text-center text-sm font-bold outline-none"
                   />
-                  <span className="text-xs text-muted-foreground">봉</span>
+                  <span className="text-xs text-muted-foreground">{t("training.actionUi.candleUnit")}</span>
                 </div>
 
                 <button
@@ -274,10 +277,10 @@ export function TrainingTradeJournalPanel({
                   className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 text-sm font-bold text-primary transition hover:bg-primary/15 active:scale-[0.99] disabled:cursor-not-allowed ${loading ? "disabled:opacity-100" : "disabled:opacity-45"}`}
                 >
                   {loading ? (
-                    "처리 중..."
+                    t("training.action.processing")
                   ) : (
                     <>
-                      NEXT
+                      {t("training.action.next")}
                       <ChevronsRight className="h-4 w-4" />
                     </>
                   )}
@@ -293,8 +296,8 @@ export function TrainingTradeJournalPanel({
                   disabled={!riskRuleAvailable}
                   title={
                     riskRuleAvailable
-                      ? "리스크룰 설정"
-                      : "포지션을 먼저 매수한 후 설정할 수 있습니다"
+                      ? t("training.riskUi.configure")
+                      : t("training.riskUi.unavailable")
                   }
                   className={[
                     "h-9 shrink-0 rounded-lg border px-3 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45",
@@ -303,7 +306,7 @@ export function TrainingTradeJournalPanel({
                       : "border-border/50 bg-background/55 text-muted-foreground hover:text-foreground",
                   ].join(" ")}
                 >
-                  리스크
+                  {t("training.risk.title")}
                 </button>
               </div>
 
@@ -312,7 +315,7 @@ export function TrainingTradeJournalPanel({
                 onClick={() => setSyncNext((prev) => !prev)}
                 className="flex h-8 w-full items-center justify-between rounded-md px-2 text-xs transition hover:bg-background/45"
               >
-                <span className="text-muted-foreground">Grid 동시 진행</span>
+                <span className="text-muted-foreground">{t("training.actionUi.syncGrid")}</span>
                 <span
                   className={
                     syncNext
@@ -331,7 +334,7 @@ export function TrainingTradeJournalPanel({
         <WorkspaceDialog
           medium
           title={orderMode}
-          description="현재 차트의 주문과 판단을 함께 기록합니다."
+          description={t("training.tradeUi.orderDescription")}
           busy={loading}
           onClose={closeOrder}
         >
@@ -366,7 +369,7 @@ export function TrainingTradeJournalPanel({
         <WorkspaceDialog
           medium
           title="WAIT"
-          description="지금 거래하지 않는 판단과 계획의 관계를 기록합니다."
+          description={t("training.tradeUi.waitDescription")}
           busy={loading}
           onClose={closeWait}
         >
@@ -384,7 +387,7 @@ export function TrainingTradeJournalPanel({
                 onClick={() => setWaitReasonOpen((open) => !open)}
                 className="flex w-full items-center justify-between rounded-md py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
               >
-                <span>{waitReasonOpen ? "관망 이유 접기" : "+ 관망 이유 남기기"}</span>
+                <span>{waitReasonOpen ? t("training.tradeUi.hideWaitReason") : t("training.tradeUi.addWaitReason")}</span>
                 {waitReasonOpen ? (
                   <ChevronUp className="h-3.5 w-3.5" />
                 ) : (
@@ -393,7 +396,7 @@ export function TrainingTradeJournalPanel({
               </button>
               {waitReasonOpen && (
                 <label className="mt-2 block text-xs font-semibold">
-                  관망 이유 <span className="font-normal text-muted-foreground">(선택)</span>
+                  {t("training.tradeUi.waitReason")} <span className="font-normal text-muted-foreground">({t("training.tradeUi.optional")})</span>
                   <textarea
                     rows={3}
                     value={tradeForm.reasons.find((reason) => reason.id === "action-input")?.entryReason ?? ""}
@@ -402,7 +405,7 @@ export function TrainingTradeJournalPanel({
                         updateActionReason(previous, event.target.value),
                       )
                     }
-                    placeholder="예: 진입 조건이 아직 충족되지 않음"
+                    placeholder={t("training.tradeUi.waitPlaceholder")}
                     className="mt-2 w-full resize-none rounded-lg border border-border/60 bg-muted/20 px-3.5 py-3 text-sm font-normal leading-6 outline-none placeholder:text-muted-foreground/65 focus:border-primary/60"
                   />
                 </label>
@@ -416,7 +419,7 @@ export function TrainingTradeJournalPanel({
               disabled={loading}
               className="h-10 rounded-lg px-5 text-sm text-muted-foreground hover:bg-muted/40"
             >
-              취소
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -426,7 +429,7 @@ export function TrainingTradeJournalPanel({
               }}
               className="h-10 rounded-lg bg-sky-500/15 px-6 text-sm font-semibold text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
             >
-              {loading ? "저장 중..." : "WAIT 기록"}
+              {loading ? t("common.saving") : t("training.tradeUi.recordWait")}
             </button>
           </footer>
         </WorkspaceDialog>
@@ -434,8 +437,8 @@ export function TrainingTradeJournalPanel({
       {riskOpen && (
         <WorkspaceDialog
           medium
-          title="리스크룰 설정"
-          description="NEXT 진행 중 기준가 도달 시 자동 청산됩니다."
+          title={t("training.riskUi.configure")}
+          description={t("training.riskUi.description")}
           busy={riskSaving}
           onClose={() => {
             setRiskOpen(false);
@@ -445,27 +448,27 @@ export function TrainingTradeJournalPanel({
           <div className="thin-scrollbar min-h-0 space-y-4 overflow-y-auto px-6 pb-5">
             <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/[0.08] px-3.5 py-3 text-sm text-muted-foreground">
               <ShieldAlert className="h-4 w-4 shrink-0 text-red-300" />
-              설정한 가격과 청산 비율은 현재 차트의 보유 포지션에 적용됩니다.
+              {t("training.riskUi.help")}
             </div>
             <div className="grid grid-cols-2 divide-x divide-border/40 rounded-xl border border-primary/20 bg-primary/5 py-3">
               <div className="px-4">
-                <div className="text-xs text-muted-foreground">현재가</div>
+                <div className="text-xs text-muted-foreground">{t("training.account.currentPrice")}</div>
                 <div className="mt-1 text-lg font-bold text-primary">
                   {Number.isFinite(currentPrice)
-                    ? `${currentPrice.toLocaleString()}원`
+                    ? `₩${currentPrice.toLocaleString(locale)}`
                     : "-"}
                 </div>
               </div>
               <div className="px-4">
-                <div className="text-xs text-muted-foreground">현재 보유</div>
+                <div className="text-xs text-muted-foreground">{t("training.riskUi.currentPosition")}</div>
                 <div className="mt-1 text-lg font-bold">
-                  {Math.max(0, Math.floor(positionQty)).toLocaleString()}주
+                  {t("training.chart.shares", { count: Math.max(0, Math.floor(positionQty)).toLocaleString(locale) })}
                 </div>
               </div>
             </div>
 
             <RiskRuleSection
-              title="손절"
+              title={t("training.riskUi.stop")}
               tone="loss"
               price={riskDraft.stopLossPrice}
               pricePlaceholder="예: 58000"
@@ -485,7 +488,7 @@ export function TrainingTradeJournalPanel({
             />
 
             <RiskRuleSection
-              title="익절"
+              title={t("training.riskUi.take")}
               tone="profit"
               price={riskDraft.takeProfitPrice}
               pricePlaceholder="예: 72000"
@@ -514,7 +517,7 @@ export function TrainingTradeJournalPanel({
               }
               className="flex h-11 w-full items-center justify-between rounded-xl bg-background/45 px-4 text-sm"
             >
-              <span className="text-muted-foreground">자동 청산</span>
+              <span className="text-muted-foreground">{t("training.risk.autoExit")}</span>
               <span
                 className={
                   riskDraft.autoExitEnabled
@@ -544,7 +547,7 @@ export function TrainingTradeJournalPanel({
               }}
               className="h-10 rounded-xl px-4 text-sm text-muted-foreground hover:bg-background/60"
             >
-              초기화
+              {t("training.riskUi.reset")}
             </button>
 
             <button
@@ -560,12 +563,12 @@ export function TrainingTradeJournalPanel({
                   );
                   if (saved) setRiskOpen(false);
                 } catch {
-                  setRiskError("리스크룰을 저장하지 못했습니다. 다시 시도해주세요.");
+                  setRiskError(t("training.risk.saveFailed"));
                 }
               }}
               className="h-10 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground disabled:opacity-40"
             >
-              {riskSaving ? "저장 중..." : "저장"}
+              {riskSaving ? t("common.saving") : t("common.save")}
             </button>
           </footer>
         </WorkspaceDialog>
@@ -597,6 +600,8 @@ function RiskRuleSection({
   hasPosition: boolean;
   currentPrice: number;
 }) {
+  const { language, t } = useI18n();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const [pricePickerOpen, setPricePickerOpen] = useState(false);
   const priceChangePercent = calculatePriceChangePercent(price, currentPrice);
   const candidatePercents = Array.from(
@@ -625,18 +630,18 @@ function RiskRuleSection({
         }}
       >
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">{title} 가격</span>
+          <span className="text-muted-foreground">{t("training.riskUi.price", { title })}</span>
           {priceChangePercent !== null && (
             <span
               className={tone === "loss" ? "text-red-300" : "text-emerald-300"}
             >
-              현재가 대비 {formatPercent(priceChangePercent)}
+              {t("training.riskUi.relative", { percent: formatPercent(priceChangePercent) })}
             </span>
           )}
         </div>
         <div className="flex rounded-lg border border-border/40 bg-background/55 focus-within:border-primary/45">
           <input
-            aria-label={`${title} 가격`}
+            aria-label={t("training.riskUi.price", { title })}
             type="number"
             value={price}
             onFocus={() => setPricePickerOpen(true)}
@@ -646,7 +651,7 @@ function RiskRuleSection({
           />
           <button
             type="button"
-            aria-label={`${title} 가격 후보 열기`}
+            aria-label={t("training.riskUi.openCandidates", { title })}
             aria-expanded={pricePickerOpen}
             onClick={() => setPricePickerOpen((open) => !open)}
             className="flex w-10 items-center justify-center border-l border-border/40 text-muted-foreground hover:text-foreground"
@@ -659,21 +664,21 @@ function RiskRuleSection({
           <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-border/60 bg-background shadow-2xl">
             <div className="space-y-0.5 border-b border-border/50 bg-muted/20 px-3 py-2 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">현재가</span>
+                <span className="text-muted-foreground">{t("training.account.currentPrice")}</span>
                 <strong>
-                  {hasCurrentPrice ? `${currentPrice.toLocaleString()}원` : "-"}
+                  {hasCurrentPrice ? `₩${currentPrice.toLocaleString(locale)}` : "-"}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">선택가</span>
+                <span className="text-muted-foreground">{t("training.riskUi.selectedPrice")}</span>
                 <strong>
                   {price && Number.isFinite(Number(price))
-                    ? `${Number(price).toLocaleString()}원`
+                    ? `₩${Number(price).toLocaleString(locale)}`
                     : "-"}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">현재가 대비</span>
+                <span className="text-muted-foreground">{t("training.account.currentPrice")} %</span>
                 <strong>
                   {priceChangePercent === null
                     ? "-"
@@ -685,7 +690,7 @@ function RiskRuleSection({
               <div
                 className="max-h-44 overflow-y-auto p-1"
                 role="listbox"
-                aria-label={`${title} 가격 후보`}
+                aria-label={t("training.riskUi.candidates", { title })}
               >
                 {candidatePercents.map((candidatePercent) => {
                   const candidatePrice = calculateTargetPrice(
@@ -712,14 +717,14 @@ function RiskRuleSection({
                         </span>
                         {formatPercent(candidatePercent)}
                       </span>
-                      <span>{candidatePrice.toLocaleString()}원</span>
+                      <span>₩{candidatePrice.toLocaleString(locale)}</span>
                     </button>
                   );
                 })}
               </div>
             ) : (
               <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                유효한 현재가가 없어 가격 후보를 계산할 수 없습니다.
+                {t("training.riskUi.invalidCurrent")}
               </div>
             )}
           </div>
@@ -727,17 +732,17 @@ function RiskRuleSection({
       </div>
       <div className="mt-2">
         <ExitPercentControl
-          label="청산 비율"
+          label={t("training.riskUi.exitPercent")}
           value={percent}
           onChange={onPercentChange}
         />
       </div>
       <div className="mt-3 flex items-center justify-between rounded-lg bg-background/55 px-3 py-2 text-xs">
-        <span className="text-muted-foreground">예상 청산수량</span>
+        <span className="text-muted-foreground">{t("training.riskUi.estimatedExit")}</span>
         <strong>
           {hasPosition
-            ? `${exitQuantity.toLocaleString()}주 청산`
-            : "0주 (보유 포지션 없음)"}
+            ? t("training.riskUi.exitShares", { count: exitQuantity.toLocaleString(locale) })
+            : t("training.riskUi.noPosition")}
         </strong>
       </div>
     </section>
@@ -753,13 +758,14 @@ function ExitPercentControl({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useI18n();
   const valid = isValidExitPercent(value);
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
         <span>{label}</span>
-        {!valid && <span className="text-red-300">1~100 정수만 입력</span>}
+        {!valid && <span className="text-red-300">{t("training.riskUi.percentInvalid")}</span>}
       </div>
       <div className="flex items-center gap-2">
         <div className="grid flex-1 grid-cols-4 overflow-hidden rounded-lg border border-border/40">

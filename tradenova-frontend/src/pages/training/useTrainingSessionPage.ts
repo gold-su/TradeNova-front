@@ -23,6 +23,7 @@ import {
   applyTradeToProgressMap,
   isCurrentChartRequest,
 } from "@/hooks/training/trainingStateConsistency";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 /**
  * 훈련 페이지 전체 조립 훅
@@ -35,6 +36,7 @@ import {
  * - useTrainingTrade: 거래 모달/BUY/SELL/SELL ALL
  */
 export function useTrainingSessionPage() {
+  const { t } = useI18n();
   // 거래와 차트 진행이 같은 렌더 안에서 재진입하더라도 동시에 실행되지 않게 한다.
   const mutationGuard = useRef(false);
 
@@ -53,15 +55,15 @@ export function useTrainingSessionPage() {
   const autoExitMessage = (reason: AutoExitReason | null) => {
     switch (reason) {
       case "STOP_LOSS":
-        return "손절가 도달로 자동청산되었습니다.";
+        return t("training.risk.stopTriggered");
       case "TAKE_PROFIT":
-        return "익절가 도달로 자동청산되었습니다.";
+        return t("training.risk.takeTriggered");
       case "END_OF_CHART":
-        return "마지막 봉에 도달해 남은 포지션이 전량청산되었습니다.";
+        return t("training.risk.chartEnded");
       case "END_OF_SESSION":
-        return "훈련 종료로 전량 청산되었습니다.";
+        return t("training.risk.sessionEnded");
       default:
-        return "포지션이 자동청산되었습니다.";
+        return t("training.risk.autoTriggered");
     }
   };
 
@@ -191,7 +193,7 @@ export function useTrainingSessionPage() {
 
   const onRefreshChart = (chartId: number) => {
     if ((tradeMarkersByChart[chartId]?.length ?? 0) > 0) {
-      core.setError("이미 거래 기록이 있는 차트는 새로고침할 수 없습니다.");
+      core.setError(t("training.session.refreshTradeBlocked"));
       return;
     }
     void core.onRefreshChart(chartId);
@@ -286,8 +288,8 @@ export function useTrainingSessionPage() {
       setSummaryError(
         axios.isAxiosError<{ message?: string }>(error)
           ? (error.response?.data?.message ??
-            "세션 완료 정보를 불러오지 못했습니다.")
-          : "세션 완료 정보를 불러오지 못했습니다.",
+            t("training.completion.loadFailed"))
+          : t("training.completion.loadFailed"),
       );
 
       return null;
