@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseChartAiPayload, parseSessionAiPayload } from "../src/components/training/ai/aiReviewPayload.ts";
+import { aiReviewGenerateRequest } from "../src/api/aiReviewRequest.ts";
+
+test("AI review generation sends the selected UI language without changing stored-review reads", () => {
+  assert.deepEqual(aiReviewGenerateRequest("en"), { language: "en" });
+  assert.deepEqual(aiReviewGenerateRequest("ko"), { language: "ko" });
+});
 
 test("saved session AI payload retains review content for history", () => {
   const payload = { analysisScope: "SESSION", sessionId: 9, score: 75, summary: "요약", strengths: ["계획 준수"], warnings: ["추격 매수"], decisionReview: { assessment: "좋음", evidence: ["근거"], betterAction: "유지" } };
