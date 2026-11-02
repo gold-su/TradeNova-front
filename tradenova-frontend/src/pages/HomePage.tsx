@@ -10,8 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import aiReviewEnglishScreenshot from "@/assets/landing/product/en/ai-review.png";
-import aiReviewScreenshot from "@/assets/landing/product/ai-review.png";
-import aiReviewMobileScreenshot from "@/assets/landing/product/ai-review-mobile.png";
+import aiReviewKoreanScreenshot from "@/assets/landing/product/ko/ai-review.png";
 import { BetaWaitlistForm } from "@/components/landing/BetaWaitlistForm";
 import {
   HeroProductScreenshot,
@@ -223,10 +222,9 @@ export default function HomePage() {
             </ul>
           </div>
           <ProductScreenshot
-            src={language === "en" ? aiReviewEnglishScreenshot : aiReviewScreenshot}
-            mobileSrc={language === "en" ? undefined : aiReviewMobileScreenshot}
-            width={language === "en" ? 593 : 1200}
-            height={language === "en" ? 705 : 750}
+            src={language === "en" ? aiReviewEnglishScreenshot : aiReviewKoreanScreenshot}
+            width={language === "en" ? 593 : 588}
+            height={language === "en" ? 705 : 641}
             alt={t("landing.ai.alt")}
           />
         </div>

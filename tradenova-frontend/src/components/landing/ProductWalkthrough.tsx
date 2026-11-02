@@ -1,19 +1,15 @@
+import koreanWorkspace from "@/assets/landing/product/ko/training-workspace.png";
+import koreanBlindChart from "@/assets/landing/product/ko/blind-chart.png";
+import koreanScenarioPlan from "@/assets/landing/product/ko/scenario-plan.png";
+import koreanNextProgress from "@/assets/landing/product/ko/next-progress.png";
+import koreanTradeExecution from "@/assets/landing/product/ko/trade-execution.png";
+import koreanAiReview from "@/assets/landing/product/ko/ai-review.png";
 import trainingWorkspace from "@/assets/landing/product/en/training-workspace.png";
 import blindChart from "@/assets/landing/product/en/blind-chart.png";
 import scenarioPlan from "@/assets/landing/product/en/scenario-plan.png";
 import nextProgress from "@/assets/landing/product/en/next-progress.png";
 import tradeExecution from "@/assets/landing/product/en/trade-execution.png";
 import aiReview from "@/assets/landing/product/en/ai-review.png";
-import legacyBlindChart from "@/assets/landing/product/blind-chart.png";
-import legacyBlindChartMobile from "@/assets/landing/product/blind-chart-mobile.png";
-import legacyScenarioPlan from "@/assets/landing/product/scenario-plan.png";
-import legacyScenarioPlanMobile from "@/assets/landing/product/scenario-plan-mobile.png";
-import legacyNextProgress from "@/assets/landing/product/next-progress.png";
-import legacyNextProgressMobile from "@/assets/landing/product/next-progress-mobile.png";
-import legacyTradeExecution from "@/assets/landing/product/trade-execution.png";
-import legacyTradeExecutionMobile from "@/assets/landing/product/trade-execution-mobile.png";
-import legacyAiReview from "@/assets/landing/product/ai-review.png";
-import legacyAiReviewMobile from "@/assets/landing/product/ai-review-mobile.png";
 import { useI18n } from "@/i18n/LanguageProvider";
 
 // Native sizes reserve aspect ratios; displayWidth can enlarge compact control captures.
@@ -26,13 +22,13 @@ const englishScreenshots = {
   review: { src: aiReview, width: 593, height: 705 },
 } as const;
 
-const legacyScreenshots = {
-  workspace: { src: legacyBlindChart, mobileSrc: legacyBlindChartMobile, width: 1200, height: 750 },
-  blind: { src: legacyBlindChart, mobileSrc: legacyBlindChartMobile, width: 1200, height: 750 },
-  plan: { src: legacyScenarioPlan, mobileSrc: legacyScenarioPlanMobile, width: 1200, height: 750 },
-  next: { src: legacyNextProgress, mobileSrc: legacyNextProgressMobile, width: 1200, height: 750 },
-  trade: { src: legacyTradeExecution, mobileSrc: legacyTradeExecutionMobile, width: 1200, height: 750 },
-  review: { src: legacyAiReview, mobileSrc: legacyAiReviewMobile, width: 1200, height: 750 },
+const koreanScreenshots = {
+  workspace: { src: koreanWorkspace, width: 1920, height: 910 },
+  blind: { src: koreanBlindChart, width: 1327, height: 615 },
+  plan: { src: koreanScenarioPlan, width: 680, height: 745 },
+  next: { src: koreanNextProgress, width: 939, height: 640, displayWidth: 420 },
+  trade: { src: koreanTradeExecution, width: 494, height: 754 },
+  review: { src: koreanAiReview, width: 588, height: 641 },
 } as const;
 
 const stepMeta = [
@@ -87,7 +83,7 @@ export function ProductScreenshot({
 
 export function HeroProductScreenshot() {
   const { t, language } = useI18n();
-  const screenshots = language === "en" ? englishScreenshots : legacyScreenshots;
+  const screenshots = language === "en" ? englishScreenshots : koreanScreenshots;
 
   return (
     <div className="relative min-w-0">
@@ -111,7 +107,7 @@ export function HeroProductScreenshot() {
 
 export function ProductWalkthrough() {
   const { value, language } = useI18n();
-  const screenshots = language === "en" ? englishScreenshots : legacyScreenshots;
+  const screenshots = language === "en" ? englishScreenshots : koreanScreenshots;
   const copy = value<Array<{ title: string; description: string; alt: string }>>("landing.walkthrough.steps");
   return (
     <div className="mt-12 space-y-14 sm:mt-14 sm:space-y-20">
