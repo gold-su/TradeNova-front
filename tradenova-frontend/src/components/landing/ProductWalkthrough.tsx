@@ -18,7 +18,7 @@ import { useI18n } from "@/i18n/LanguageProvider";
 
 // Native sizes reserve aspect ratios; displayWidth can enlarge compact control captures.
 const englishScreenshots = {
-  workspace: { src: trainingWorkspace, width: 1920, height: 910 },
+  workspace: { src: trainingWorkspace, width: 1920, height: 906 },
   blind: { src: blindChart, width: 1330, height: 716 },
   plan: { src: scenarioPlan, width: 679, height: 743 },
   next: { src: nextProgress, width: 935, height: 637, displayWidth: 420 },
