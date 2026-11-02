@@ -16,12 +16,12 @@ import legacyAiReview from "@/assets/landing/product/ai-review.png";
 import legacyAiReviewMobile from "@/assets/landing/product/ai-review-mobile.png";
 import { useI18n } from "@/i18n/LanguageProvider";
 
-// Native capture sizes reserve the right aspect ratio and prevent upscaling small UI crops.
+// Native sizes reserve aspect ratios; displayWidth can enlarge compact control captures.
 const englishScreenshots = {
   workspace: { src: trainingWorkspace, width: 1920, height: 910 },
   blind: { src: blindChart, width: 1330, height: 716 },
   plan: { src: scenarioPlan, width: 679, height: 743 },
-  next: { src: nextProgress, width: 305, height: 183 },
+  next: { src: nextProgress, width: 305, height: 183, displayWidth: 720 },
   trade: { src: tradeExecution, width: 491, height: 764 },
   review: { src: aiReview, width: 593, height: 705 },
 } as const;
@@ -49,6 +49,7 @@ type ScreenshotProps = {
   alt: string;
   width?: number;
   height?: number;
+  displayWidth?: number;
   eager?: boolean;
   className?: string;
 };
@@ -59,13 +60,14 @@ export function ProductScreenshot({
   alt,
   width = 1200,
   height = 750,
+  displayWidth = width,
   eager = false,
   className = "",
 }: ScreenshotProps) {
   return (
     <figure
       className={`mx-auto w-full overflow-hidden rounded-xl border border-border/70 bg-[#06100d] p-1 shadow-[0_22px_58px_-42px_rgba(0,0,0,0.92)] sm:p-1.5 ${className}`}
-      style={{ maxWidth: width + 14 }}
+      style={{ maxWidth: displayWidth + 14 }}
     >
       <picture className="block overflow-hidden rounded-lg bg-[#020806]">
         {mobileSrc && <source media="(max-width: 639px)" srcSet={mobileSrc} />}
