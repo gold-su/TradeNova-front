@@ -9,6 +9,7 @@ import {
   ListChecks,
   ShieldCheck,
 } from "lucide-react";
+import aiReviewEnglishScreenshot from "@/assets/landing/product/en/ai-review.png";
 import aiReviewScreenshot from "@/assets/landing/product/ai-review.png";
 import aiReviewMobileScreenshot from "@/assets/landing/product/ai-review-mobile.png";
 import { BetaWaitlistForm } from "@/components/landing/BetaWaitlistForm";
@@ -26,7 +27,7 @@ function scrollToSection(id: string) {
 }
 
 export default function HomePage() {
-  const { t, value } = useI18n();
+  const { t, value, language } = useI18n();
   const howRef = useRef<HTMLElement>(null);
   const problemStatements = value<string[]>("landing.problem.items");
   const tradeNovaDifferences = value<string[]>("landing.difference.ours");
@@ -222,8 +223,10 @@ export default function HomePage() {
             </ul>
           </div>
           <ProductScreenshot
-            src={aiReviewScreenshot}
-            mobileSrc={aiReviewMobileScreenshot}
+            src={language === "en" ? aiReviewEnglishScreenshot : aiReviewScreenshot}
+            mobileSrc={language === "en" ? undefined : aiReviewMobileScreenshot}
+            width={language === "en" ? 593 : 1200}
+            height={language === "en" ? 705 : 750}
             alt={t("landing.ai.alt")}
           />
         </div>
