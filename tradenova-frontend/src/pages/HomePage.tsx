@@ -72,7 +72,7 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/[0.07] blur-3xl"
         />
-        <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1440px] items-center gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(540px,1.18fr)] lg:gap-12 lg:px-14 lg:py-16 xl:gap-16 xl:px-16">
+        <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1760px] items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-10 lg:px-10 lg:py-16 xl:grid-cols-[minmax(0,0.62fr)_minmax(0,1.38fr)] xl:gap-12 xl:px-12">
           <div className="min-w-0 max-w-[590px]">
             <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary">
               <span aria-hidden="true" className="h-px w-7 bg-primary/70" />
