@@ -13,14 +13,14 @@ const copy = {
     chart: "Chart 2 · Finance",
     example: "Illustrative example · Sample data",
     hint: "Capture the review card below. Its height expands so all text stays visible.",
-    summary: "Your plan required a resistance breakout with volume above **1.5× its 20-bar average**. You entered after the breakout, but entry-bar volume was only **0.8× the average**. The price condition was met; the volume condition was not.",
+    summary: "Your entry met both planned conditions: a resistance breakout and volume at **1.6× the 20-bar average**, above your 1.5× threshold. Your exit came **two bars after price fell below the planned swing low**. Entry discipline was stronger than exit discipline.",
     strengths: [
-      "Recorded both entry conditions before BUY and linked the trade to that plan.",
-      "Defined a manual exit below the recent swing low. This is a documented risk plan, even without an automatic stop."
+      "Recorded the breakout trigger, volume threshold, and swing-low exit condition before entering.",
+      "Waited until both price and volume conditions were met before buying."
     ],
     warnings: [
-      "Marked the entry as following the plan despite missing volume confirmation.",
-      "Next drill: check price and volume separately before BUY. If either required condition is unmet, WAIT."
+      "Advanced two more bars after the exit condition was met, then sold without recording a change to the plan.",
+      "Next drill: after each NEXT, check your exit condition before advancing again. If it is met, exit or record why you are changing the plan."
     ],
   },
   ko: {
@@ -28,14 +28,14 @@ const copy = {
     chart: "Chart 2 · 금융",
     example: "리뷰 예시 · 가상 데이터",
     hint: "아래 리뷰 카드만 캡처하세요. 전체 내용을 볼 수 있도록 높이가 자동으로 늘어납니다.",
-    summary: "계획은 저항선 돌파와 함께 거래량이 **20봉 평균의 1.5배 이상**일 때 진입하는 것이었습니다. 돌파 후 매수했지만 진입 봉의 거래량은 **평균의 0.8배**였습니다. 가격 조건은 충족됐지만, 거래량 조건은 충족되지 않았습니다.",
+    summary: "진입 당시 저항선 돌파와 거래량 조건을 모두 충족했습니다. 거래량은 **20봉 평균의 1.6배**로, 계획한 1.5배 기준을 넘었습니다. 반면 청산은 **계획한 스윙 저점 이탈보다 2봉 늦었습니다**. 진입에서는 계획을 지켰지만, 청산에서는 실행이 지연됐습니다.",
     strengths: [
-      "매수 전에 두 가지 진입 조건을 기록하고 해당 계획을 거래에 연결했습니다.",
-      "최근 스윙 저점 이탈 시 수동 청산한다는 기준을 기록했습니다. 자동 손절을 설정하지 않았어도 문서화된 위험관리 계획입니다."
+      "진입 전에 돌파 조건, 거래량 기준, 스윙 저점 이탈 시 청산 조건을 기록했습니다.",
+      "가격과 거래량 조건이 모두 충족될 때까지 기다린 뒤 매수했습니다."
     ],
     warnings: [
-      "거래량 확인 조건이 충족되지 않았는데도 계획에 따른 진입으로 기록했습니다.",
-      "다음 훈련에서는 매수 전 가격과 거래량 조건을 각각 확인하세요. 필수 조건 중 하나라도 미충족이면 관망하세요."
+      "청산 조건이 충족된 뒤 2봉을 더 진행하고 매도했지만, 계획을 바꾼 이유는 기록하지 않았습니다.",
+      "다음 훈련에서는 NEXT를 누른 뒤 청산 조건부터 확인하세요. 조건이 충족됐다면 청산하거나, 계획을 바꾸는 이유를 기록한 뒤 다음 봉으로 진행하세요."
     ],
   },
 };
