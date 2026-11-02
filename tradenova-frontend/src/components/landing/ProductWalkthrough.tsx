@@ -21,7 +21,7 @@ const englishScreenshots = {
   workspace: { src: trainingWorkspace, width: 1920, height: 910 },
   blind: { src: blindChart, width: 1330, height: 716 },
   plan: { src: scenarioPlan, width: 679, height: 743 },
-  next: { src: nextProgress, width: 305, height: 183, displayWidth: 420 },
+  next: { src: nextProgress, width: 935, height: 637, displayWidth: 420 },
   trade: { src: tradeExecution, width: 491, height: 764 },
   review: { src: aiReview, width: 593, height: 705 },
 } as const;
