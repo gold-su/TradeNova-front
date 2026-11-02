@@ -72,9 +72,9 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/[0.07] blur-3xl"
         />
-        <div className="relative mx-auto grid min-h-[calc(100dvh-57px)] w-full max-w-[1760px] items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-10 lg:px-10 lg:py-16 xl:grid-cols-[minmax(0,0.62fr)_minmax(0,1.38fr)] xl:gap-12 xl:px-12">
-          <div className="min-w-0 max-w-[590px]">
-            <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary">
+        <div className="relative mx-auto flex w-full max-w-[1840px] flex-col gap-10 px-5 py-10 sm:px-8 lg:px-10 lg:py-12 xl:px-12">
+          <div className="mx-auto min-w-0 w-full max-w-[960px] text-center">
+            <p className="mb-4 flex items-center justify-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-primary">
               <span aria-hidden="true" className="h-px w-7 bg-primary/70" />
               {t("landing.hero.eyebrow")}
             </p>
@@ -82,15 +82,15 @@ export default function HomePage() {
               <span className="block">{t("landing.hero.line1")}</span>
               <span className="block text-primary">{t("landing.hero.line2")}</span>
             </h1>
-            <p className="mt-7 max-w-[560px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+            <p className="mx-auto mt-5 max-w-[680px] break-keep text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
               {t("landing.hero.body")}
             </p>
-            <p className="mt-5 text-xs font-semibold tracking-[0.12em] text-foreground/80 sm:text-sm">
+            <p className="mt-4 text-xs font-semibold tracking-[0.12em] text-foreground/80 sm:text-sm">
               Blind Chart <span className="px-1 text-primary">→</span> Plan
               <span className="px-1 text-primary">→</span> Trade
               <span className="px-1 text-primary">→</span> AI Review
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
                 className="h-11 px-6"
@@ -107,7 +107,7 @@ export default function HomePage() {
                 {t("landing.hero.secondary")} <ArrowDown aria-hidden="true" />
               </Button>
             </div>
-            <p className="mt-4 text-xs leading-5 text-muted-foreground">
+            <p className="mx-auto mt-3 max-w-[680px] text-xs leading-5 text-muted-foreground">
               {t("landing.hero.disclaimer")}
             </p>
           </div>
