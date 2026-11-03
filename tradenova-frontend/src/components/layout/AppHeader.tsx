@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { authApi } from "@/api/authApi";
@@ -7,6 +7,13 @@ import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useI18n } from "@/i18n/LanguageProvider";
 import { clearAuthSession, hasValidAccessToken, subscribeToAuthSession } from "@/lib/authSession";
+import { PUBLIC_LANDING_NAV_ITEMS } from "@/lib/landing/navigation";
+
+type HeaderLink = {
+  to: string;
+  label: string;
+  sectionId?: string;
+};
 
 export function AppHeader() {
   const { t } = useI18n();
@@ -32,25 +39,51 @@ export function AppHeader() {
   };
 
   const isLanding = location.pathname === "/";
-  const publicLinks = [
-    { to: "/#service-intro", label: t("landing.nav.intro") },
-    { to: "/#how-it-works", label: t("landing.nav.method") },
-    { to: "/#product-preview", label: t("landing.nav.preview") },
-    { to: "/#faq", label: t("landing.nav.faq") },
-  ];
-  const memberLinks = [
+  const publicLinks: HeaderLink[] = PUBLIC_LANDING_NAV_ITEMS.map(({ sectionId, labelKey }) => ({
+    sectionId,
+    to: `/#${sectionId}`,
+    label: t(labelKey),
+  }));
+  const memberLinks: HeaderLink[] = [
     { to: "/training", label: t("landing.nav.training") },
     { to: "/growth", label: t("landing.nav.growth") },
     { to: "/mypage", label: t("landing.nav.mypage") },
   ];
   const links = isLanding || !isAuthenticated ? publicLinks : memberLinks;
 
+  const handleLandingSectionClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+  ) => {
+    setOpen(false);
+    if (!isLanding) return;
+
+    event.preventDefault();
+    const targetHash = `#${sectionId}`;
+    if (location.hash === targetHash) {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    navigate({ pathname: "/", hash: targetHash });
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
         <Link to="/" aria-label={`TradeNova ${t("common.home")}`}><BrandWordmark /></Link>
         <nav className="ml-8 hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label={t("landing.nav.mainMenu")}>
-          {links.map((link) => <Link key={link.to} className="transition hover:text-foreground" to={link.to}>{link.label}</Link>)}
+          {links.map((link) => (
+            <Link
+              key={link.to}
+              className="transition hover:text-foreground"
+              to={link.to}
+              onClick={(event) => {
+                if (link.sectionId) handleLandingSectionClick(event, link.sectionId);
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <LanguageSwitcher />
@@ -84,7 +117,19 @@ export function AppHeader() {
         <nav className="border-t border-border/60 bg-background px-4 py-4 md:hidden" aria-label={t("landing.nav.mobileMenu")}>
           <LanguageSwitcher compact />
           <div className="grid gap-1">
-            {links.map((link) => <Link key={link.to} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" to={link.to} onClick={() => setOpen(false)}>{link.label}</Link>)}
+            {links.map((link) => (
+              <Link
+                key={link.to}
+                className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                to={link.to}
+                onClick={(event) => {
+                  if (link.sectionId) handleLandingSectionClick(event, link.sectionId);
+                  else setOpen(false);
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
             {isAuthenticated ? (

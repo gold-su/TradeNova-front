@@ -1,7 +1,7 @@
 export const landingMessages = {
   en: {
     meta: { title: "TradeNova | Practice investment decision-making", description: "Practice decisions on blind historical charts and review your trading process with AI." },
-    nav: { intro: "Product", method: "How it works", preview: "Product preview", faq: "FAQ", login: "Log in", beta: "Join the beta", start: "Start training", training: "Training", growth: "Growth report", mypage: "My page", logout: "Log out", userMenu: "User menu", mainMenu: "Main navigation", mobileMenu: "Mobile navigation", openMenu: "Open menu", closeMenu: "Close menu" },
+    nav: { intro: "Product", method: "How it works", preview: "Training preview", faq: "FAQ", login: "Log in", beta: "Join the beta", start: "Start training", training: "Training", growth: "Growth report", mypage: "My page", logout: "Log out", userMenu: "User menu", mainMenu: "Main navigation", mobileMenu: "Mobile navigation", openMenu: "Open menu", closeMenu: "Close menu" },
     hero: { eyebrow: "TRAIN THE DECISION. NOT THE OUTCOME.", line1: "Train the decision,", line2: "not just the outcome.", body: "Practice on real historical charts without knowing the ticker, then move from planning to execution and review.", primary: "Join the free beta", secondary: "See how it works", disclaimer: "TradeNova trains decision-making. It does not provide investment advice or automated trading." },
     problem: { eyebrow: "WHY PRACTICE", title: "Explaining a chart afterward is not the same as deciding in the moment.", items: ["Reading a chart with the outcome already known is different from deciding without seeing the future.", "Profit and loss alone do not reveal the reasoning or risk criteria behind a decision.", "Recording a plan first lets you compare intent with actual behavior."] },
     walkthrough: { eyebrow: "PRODUCT WALKTHROUGH", title: "Decide first, act, then review", description: "See how one TradeNova training session works through real product screens.", workspace: "Actual Training Workspace", cta: "Join the free beta", steps: [
@@ -32,7 +32,7 @@ export const landingMessages = {
   },
   ko: {
     meta: { title: "TradeNova | 실제 과거 시장으로 투자 판단 훈련", description: "종목명을 숨긴 실제 과거 차트에서 판단하고, AI와 함께 내 매매 과정을 복기하는 투자 훈련 서비스." },
-    nav: { intro: "제품 소개", method: "훈련 방식", preview: "예시 화면", faq: "FAQ", login: "로그인", beta: "무료 베타 신청", start: "훈련 시작", training: "훈련", growth: "성장 리포트", mypage: "마이페이지", logout: "로그아웃", userMenu: "사용자 메뉴", mainMenu: "주요 메뉴", mobileMenu: "모바일 메뉴", openMenu: "메뉴 열기", closeMenu: "메뉴 닫기" },
+    nav: { intro: "제품 소개", method: "훈련 방식", preview: "훈련 화면", faq: "FAQ", login: "로그인", beta: "무료 베타 신청", start: "훈련 시작", training: "훈련", growth: "성장 리포트", mypage: "마이페이지", logout: "로그아웃", userMenu: "사용자 메뉴", mainMenu: "주요 메뉴", mobileMenu: "모바일 메뉴", openMenu: "메뉴 열기", closeMenu: "메뉴 닫기" },
     hero: { eyebrow: "TRAIN THE DECISION. NOT THE OUTCOME.", line1: "투자 결과가 아니라,", line2: "판단 과정을 훈련합니다.", body: "종목을 모른 채 실제 과거 차트를 보고, 계획부터 실행과 복기까지 반복하는 투자 판단 훈련 SaaS입니다.", primary: "무료 베타 신청", secondary: "제품 사용 방식 보기", disclaimer: "투자 추천이나 자동매매가 아닌, 판단 과정을 기록하고 복기하는 훈련 서비스입니다." },
     problem: { eyebrow: "WHY PRACTICE", title: "결과를 본 뒤의 설명은, 그 순간의 판단과 다릅니다.", items: ["결과를 알고 보는 차트와 미래를 모른 채 내리는 판단은 다릅니다.", "수익과 손실만으로는 당시의 근거와 리스크 기준을 알 수 없습니다.", "계획을 먼저 기록해야 실제 행동과 비교하며 복기할 수 있습니다."] },
     walkthrough: { eyebrow: "PRODUCT WALKTHROUGH", title: "먼저 판단하고, 직접 행동한 뒤 복기합니다", description: "실제 제품 화면으로 TradeNova의 한 번의 훈련이 어떻게 이어지는지 확인해보세요.", workspace: "실제 Training Workspace", cta: "무료 베타 신청", steps: [
