@@ -7,7 +7,10 @@ import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useI18n } from "@/i18n/LanguageProvider";
 import { clearAuthSession, hasValidAccessToken, subscribeToAuthSession } from "@/lib/authSession";
-import { PUBLIC_LANDING_NAV_ITEMS } from "@/lib/landing/navigation";
+import {
+  PUBLIC_BETA_SECTION_ID,
+  PUBLIC_LANDING_NAV_ITEMS,
+} from "@/lib/landing/navigation";
 
 type HeaderLink = {
   to: string;
@@ -105,7 +108,14 @@ export function AppHeader() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild><Link to="/login">{t("landing.nav.login")}</Link></Button>
-              <Button size="sm" className="rounded-full px-4" asChild><Link to="/#beta-apply">{t("landing.nav.beta")}</Link></Button>
+              <Button size="sm" className="rounded-full px-4" asChild>
+                <Link
+                  to={`/#${PUBLIC_BETA_SECTION_ID}`}
+                  onClick={(event) => handleLandingSectionClick(event, PUBLIC_BETA_SECTION_ID)}
+                >
+                  {t("landing.nav.beta")}
+                </Link>
+              </Button>
             </>
           )}
         </div>
@@ -135,7 +145,19 @@ export function AppHeader() {
             {isAuthenticated ? (
               <><Button asChild><Link to="/training" onClick={() => setOpen(false)}>{isLanding ? t("landing.nav.start") : t("landing.nav.training")}</Link></Button><Button variant="outline" onClick={logout}>{t("landing.nav.logout")}</Button></>
             ) : (
-              <><Button variant="outline" asChild><Link to="/login" onClick={() => setOpen(false)}>{t("landing.nav.login")}</Link></Button><Button asChild><Link to="/#beta-apply" onClick={() => setOpen(false)}>{t("landing.nav.beta")}</Link></Button></>
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/login" onClick={() => setOpen(false)}>{t("landing.nav.login")}</Link>
+                </Button>
+                <Button asChild>
+                  <Link
+                    to={`/#${PUBLIC_BETA_SECTION_ID}`}
+                    onClick={(event) => handleLandingSectionClick(event, PUBLIC_BETA_SECTION_ID)}
+                  >
+                    {t("landing.nav.beta")}
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
         </nav>

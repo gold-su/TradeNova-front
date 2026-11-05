@@ -20,6 +20,7 @@ import {
 } from "@/components/landing/ProductWalkthrough";
 import { Button } from "@/components/ui/button";
 import { trackLandingEvent } from "@/lib/landing/analytics";
+import { PUBLIC_BETA_SECTION_ID } from "@/lib/landing/navigation";
 import { useI18n } from "@/i18n/LanguageProvider";
 
 function scrollToSection(id: string) {
@@ -71,7 +72,7 @@ export default function HomePage() {
 
   const openBetaForm = (placement: string) => {
     trackLandingEvent("hero_beta_cta_click", { placement });
-    scrollToSection("beta-apply");
+    scrollToSection(PUBLIC_BETA_SECTION_ID);
   };
 
   return (
@@ -259,7 +260,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="beta-apply" className="scroll-mt-20 border-t border-border/60 bg-card/30">
+      <section id={PUBLIC_BETA_SECTION_ID} className="scroll-mt-20 border-t border-border/60 bg-card/30">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <p className="text-xs font-semibold tracking-[0.17em] text-primary">{t("landing.beta.eyebrow")}</p>
