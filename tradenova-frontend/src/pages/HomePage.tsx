@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   ArrowDown,
   ArrowRight,
@@ -19,6 +20,7 @@ import {
 } from "@/components/landing/ProductWalkthrough";
 import { Button } from "@/components/ui/button";
 import { trackLandingEvent } from "@/lib/landing/analytics";
+import { PUBLIC_BETA_SECTION_ID } from "@/lib/landing/navigation";
 import { useI18n } from "@/i18n/LanguageProvider";
 
 function scrollToSection(id: string) {
@@ -27,6 +29,7 @@ function scrollToSection(id: string) {
 
 export default function HomePage() {
   const { t, value, language } = useI18n();
+  const { hash } = useLocation();
   const howRef = useRef<HTMLElement>(null);
   const problemStatements = value<string[]>("landing.problem.items");
   const tradeNovaDifferences = value<string[]>("landing.difference.ours");
@@ -39,6 +42,14 @@ export default function HomePage() {
   useEffect(() => {
     trackLandingEvent("landing_view");
   }, []);
+
+  useEffect(() => {
+    const sectionId = hash.startsWith("#") ? hash.slice(1) : hash;
+    if (!sectionId) return;
+
+    const frame = window.requestAnimationFrame(() => scrollToSection(sectionId));
+    return () => window.cancelAnimationFrame(frame);
+  }, [hash]);
 
   useEffect(() => {
     const section = howRef.current;
@@ -61,7 +72,7 @@ export default function HomePage() {
 
   const openBetaForm = (placement: string) => {
     trackLandingEvent("hero_beta_cta_click", { placement });
-    scrollToSection("beta-apply");
+    scrollToSection(PUBLIC_BETA_SECTION_ID);
   };
 
   return (
@@ -144,8 +155,7 @@ export default function HomePage() {
         ref={howRef}
         className="scroll-mt-20 relative border-y border-border/60 bg-card/35"
       >
-        <span id="product-preview" className="absolute top-0 scroll-mt-20" aria-hidden="true" />
-        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
+        <div id="product-preview" className="scroll-mt-20 mx-auto max-w-6xl px-5 py-16 sm:px-10 lg:py-20">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold tracking-[0.17em] text-primary">{t("landing.walkthrough.eyebrow")}</p>
             <h2 className="mt-4 break-keep text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
@@ -250,7 +260,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="beta-apply" className="scroll-mt-20 border-t border-border/60 bg-card/30">
+      <section id={PUBLIC_BETA_SECTION_ID} className="scroll-mt-20 border-t border-border/60 bg-card/30">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <p className="text-xs font-semibold tracking-[0.17em] text-primary">{t("landing.beta.eyebrow")}</p>

@@ -7,7 +7,12 @@ import {
   persistLanguage,
   resolveInitialLanguage,
 } from "../src/i18n/language.ts";
+import { landingMessages } from "../src/i18n/resources/landing.ts";
 import { trainingMessages } from "../src/i18n/resources/training.ts";
+import {
+  PUBLIC_BETA_SECTION_ID,
+  PUBLIC_LANDING_NAV_ITEMS,
+} from "../src/lib/landing/navigation.ts";
 
 test("English is the default language when no valid preference is stored", () => {
   assert.equal(DEFAULT_LANGUAGE, "en");
@@ -33,6 +38,34 @@ test("semantic resources contain natural EN and KO product copy", () => {
   assert.equal(trainingMessages.ko.plan.currentView, "현재 관점");
   assert.equal(trainingMessages.en.chart.shares, "{count} shares");
   assert.equal(trainingMessages.ko.chart.shares, "{count}주");
+});
+
+test("public landing navigation exposes only working training preview and FAQ anchors", () => {
+  const homePage = readFileSync(new URL("../src/pages/HomePage.tsx", import.meta.url), "utf8");
+
+  assert.deepEqual(PUBLIC_LANDING_NAV_ITEMS, [
+    { sectionId: "product-preview", labelKey: "landing.nav.preview" },
+    { sectionId: "faq", labelKey: "landing.nav.faq" },
+  ]);
+  for (const { sectionId } of PUBLIC_LANDING_NAV_ITEMS) {
+    assert.match(homePage, new RegExp(`id=["']${sectionId}["']`));
+  }
+  assert.equal(landingMessages.en.nav.preview, "Training preview");
+  assert.equal(landingMessages.ko.nav.preview, "훈련 화면");
+  assert.equal(landingMessages.en.nav.faq, "FAQ");
+  assert.equal(landingMessages.ko.nav.faq, "FAQ");
+});
+
+test("header beta calls to action target the real waitlist section", () => {
+  const appHeader = readFileSync(new URL("../src/components/layout/AppHeader.tsx", import.meta.url), "utf8");
+  const homePage = readFileSync(new URL("../src/pages/HomePage.tsx", import.meta.url), "utf8");
+
+  assert.equal(PUBLIC_BETA_SECTION_ID, "beta-apply");
+  assert.match(homePage, /id=\{PUBLIC_BETA_SECTION_ID\}/);
+  assert.equal(
+    appHeader.match(/handleLandingSectionClick\(event, PUBLIC_BETA_SECTION_ID\)/g)?.length,
+    2,
+  );
 });
 
 test("localized labels never mutate API enum values", () => {
