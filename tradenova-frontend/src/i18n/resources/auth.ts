@@ -1,7 +1,7 @@
 export const authMessages = {
   en: {
     loginTitle: "Log in",
-    loginDesc: "Welcome back to TradeNova.",
+    loginDesc: "Welcome back to DeciReps.",
     email: "Email",
     password: "Password",
     nickname: "Nickname",
@@ -44,7 +44,7 @@ export const authMessages = {
   },
   ko: {
     loginTitle: "로그인",
-    loginDesc: "TradeNova에 다시 오신 것을 환영합니다.",
+    loginDesc: "DeciReps에 다시 오신 것을 환영합니다.",
     email: "이메일",
     password: "비밀번호",
     nickname: "닉네임",

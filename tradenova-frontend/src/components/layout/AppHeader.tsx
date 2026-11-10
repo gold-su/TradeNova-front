@@ -73,7 +73,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <Link to="/" aria-label={`TradeNova ${t("common.home")}`}><BrandWordmark /></Link>
+        <Link to="/" aria-label={`DeciReps ${t("common.home")}`}><BrandWordmark /></Link>
         <nav className="ml-8 hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label={t("landing.nav.mainMenu")}>
           {links.map((link) => (
             <Link

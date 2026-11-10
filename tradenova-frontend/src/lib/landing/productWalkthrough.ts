@@ -15,7 +15,7 @@ export const PRODUCT_WALKTHROUGH_STEPS: ProductWalkthroughStep[] = [
     description:
       "종목명과 티커를 가린 실제 과거 차트에서 가격 흐름과 거래량을 먼저 읽습니다.",
     image: "blind",
-    imageAlt: "종목명이 가려진 네 개의 과거 차트를 비교하는 TradeNova 훈련 화면",
+    imageAlt: "종목명이 가려진 네 개의 과거 차트를 비교하는 DeciReps 훈련 화면",
   },
   {
     number: "02",
@@ -42,7 +42,7 @@ export const PRODUCT_WALKTHROUGH_STEPS: ProductWalkthroughStep[] = [
     description:
       "BUY·SELL, 포지션과 거래 근거를 계획에 연결해 실제 훈련 행동으로 기록합니다.",
     image: "trade",
-    imageAlt: "수량과 적용 계획, 매수 근거를 기록하는 TradeNova 주문 화면",
+    imageAlt: "수량과 적용 계획, 매수 근거를 기록하는 DeciReps 주문 화면",
   },
   {
     number: "05",
