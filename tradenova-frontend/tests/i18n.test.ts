@@ -40,6 +40,41 @@ test("semantic resources contain natural EN and KO product copy", () => {
   assert.equal(trainingMessages.ko.chart.shares, "{count}주");
 });
 
+test("public brand metadata uses DeciReps and the production domain", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const robots = readFileSync(new URL("../public/robots.txt", import.meta.url), "utf8");
+  const sitemap = readFileSync(new URL("../public/sitemap.xml", import.meta.url), "utf8");
+
+  assert.equal(landingMessages.en.meta.title, "DeciReps | Train your trading decisions");
+  assert.equal(landingMessages.ko.meta.title, "DeciReps | 투자 판단을 훈련하세요");
+  assert.match(html, /<meta property="og:site_name" content="DeciReps" \/>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/decireps\.com\/" \/>/);
+  assert.match(robots, /https:\/\/decireps\.com\/sitemap\.xml/);
+  assert.match(sitemap, /<loc>https:\/\/decireps\.com\/<\/loc>/);
+});
+
+test("official DeciReps SVG assets are wired without executable or remote dependencies", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const wordmark = readFileSync(
+    new URL("../src/components/brand/BrandWordmark.tsx", import.meta.url),
+    "utf8",
+  );
+  const assets = [
+    "../src/assets/brand/decireps-logo.svg",
+    "../src/assets/brand/decireps-symbol.svg",
+    "../public/decireps-favicon.svg",
+  ];
+
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/decireps-favicon\.svg" \/>/);
+  assert.match(wordmark, /import decirepsLogo from "@\/assets\/brand\/decireps-logo\.svg"/);
+
+  for (const path of assets) {
+    const svg = readFileSync(new URL(path, import.meta.url), "utf8");
+    assert.match(svg, /<svg\b[^>]*\bviewBox="[^"]+"/);
+    assert.doesNotMatch(svg, /<script\b|<foreignObject\b|(?:xlink:)?href\s*=|\son[a-z]+\s*=|@font-face|font-family/i);
+  }
+});
+
 test("public landing navigation exposes only working training preview and FAQ anchors", () => {
   const homePage = readFileSync(new URL("../src/pages/HomePage.tsx", import.meta.url), "utf8");
 

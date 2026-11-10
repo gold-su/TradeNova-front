@@ -23,12 +23,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const title = translate(language, "landing.meta.title");
+    const description = translate(language, "landing.meta.description");
+    const setMetaContent = (selector: string, content: string) => {
+      document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", content);
+    };
+
     document.documentElement.lang = language;
-    document.title = translate(language, "landing.meta.title");
-    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute(
-      "content",
-      translate(language, "landing.meta.description"),
-    );
+    document.title = title;
+    setMetaContent('meta[name="description"]', description);
+    setMetaContent('meta[property="og:title"]', title);
+    setMetaContent('meta[property="og:description"]', description);
+    setMetaContent('meta[property="og:locale"]', language === "ko" ? "ko_KR" : "en_US");
+    setMetaContent('meta[name="twitter:title"]', title);
+    setMetaContent('meta[name="twitter:description"]', description);
   }, [language]);
 
   const context = useMemo<LanguageContextValue>(() => ({

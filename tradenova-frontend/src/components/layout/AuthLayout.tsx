@@ -7,7 +7,7 @@ export function AuthLayout() {
     const { t } = useI18n();
     return (
         <div className="relative min-h-dvh">
-            <Link to="/" className="absolute left-5 top-5 z-20 text-base sm:left-8 sm:top-7" aria-label={`TradeNova ${t("common.home")}`}>
+            <Link to="/" className="absolute left-5 top-5 z-20 text-base sm:left-8 sm:top-7" aria-label={`DeciReps ${t("common.home")}`}>
                 <BrandWordmark />
             </Link>
             <div className="absolute right-5 top-5 z-20 sm:right-8 sm:top-7"><LanguageSwitcher /></div>
