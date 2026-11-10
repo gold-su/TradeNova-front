@@ -27,9 +27,9 @@
   }
 
   .dark {
-    /* TradeNova Dark (Calm Lab + Nova Growth) */
-    --background: 160 35% 4%;
-    --foreground: 150 30% 98%;
+    /* DeciReps brand: #0B1215 background, #F1F5F4 text, #10B981 primary */
+    --background: 198 31% 6%;
+    --foreground: 165 17% 95%;
 
     --card: 160 22% 7%;
     --card-foreground: 150 30% 98%;
@@ -38,7 +38,7 @@
     --popover-foreground: 150 30% 98%;
 
     /* Emerald accent */
-    --primary: 155 70% 55%;
+    --primary: 160 84% 39%;
     --primary-foreground: 160 30% 6%;
 
     --secondary: 160 18% 12%;
