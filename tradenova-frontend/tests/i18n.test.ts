@@ -53,6 +53,28 @@ test("public brand metadata uses DeciReps and the production domain", () => {
   assert.match(sitemap, /<loc>https:\/\/decireps\.com\/<\/loc>/);
 });
 
+test("official DeciReps SVG assets are wired without executable or remote dependencies", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const wordmark = readFileSync(
+    new URL("../src/components/brand/BrandWordmark.tsx", import.meta.url),
+    "utf8",
+  );
+  const assets = [
+    "../src/assets/brand/decireps-logo.svg",
+    "../src/assets/brand/decireps-symbol.svg",
+    "../public/decireps-favicon.svg",
+  ];
+
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/decireps-favicon\.svg" \/>/);
+  assert.match(wordmark, /import decirepsLogo from "@\/assets\/brand\/decireps-logo\.svg"/);
+
+  for (const path of assets) {
+    const svg = readFileSync(new URL(path, import.meta.url), "utf8");
+    assert.match(svg, /<svg\b[^>]*\bviewBox="[^"]+"/);
+    assert.doesNotMatch(svg, /<script\b|<foreignObject\b|(?:xlink:)?href\s*=|\son[a-z]+\s*=|@font-face|font-family/i);
+  }
+});
+
 test("public landing navigation exposes only working training preview and FAQ anchors", () => {
   const homePage = readFileSync(new URL("../src/pages/HomePage.tsx", import.meta.url), "utf8");
 
