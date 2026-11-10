@@ -66,7 +66,8 @@ test("official DeciReps SVG assets are wired without executable or remote depend
   ];
 
   assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/decireps-favicon\.svg" \/>/);
-  assert.match(wordmark, /import decirepsLogo from "@\/assets\/brand\/decireps-logo\.svg"/);
+  assert.match(wordmark, /import decirepsSymbol from "@\/assets\/brand\/decireps-symbol\.svg"/);
+  assert.doesNotMatch(wordmark, /bg-\[#F1F5F4\]|rounded-md|px-1|py-0\.5/);
 
   for (const path of assets) {
     const svg = readFileSync(new URL(path, import.meta.url), "utf8");

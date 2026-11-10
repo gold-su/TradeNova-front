@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import decirepsLogo from "@/assets/brand/decireps-logo.svg";
+import decirepsSymbol from "@/assets/brand/decireps-symbol.svg";
 
 type BrandWordmarkProps = {
   className?: string;
@@ -8,15 +8,22 @@ type BrandWordmarkProps = {
 export function BrandWordmark({ className }: BrandWordmarkProps) {
   return (
     <span
-      className={cn("inline-flex items-center rounded-md bg-[#F1F5F4] px-1 py-0.5", className)}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-[17px] font-semibold leading-none tracking-tight",
+        className,
+      )}
       aria-label="DeciReps"
     >
       <img
-        src={decirepsLogo}
+        src={decirepsSymbol}
         alt=""
         aria-hidden="true"
-        className="block h-7 w-auto max-w-full"
+        className="block h-[26px] w-[26px] shrink-0"
       />
+      <span aria-hidden="true">
+        <span className="text-foreground">Deci</span>
+        <span className="text-primary">Reps</span>
+      </span>
     </span>
   );
 }
