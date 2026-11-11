@@ -53,6 +53,11 @@ import type {
   PendingDrawing,
   SelectedDrawing,
 } from "./drawing/drawingTypes";
+import {
+  formatCandleAxisDate,
+  formatCandleTooltipDate,
+  type CandleDateDisplayMode,
+} from "@/lib/chart/candleDateDisplay";
 
 export type TradeChartMarker = {
   id: string;
@@ -87,24 +92,8 @@ type Props = {
   drawingEditingEnabled?: boolean;
   drawingRailCollapsed?: boolean;
   onToggleDrawingRail?: () => void;
+  dateDisplayMode?: CandleDateDisplayMode;
 };
-
-function formatTooltipDate(timestamp: number, locale: string) {
-  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }).format(new Date(timestamp));
-}
-
-function formatAxisMonth(timestamp: number, locale: string) {
-  const date = new Date(timestamp);
-
-  const yyyy = date.getFullYear();
-  const month = date.getMonth() + 1;
-
-  if (month === 1) {
-    return String(yyyy);
-  }
-
-  return locale === "ko-KR" ? `${month}월` : new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
-}
 
 export default function CandleChart({
   chartId,
@@ -130,6 +119,7 @@ export default function CandleChart({
   drawingEditingEnabled = false,
   drawingRailCollapsed = false,
   onToggleDrawingRail,
+  dateDisplayMode = "ACTUAL",
 }: Props) {
   const { language, t } = useI18n();
   const locale = language === "ko" ? "ko-KR" : "en-US";
@@ -289,7 +279,8 @@ export default function CandleChart({
               ? time * 1000
               : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
 
-          return formatTooltipDate(timestamp, locale);
+          const candle = candleByTimeRef.current.get(Math.floor(timestamp / 1000));
+          return formatCandleTooltipDate(timestamp, locale, dateDisplayMode, candle?.idx);
         },
       },
       grid: {
@@ -315,7 +306,8 @@ export default function CandleChart({
               ? time * 1000
               : new Date(`${time.year}-${time.month}-${time.day}`).getTime();
 
-          return formatAxisMonth(timestamp, locale);
+          const candle = candleByTimeRef.current.get(Math.floor(timestamp / 1000));
+          return formatCandleAxisDate(timestamp, locale, dateDisplayMode, candle?.idx);
         },
       },
       crosshair: {
@@ -612,7 +604,7 @@ export default function CandleChart({
       setTooltip(null);
       setTradeTooltip(null);
     };
-  }, [chartId, height, locale, mainHeight, showRsi, showMacd, subPaneHeight]);
+  }, [chartId, dateDisplayMode, height, locale, mainHeight, showRsi, showMacd, subPaneHeight]);
 
   /**
    * 데이터 업데이트 effect
@@ -912,7 +904,7 @@ export default function CandleChart({
           className="pointer-events-none absolute z-20 w-[150px] rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-[11px] shadow-xl backdrop-blur"
           style={tooltipStyle}
         >
-          {formatTooltipDate(tooltip.candle.t, locale)}
+          {formatCandleTooltipDate(tooltip.candle.t, locale, dateDisplayMode, tooltip.candle.idx)}
 
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted-foreground">
             <span>{t("training.chart.open")}</span>

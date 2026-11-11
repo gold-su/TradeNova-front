@@ -5,10 +5,11 @@ import { trainingMessages } from "./resources/training";
 import { mypageMessages } from "./resources/mypage";
 import { growthMessages } from "./resources/growth";
 import { communityMessages } from "./resources/community";
+import { adminMessages } from "./resources/admin";
 
 export const resources = {
-  en: { common: commonMessages.en, auth: authMessages.en, landing: landingMessages.en, training: trainingMessages.en, mypage: mypageMessages.en, growth: growthMessages.en, community: communityMessages.en },
-  ko: { common: commonMessages.ko, auth: authMessages.ko, landing: landingMessages.ko, training: trainingMessages.ko, mypage: mypageMessages.ko, growth: growthMessages.ko, community: communityMessages.ko },
+  en: { common: commonMessages.en, auth: authMessages.en, landing: landingMessages.en, training: trainingMessages.en, mypage: mypageMessages.en, growth: growthMessages.en, community: communityMessages.en, admin: adminMessages.en },
+  ko: { common: commonMessages.ko, auth: authMessages.ko, landing: landingMessages.ko, training: trainingMessages.ko, mypage: mypageMessages.ko, growth: growthMessages.ko, community: communityMessages.ko, admin: adminMessages.ko },
 } as const;
 
 export type Language = keyof typeof resources;

@@ -19,8 +19,14 @@ import GrowthAnalyticsPage from "@/pages/growth/GrowthAnalyticsPage";
 import CommunityListPage from "@/pages/community/CommunityListPage";
 import CommunityEditorPage from "@/pages/community/CommunityEditorPage";
 import CommunityDetailPage from "@/pages/community/CommunityDetailPage";
+import ContentStudioPage from "@/pages/admin/ContentStudioPage";
+import { AdminOnlyRoute } from "@/components/auth/AdminOnlyRoute";
 
 export const router = createBrowserRouter([
+    {
+        path: "/admin/content-studio",
+        element: <AdminOnlyRoute><ContentStudioPage /></AdminOnlyRoute>,
+    },
     //헤더 보이는 영역
     {
         element: <AppLayout />,
